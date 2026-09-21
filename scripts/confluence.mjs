@@ -1,5 +1,8 @@
+#!/usr/bin/env node
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
+import { realpathSync } from 'node:fs';
+import { runCli } from '../src/cli.mjs';
 
 const statePath = new URL('../.confluence-dev.json', import.meta.url);
 const reportPath = new URL('../artifacts/smoke-test.json', import.meta.url);
@@ -139,6 +142,8 @@ async function smoke(config, client, space) {
 }
 
 async function main(args) {
+  if (args[0] !== 'smoke') return runCli(args);
+  try { process.loadEnvFile('.env'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
   const [command, pageId] = args;
   if (!command || command === '--help' || command === '-h') {
     console.log('Usage: npm run confluence -- <doctor|read PAGE_ID|smoke>\n\ndoctor  Verify authentication and find the configured space.\nread    Read a page in Confluence storage format.\nsmoke   Create/reuse one test page, then update and verify it.\n\nConfigure credentials locally in .env. Tokens are never printed.');
@@ -161,7 +166,7 @@ async function main(args) {
   await smoke(config, client, space);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   main(process.argv.slice(2)).catch((error) => {
     console.error(error.message);
     process.exitCode = 1;

@@ -2,11 +2,30 @@
   "name": "confluence-wiki-md",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24" },
+  "bin": {
+    "cfwiki": "scripts/confluence.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
-    "confluence": "node --env-file-if-exists=.env scripts/confluence.mjs",
-    "doctor": "node --env-file-if-exists=.env scripts/confluence.mjs doctor",
-    "smoke": "node --env-file-if-exists=.env scripts/confluence.mjs smoke",
-    "test": "node --test"
+    "confluence": "node scripts/confluence.mjs",
+    "doctor": "node scripts/confluence.mjs doctor",
+    "smoke": "node scripts/confluence.mjs smoke",
+    "test": "node --test test/*.test.mjs",
+    "test:live": "node scripts/live-check.mjs",
+    "test:diagrams": "node --test checks/diagram-engines.mjs"
+  },
+  "dependencies": {
+    "cheerio": "1.2.0",
+    "markdown-it": "15.0.2",
+    "markdown-it-footnote": "4.0.0",
+    "markdown-it-task-lists": "2.1.1",
+    "mermaid": "11.17.2",
+    "puppeteer": "25.11.0",
+    "sanitize-html": "2.17.7",
+    "turndown": "7.2.4",
+    "turndown-plugin-gfm": "1.0.2",
+    "yaml": "2.9.1"
   }
 }

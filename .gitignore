@@ -3,6 +3,7 @@
 !.env.example
 .confluence-dev.json
 artifacts/
+wiki/
 node_modules/
 .DS_Store
 .omo/
