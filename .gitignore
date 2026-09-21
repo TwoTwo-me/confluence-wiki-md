@@ -1,6 +1,8 @@
 .env
 .env.*
 !.env.example
+!.env.cloud.example
+!.env.company.example
 .confluence-dev.json
 artifacts/
 wiki/

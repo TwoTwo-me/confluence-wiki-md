@@ -10,6 +10,13 @@ run `node <this-skill-directory>/../../scripts/confluence.mjs` from the reposito
 Read `cfwiki --help` for options. Use `--env /absolute/path/to/profile.env` when the
 working directory differs from the project containing `.env`. Never print tokens.
 
+Choose the deployment profile explicitly: `.env.cloud.example` configures Cloud
+Basic authentication with email and `CONFLUENCE_API_TOKEN`; `.env.company.example`
+configures Data Center Bearer authentication with `CONFLUENCE_PAT`. Copy to a private
+`.env.cloud` or `.env.company` and pass it through `--env`. A company may use Cloud;
+do not infer Data Center from an internal-use label. `doctor --json` reports
+`deployment` and `auth`. Without `--env`, only the legacy `.env` is selected.
+
 ## Search and read
 
 ```sh

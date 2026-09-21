@@ -6,6 +6,7 @@ Confluence를 Markdown 파일로 읽고 편집하는 Node.js CLI입니다. **Clo
 도표가 필요하면 로컬 검사 도구와 Confluence 앱을 추가로 설치합니다.
 
 - [설치](#설치)
+- [인증 방식 선택](#인증-방식-선택)
 - [Cloud 설정](#cloud-설정)
 - [사내 Confluence / PAT](#사내-confluence--pat)
 - [첫 문서 게시와 수정](#첫-문서-게시와-수정)
@@ -35,14 +36,12 @@ cd confluence-wiki-md
 npm ci
 npm link
 cfwiki --help
-cp -n .env.example .env
-chmod 600 .env
 ```
 
 `npm ci`는 잠금 파일의 버전으로 설치하며 Puppeteer의 Chrome 다운로드가 실행될 수 있습니다.
 이미 Chrome이 있거나 일반 Markdown 기능만 쓴다면 `PUPPETEER_SKIP_DOWNLOAD=true npm ci`로
 다운로드를 생략할 수 있습니다. Mermaid를 사용할 때는 아래 [로컬 검사 환경](#로컬-검사-환경)을 준비하세요.
-브라우저 로그인은 CLI 실행 조건이 아닙니다. CLI는 `.env`의 토큰으로 인증합니다.
+브라우저 로그인은 CLI 실행 조건이 아닙니다. CLI는 `--env`로 선택한 프로필의 토큰으로 인증합니다.
 
 전역 연결 없이 `npm run -s confluence -- <명령>`으로도 실행할 수 있습니다.
 `-s`는 npm의 안내 문구를 없애 stdout에 Markdown만 남깁니다.
@@ -51,24 +50,60 @@ chmod 600 .env
 ```sh
 npm run -s confluence -- --help
 # 저장소 밖에서는 CLI와 프로필의 절대 경로로도 실행할 수 있습니다.
-node /path/to/confluence-wiki-md/scripts/confluence.mjs doctor --env /path/to/confluence-wiki-md/.env
+node /path/to/confluence-wiki-md/scripts/confluence.mjs doctor --env /path/to/confluence-wiki-md/.env.cloud
 ```
 
 `npm link`가 권한 오류로 실패하면 전역 연결 없이 위 명령을 사용하거나,
 사용자 권한으로 설치한 Node.js 환경에서 다시 실행하세요.
 
+## 인증 방식 선택
+
+Cloud 인증과 사내 Data Center PAT 인증은 별개입니다. **사용 장소가 아니라 Confluence 운영 형태**로 선택합니다.
+회사에서 사용하는 서비스라도 Atlassian Cloud이면 Cloud 프로필을 사용하세요.
+
+| 구분 | Confluence Cloud | 사내 Confluence Data Center / PAT |
+| --- | --- | --- |
+| 설정 예제 | [.env.cloud.example](.env.cloud.example) | [.env.company.example](.env.company.example) |
+| 로컬 프로필 | `.env.cloud` | `.env.company` |
+| 배포 모드 | `CONFLUENCE_DEPLOYMENT=cloud` | `CONFLUENCE_DEPLOYMENT=datacenter` |
+| 인증 모드 | `CONFLUENCE_AUTH=basic` | `CONFLUENCE_AUTH=bearer` |
+| 자격 증명 | 계정 이메일 + `CONFLUENCE_API_TOKEN` | `CONFLUENCE_PAT` |
+| HTTP 인증 | `Basic base64(email:apiToken)` | `Bearer PAT` |
+| 토큰 발급 위치 | Atlassian 계정의 API 토큰 관리 | 해당 사내 Confluence의 개인 설정 |
+| API 기준 주소 | 범위 지정 토큰은 `api.atlassian.com/ex/confluence/{cloudId}/wiki/api/v2` | 사내 사이트의 `/rest/api` |
+| Cloud ID·이메일 | 필요 | 불필요 |
+
+두 프로필을 동시에 보관할 수 있으며, 명령마다 `--env`로 선택합니다. 서로의 토큰을 복사하지 않습니다.
+
+```sh
+cfwiki doctor --env .env.cloud --json
+cfwiki doctor --env .env.company --json
+```
+
+`doctor`의 `deployment`와 `auth`에서 각각 `cloud/basic`, `datacenter/bearer`를 확인할 수 있습니다.
+토큰 자체는 출력하지 않습니다. 기존 `.env` 방식과 [.env.example](.env.example)은 호환용으로 유지합니다.
+`--env`를 생략하면 여전히 현재 디렉터리의 `.env`를 사용하며, `.env.cloud`나 `.env.company`를 자동 선택하지 않습니다.
+
 ## Cloud 설정
+
+Cloud용 예제를 복사합니다. 기존 파일이 있으면 덮어쓰지 않습니다.
+
+```sh
+cp -n .env.cloud.example .env.cloud
+chmod 600 .env.cloud
+```
 
 1. 사용할 Confluence 사이트에 로그인합니다. 새 테스트 환경은 [Confluence Cloud](https://www.atlassian.com/software/confluence)에서 만들 수 있습니다. 가입 화면에서 필요한 요금제를 직접 확인하세요.
 2. 테스트용 공간을 만들고 **space key**를 확인합니다. 아래 예시에서는 `DOCS`를 사용합니다. 공간 이름이나 숫자 space ID와 구분하세요.
 3. [API 토큰 관리](https://id.atlassian.com/manage-profile/security/api-tokens)에서 **Create API token with scopes**를 선택하고 이름·만료일·Confluence를 지정합니다. 본인 확인이 나오면 계정 이메일의 최신 인증코드로 진행합니다.
-4. 아래 표의 권한을 선택해 토큰을 발급하고, 로컬 편집기로 `.env`의 `CONFLUENCE_API_TOKEN`에 저장합니다. 토큰은 생성 직후 한 번만 표시됩니다. [공식 토큰 발급 안내](https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/)
-5. 브라우저에서 `https://your-site.atlassian.net/_edge/tenant_info`를 열어 `cloudId`를 확인하고 `.env`에 넣습니다.
+4. 아래 표의 권한을 선택해 토큰을 발급하고, 로컬 편집기로 `.env.cloud`의 `CONFLUENCE_API_TOKEN`에 저장합니다. 토큰은 생성 직후 한 번만 표시됩니다. [공식 토큰 발급 안내](https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/)
+5. 브라우저에서 `https://your-site.atlassian.net/_edge/tenant_info`를 열어 `cloudId`를 확인하고 `.env.cloud`에 넣습니다.
 
-설치 단계에서 만든 `.env`를 다음과 같이 채웁니다. 사이트 URL에는 `/wiki`를 붙이지 않습니다.
+`.env.cloud`를 다음과 같이 채웁니다. 사이트 URL에는 `/wiki`를 붙이지 않습니다.
 
 ```dotenv
 CONFLUENCE_DEPLOYMENT=cloud
+CONFLUENCE_AUTH=basic
 CONFLUENCE_SITE_URL=https://your-site.atlassian.net
 CONFLUENCE_EMAIL=you@example.com
 CONFLUENCE_CLOUD_ID=00000000-0000-0000-0000-000000000000
@@ -99,7 +134,7 @@ Cloud의 v1 경로는 자동으로 계산하며, 별도 게이트웨이는 `CONF
 연결을 확인합니다. 성공하면 `authenticated: true`와 설정한 공간 정보가 표시됩니다.
 
 ```sh
-cfwiki doctor --env .env --json
+cfwiki doctor --env .env.cloud --json
 ```
 
 ## 사내 Confluence / PAT
@@ -111,7 +146,13 @@ cfwiki doctor --env .env --json
 토큰을 발급합니다. 메뉴가 없으면 관리자에게 서버 종류와 PAT 사용 정책을 확인하세요.
 일반적인 PAT 지원은 Confluence 7.9 이상 기준입니다. [공식 PAT 안내](https://confluence.atlassian.com/enterprise/using-personal-access-tokens-1026032365.html)
 
-Cloud 프로필과 별개로 `.env.company`를 만들고 다음 값만 넣습니다.
+PAT용 예제를 복사하고 `.env.company`를 채웁니다.
+
+```sh
+cp -n .env.company.example .env.company
+chmod 600 .env.company
+```
+
 `CONFLUENCE_API_TOKEN`과 `CONFLUENCE_PAT`를 함께 넣지 마세요. 둘 다 있으면 API 토큰이 우선합니다.
 
 ```dotenv
@@ -129,7 +170,6 @@ Basic 인증을 사용하는 서버는 `CONFLUENCE_AUTH=basic`, `CONFLUENCE_USER
 `CONFLUENCE_API_TOKEN`을 지정합니다.
 
 ```sh
-chmod 600 .env.company
 cfwiki doctor --env .env.company
 cfwiki read 12345 --env .env.company
 ```
@@ -143,30 +183,30 @@ cfwiki read 12345 --env .env.company
 
 도표 앱이 없어도 실행할 수 있는 [시작 예제](examples/getting-started.md)를 사용합니다.
 아래 명령은 저장소 루트에서 실행하며, 실제 게시 시 설정된 공간에 페이지가 생성됩니다.
+Cloud 프로필을 예로 들었습니다. 사내 PAT는 모든 `--env .env.cloud`를 `--env .env.company`로 바꿉니다.
 
 ```sh
 mkdir -p wiki
 cp -n examples/getting-started.md wiki/getting-started.md
 cfwiki validate wiki/getting-started.md
-cfwiki upload wiki/getting-started.md --dry-run --env .env
-cfwiki upload wiki/getting-started.md --env .env
+cfwiki upload wiki/getting-started.md --dry-run --env .env.cloud
+cfwiki upload wiki/getting-started.md --env .env.cloud
 ```
 
 성공하면 `wiki/getting-started.md`의 YAML에 `confluence.id`, `version`, `url`이 기록됩니다.
 `url`을 열어 게시 결과를 확인하세요. 다음 예시의 `12345`를 그 ID로 바꿉니다.
 
 ```sh
-cfwiki download 12345 -o wiki/getting-started-edit.md --env .env
+cfwiki download 12345 -o wiki/getting-started-edit.md --env .env.cloud
 # 편집기에서 getting-started-edit.md의 본문을 수정하고 저장합니다.
 cfwiki validate wiki/getting-started-edit.md
-cfwiki upload wiki/getting-started-edit.md --dry-run --env .env
-cfwiki upload wiki/getting-started-edit.md --env .env
-cfwiki read 12345 --env .env
+cfwiki upload wiki/getting-started-edit.md --dry-run --env .env.cloud
+cfwiki upload wiki/getting-started-edit.md --env .env.cloud
+cfwiki read 12345 --env .env.cloud
 ```
 
 수정 업로드는 같은 페이지 ID를 유지하고 버전을 올립니다. YAML의 ID·버전·해시를 직접 바꾸지 마세요.
 그 이후에는 최신 버전이 담긴 `getting-started-edit.md`를 기준으로 작업합니다.
-사내 프로필은 위 명령의 `--env .env`를 `--env .env.company`로 바꿉니다.
 
 ## 에이전트 스킬 설치
 
@@ -195,13 +235,13 @@ $confluence-wiki를 사용해 "배포 절차"를 검색하고 Markdown으로 읽
 에이전트가 내용을 확인할 때 임시 파일이 필요 없고, 수정할 때는 파일을 저장해 diff와 버전을 확인할 수 있습니다.
 
 ```sh
-cfwiki search "배포 절차"
-cfwiki read 12345
-cfwiki read 12345 --body-only
-cfwiki download 12345 -o wiki/deployment.md --assets
+cfwiki search "배포 절차" --env .env.cloud
+cfwiki read 12345 --env .env.cloud
+cfwiki read 12345 --body-only --env .env.cloud
+cfwiki download 12345 -o wiki/deployment.md --assets --env .env.cloud
 cfwiki validate wiki/deployment.md
-cfwiki upload wiki/deployment.md --dry-run
-cfwiki upload wiki/deployment.md
+cfwiki upload wiki/deployment.md --dry-run --env .env.cloud
+cfwiki upload wiki/deployment.md --env .env.cloud
 ```
 
 새 파일에는 `type`과 `title`을 넣고 `upload`합니다. 없는 front matter는 자동으로 보완합니다.
@@ -211,7 +251,7 @@ cfwiki upload wiki/deployment.md
 표준 입력도 지원합니다.
 
 ```sh
-printf '# New guide\n\nA short document.\n' | cfwiki upload - --title "New guide" --space DOCS
+printf '# New guide\n\nA short document.\n' | cfwiki upload - --title "New guide" --space DOCS --env .env.cloud
 ```
 
 stdin 업로드 결과에는 생성한 ID와 버전이 포함됩니다. 이후 편집할 계획이라면 결과를 파일로 보관하세요.
@@ -313,7 +353,8 @@ Chrome 다운로드에 관한 세부 설정은 [Puppeteer 공식 안내](https:/
 
 macOS에서는 설치된 Google Chrome을 기본으로 찾습니다. 다른 위치의 브라우저는
 `CFWIKI_CHROME_PATH`, PlantUML 실행 파일은 `CFWIKI_PLANTUML_PATH`로 지정할 수 있습니다.
-Linux/Windows에서 기존 Chrome을 쓰거나 캐시 경로가 다른 경우 `.env`에 실행 파일의 절대 경로를 지정하세요.
+Linux/Windows에서 기존 Chrome을 쓰거나 캐시 경로가 다른 경우 사용할 프로필에 실행 파일의 절대 경로를 지정하세요.
+이 설정을 사용하는 로컬 `validate` 명령에도 해당 `--env`를 전달합니다.
 
 ```dotenv
 CFWIKI_CHROME_PATH="/absolute/path/to/chrome"
@@ -376,7 +417,7 @@ Confluence --> Reader: Render diagram
 아래 `12345`를 실제 ID로 바꾸세요. 이 작업은 페이지를 변경하지 않습니다.
 
 ```sh
-cfwiki read 12345 --json -o artifacts/macro-probe.json --env .env
+cfwiki read 12345 --json -o artifacts/macro-probe.json --env .env.cloud
 ```
 
 아래 명령은 저장된 원본 XML에서 **앱 키와 설정 필드 이름만** 출력합니다.
@@ -402,7 +443,7 @@ for (const fragment of doc.metadata.confluence.preserved ?? []) {
 ```
 
 출력된 `extensionKey`를 아래 `<app-id>/<environment-id>/static/...` **전체 값 대신** 넣습니다.
-두 앱의 키를 구분해서 기존 `.env`에 추가합니다. 인증 설정은 그대로 유지합니다.
+두 앱의 키를 구분해서 `.env.cloud`에 추가합니다. 인증 설정은 그대로 유지합니다.
 
 ```dotenv
 CONFLUENCE_MERMAID_MACRO=mermaid-diagram
@@ -433,18 +474,18 @@ Mermaid viewer는 웹에 소스 코드블록도 함께 표시합니다. 다운�
 ```sh
 mkdir -p wiki
 cp -n examples/diagrams.md wiki/diagrams.md
-cfwiki validate wiki/diagrams.md
-cfwiki validate wiki/diagrams.md --server --env .env
-cfwiki upload wiki/diagrams.md --dry-run --env .env
-cfwiki upload wiki/diagrams.md --env .env
+cfwiki validate wiki/diagrams.md --env .env.cloud
+cfwiki validate wiki/diagrams.md --server --env .env.cloud
+cfwiki upload wiki/diagrams.md --dry-run --env .env.cloud
+cfwiki upload wiki/diagrams.md --env .env.cloud
 # 아래 ID를 wiki/diagrams.md에 기록된 confluence.id로 바꿉니다.
-cfwiki download 12345 -o wiki/diagrams-edit.md --env .env
+cfwiki download 12345 -o wiki/diagrams-edit.md --env .env.cloud
 # diagrams-edit.md의 도표 소스를 수정한 뒤 실행합니다.
-cfwiki upload wiki/diagrams-edit.md --env .env
+cfwiki upload wiki/diagrams-edit.md --env .env.cloud
 ```
 
 첫 게시와 수정 게시 후 모두 `confluence.url`을 열어 **그림 안의 문구**가 바뀌었는지 확인하세요.
-사내 연결은 `.env` 대신 `.env.company`를 지정합니다.
+사내 연결은 `.env.cloud` 대신 `.env.company`를 지정합니다.
 
 로컬 `validate`에는 API 토큰과 매크로 설정이 필요 없습니다.
 검사 결과에는 엔진 버전과 Markdown 줄 번호가 나오며 문법 오류는 해당 위치와 함께 반환됩니다.
@@ -467,10 +508,10 @@ YAML 사용자 메타데이터는 약 28 KB, 원격 content property는 30 KB �
 ## LLM wiki 번들
 
 ```sh
-cfwiki list --space DOCS
-cfwiki export wiki --space DOCS
+cfwiki list --space DOCS --env .env.cloud
+cfwiki export wiki --space DOCS --env .env.cloud
 cfwiki search "rollback" --local wiki
-cfwiki push wiki --space DOCS
+cfwiki push wiki --space DOCS --env .env.cloud
 ```
 
 내보내기는 `index.md`와 `pages/<page-id>.md`를 만듭니다.
@@ -484,16 +525,16 @@ push는 새 페이지 ID를 먼저 할당한 후 문서 사이의 링크를 연�
 심볼릭 링크를 통한 루트 이탈도 차단합니다. 이미지 이외의 첨부는 아래 명령으로 지정합니다.
 
 ```sh
-cfwiki attachments list 12345
-cfwiki attachments upload 12345 ./design.pdf
-cfwiki attachments download 12345 67890 -o files/design.pdf
+cfwiki attachments list 12345 --env .env.cloud
+cfwiki attachments upload 12345 ./design.pdf --env .env.cloud
+cfwiki attachments download 12345 67890 -o files/design.pdf --env .env.cloud
 ```
 
 ## 삭제와 충돌
 
 ```sh
-cfwiki delete wiki/deployment.md --yes
-cfwiki delete 12345 --version 7 --yes
+cfwiki delete wiki/deployment.md --yes --env .env.cloud
+cfwiki delete 12345 --version 7 --yes --env .env.cloud
 ```
 
 삭제는 휴지통 이동이며 영구 삭제를 하지 않습니다.
@@ -520,16 +561,19 @@ npm run -s test:live
 
 `test:diagrams`는 실제 로컬 엔진으로 정상/오류 문법과 업로드 전 차단을 검사하며 Chrome·PlantUML이 필요합니다.
 `test:live`는 도표 앱 없는 환경에서도 일반 CRUD를 확인하도록 `--diagrams code`를 명시합니다.
-현재 `.env`의 공간에 예제 페이지를 생성하고 Markdown 다운로드,
+이 개발용 스크립트는 기존 `.env`의 공간에 예제 페이지를 생성하고 Markdown 다운로드,
 이미지 바이트 일치, 수정, 충돌, 검색, 내보내기, 임시 페이지 휴지통 이동을 실행합니다.
 결과 예제 페이지는 남기고 `artifacts/live-test.json`에 기록합니다.
 검색 인덱스 반영 지연 등으로 중단되면 `npm run -s test:live -- artifacts/live-실행번호`로 같은 예제를 이어서 검증할 수 있습니다.
+`test:live`는 분리된 프로필 이름을 자동 선택하지 않습니다. `.env.cloud` 또는 `.env.company`를
+사용한다면 위의 CLI 업로드·다운로드 절차에 `--env`를 명시해 실제 연결을 검증하세요.
 테스트 계정·공간에서 실행하세요. 사내 실제 환경 검증은 해당 인스턴스에 연결해야 합니다.
 
 기존 `smoke` 명령은 Cloud 연결 검증용으로 유지합니다. 저장된 개발 테스트 페이지를 갱신하고 JSON을 출력합니다.
 일반 문서 작업에는 `upload/read/download`를 사용하세요.
 
-`.env*`, `artifacts/`, `wiki/`, 로컬 개발 상태와 토큰은 Git에서 제외합니다.
+실제 `.env`, `.env.cloud`, `.env.company`, `artifacts/`, `wiki/`와 토큰은 Git에서 제외합니다.
+자격 증명이 비어 있는 `.env.example`, `.env.cloud.example`, `.env.company.example`만 예제로 공개합니다.
 다운로드한 사내 문서를 다른 경로에 저장하면 그 경로도 직접 제외해야 합니다.
 오류는 토큰과 서버 원문 응답을 출력하지 않습니다.
 

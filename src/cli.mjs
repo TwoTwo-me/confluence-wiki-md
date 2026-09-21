@@ -111,8 +111,8 @@ export async function runCli(args) {
   switch (command) {
     case 'doctor': {
       const space = await api.getSpace(values.space);
-      const result = { authenticated: true, deployment: api.config.deployment, api_url: api.config.apiUrl, space: { id: String(space.id), key: space.key, name: space.name } };
-      await emit('# Connection verified\n\n- Deployment: ' + result.deployment + '\n- Space: ' + space.name + ' (' + space.key + ')\n', result);
+      const result = { authenticated: true, deployment: api.config.deployment, auth: api.config.auth, api_url: api.config.apiUrl, space: { id: String(space.id), key: space.key, name: space.name } };
+      await emit('# Connection verified\n\n- Deployment: ' + result.deployment + '\n- Authentication: ' + result.auth + '\n- Space: ' + space.name + ' (' + space.key + ')\n', result);
       break;
     }
     case 'read':
