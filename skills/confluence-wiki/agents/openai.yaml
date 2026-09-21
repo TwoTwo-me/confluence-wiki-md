@@ -1,0 +1,4 @@
+interface:
+  display_name: "Confluence Markdown Wiki"
+  short_description: "Search and edit Confluence with Markdown and OKF metadata"
+  default_prompt: "Use $confluence-wiki to search, read, or edit Confluence pages as Markdown."
