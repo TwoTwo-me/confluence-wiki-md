@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+.confluence-dev.json
+artifacts/
+node_modules/
+.DS_Store
+.omo/
+.codex/
+*.log
+*.pem
+*.key

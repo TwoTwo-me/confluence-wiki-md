@@ -1,0 +1,12 @@
+{
+  "name": "confluence-wiki-md",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "confluence": "node --env-file-if-exists=.env scripts/confluence.mjs",
+    "doctor": "node --env-file-if-exists=.env scripts/confluence.mjs doctor",
+    "smoke": "node --env-file-if-exists=.env scripts/confluence.mjs smoke",
+    "test": "node --test"
+  }
+}
