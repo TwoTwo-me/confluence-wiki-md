@@ -1,6 +1,6 @@
 {
   "name": "@twotwo-me/confluence-wiki-md",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Read and edit Confluence Cloud and Data Center wiki pages as Markdown with OKF front matter.",
   "repository": {
     "type": "git",
