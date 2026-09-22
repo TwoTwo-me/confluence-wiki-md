@@ -46,12 +46,20 @@ try {
   const example = path.join(temporary, 'guide.md');
   await copyFile(path.join(packageRoot, 'examples/getting-started.md'), example);
   assert.equal(JSON.parse((await cli(['validate', example, '--json'])).stdout).valid, true);
+  assert.equal(JSON.parse((await cli(['status', example, '--json'])).stdout).bodyStatus, 'unknown');
   const storage = path.join(temporary, 'page.xml');
   await cli(['convert', example, '--to', 'storage', '-o', storage]);
   assert.match(await readFile(storage, 'utf8'), /<h1>Markdown wiki quickstart<\/h1>/);
   const markdown = path.join(temporary, 'roundtrip.md');
   await cli(['convert', storage, '--to', 'markdown', '-o', markdown]);
   assert.match(await readFile(markdown, 'utf8'), /# Markdown wiki quickstart/);
+  const body = '# Installed body status\n';
+  const baseline = 'sha256:' + createHash('sha256').update(body).digest('hex');
+  const tracked = '---\nconfluence:\n  base_body_hash: ' + baseline + '\n---\n' + body;
+  await writeFile(markdown, tracked);
+  assert.equal(JSON.parse((await cli(['status', markdown, '--json'])).stdout).bodyStatus, 'unchanged');
+  await writeFile(markdown, tracked + '\nA local edit.\n');
+  assert.equal(JSON.parse((await cli(['status', markdown, '--json'])).stdout).bodyStatus, 'modified');
   for (const profile of ['cloud', 'company']) {
     const config = parseEnv(await readFile(path.join(packageRoot, '.env.' + profile + '.example'), 'utf8'));
     assert.equal(config.CONFLUENCE_DEPLOYMENT, profile === 'cloud' ? 'cloud' : 'datacenter');

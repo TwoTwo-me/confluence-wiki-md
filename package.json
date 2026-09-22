@@ -1,6 +1,6 @@
 {
   "name": "confluence-wiki-md",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Read and edit Confluence Cloud and Data Center wiki pages as Markdown with OKF front matter.",
   "repository": {
     "type": "git",
@@ -8,7 +8,13 @@
   },
   "homepage": "https://github.com/TwoTwo-me/confluence-wiki-md#readme",
   "bugs": "https://github.com/TwoTwo-me/confluence-wiki-md/issues",
-  "keywords": ["confluence", "markdown", "wiki", "cli", "okf"],
+  "keywords": [
+    "confluence",
+    "markdown",
+    "wiki",
+    "cli",
+    "okf"
+  ],
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

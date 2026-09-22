@@ -18,6 +18,20 @@ test('plain Markdown is accepted and receives an OKF type on export', () => {
   assert.equal(parseDocument(formatDocument(doc)).body.trim(), '# Title\n\nBody');
 });
 
+test('front matter parsing preserves leading body whitespace and empty bodies', () => {
+  for (const body of ['', '\n', '\n\n# Heading\n', '  \n    indented code\n', '```text\n  value  \n```\n']) {
+    const doc = { metadata: { type: 'Reference', title: 'Whitespace' }, body };
+    assert.equal(parseDocument(formatDocument(doc)).body, body);
+    assert.equal(parseDocument('\uFEFF' + formatDocument(doc).replaceAll('\n', '\r\n')).body, body);
+  }
+});
+
+test('malformed managed body hashes are rejected instead of appearing unchanged', () => {
+  for (const value of ['broken', '42', 'sha256:abcd']) {
+    assert.throws(() => parseDocument('---\nconfluence:\n  base_body_hash: ' + value + '\n---\nBody'), /base_body_hash/);
+  }
+});
+
 for (const input of ['---\ntype: [broken\n---\nbody', '---\ntype: Reference\ntype: Other\n---\nbody', '---\ntype: 3\n---\nbody']) {
   test('invalid YAML or non-string OKF type is rejected: ' + input.slice(4, 24), () => assert.throws(() => parseDocument(input)));
 }

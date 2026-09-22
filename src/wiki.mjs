@@ -2,7 +2,7 @@ import { readFile, writeFile, mkdir, rename, access, readdir, realpath } from 'n
 import path from 'node:path';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { randomUUID } from 'node:crypto';
-import { parseDocument, formatDocument, markdownToStorage, storageToMarkdown, references, hash } from './document.mjs';
+import { parseDocument, formatDocument, markdownToStorage, storageToMarkdown, references, hash, bodyHash } from './document.mjs';
 import { prepareDiagrams, withoutDiagramPreservation } from './diagrams.mjs';
 
 export async function saveFile(filename, content, { overwrite = false } = {}) {
@@ -47,7 +47,7 @@ export async function download(api, id, { version, pageLinks, assetsDir, assetPr
     body = source.body;
     preserved = source.preserved;
   }
-  const metadata = boundMetadata(api, page, stored?.metadata ?? { type: 'Reference', tags: labels }, { labels, preserved, storage_hash: hash(page.storage) });
+  const metadata = boundMetadata(api, page, stored?.metadata ?? { type: 'Reference', tags: labels }, { labels, preserved, storage_hash: hash(page.storage), base_body_hash: bodyHash(body) });
   return { metadata, body, warnings: converted.warnings };
 }
 
@@ -128,6 +128,8 @@ export async function upload(api, input, { filename, title, id, version, space, 
     if (!Object.keys(images).length && !Object.keys(links).length && Buffer.byteLength(JSON.stringify({ ...value, source })) <= 30000) value.source = source;
     await api.setProperty(actual.id, value);
     if (labelList !== undefined) await api.setLabels(actual.id, [...new Set(labelList)]);
+    result = { ...result, metadata: { ...result.metadata, confluence: { ...result.metadata.confluence, base_body_hash: bodyHash(result.body) } } };
+    if (onWrite) await onWrite(result);
     return result;
   } catch (error) {
     throw new Error('Page ' + written.id + ' was saved at version ' + written.version + ', but metadata/attachment synchronization failed. The local file identity was updated when a file was provided. ' + error.message, { cause: error });

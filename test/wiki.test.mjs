@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { spawn } from 'node:child_process';
@@ -12,6 +13,7 @@ import { parseDocument, formatDocument } from '../src/document.mjs';
 import { upload, download } from '../src/wiki.mjs';
 
 const entry = fileURLToPath(new URL('../scripts/confluence.mjs', import.meta.url));
+const bodyDigest = (body) => 'sha256:' + createHash('sha256').update(body.replaceAll('\r\n', '\n')).digest('hex');
 
 async function serverFixture(t) {
   const directory = await mkdtemp(path.join(tmpdir(), 'cfwiki-test-'));
@@ -107,6 +109,7 @@ test('CLI supports create, Markdown download, edit, versioned update, search and
   assert.equal(created.code, 0, created.stderr);
   const first = parseDocument(created.stdout);
   assert.equal(first.metadata.confluence.version, 1);
+  assert.equal(first.metadata.confluence.base_body_hash, bodyDigest(first.body));
   assert.equal(first.metadata.confluence.api_url, fixture.env.CONFLUENCE_API_URL);
   const id = first.metadata.confluence.id;
   const downloaded = await fixture.cli('download', id, '--output', 'copy.md');
@@ -115,9 +118,13 @@ test('CLI supports create, Markdown download, edit, versioned update, search and
   const copy = parseDocument(await readFile(path.join(fixture.directory, 'copy.md'), 'utf8'));
   assert.equal(copy.metadata.custom.owner, 'platform');
   assert.match(copy.body, /Initial body/);
+  assert.equal(copy.metadata.confluence.base_body_hash, bodyDigest(copy.body));
   await writeFile(file, formatDocument({ ...first, body: '# Guide\n\nChanged body\n' }));
   const updated = await fixture.cli('upload', file);
   assert.equal(updated.code, 0, updated.stderr);
+  const saved = parseDocument(await readFile(file, 'utf8'));
+  assert.equal(saved.metadata.confluence.base_body_hash, bodyDigest(saved.body));
+  assert.notEqual(saved.metadata.confluence.base_body_hash, first.metadata.confluence.base_body_hash);
   assert.equal(parseDocument(updated.stdout).metadata.confluence.version, 2);
   const read = await fixture.cli('read', id);
   assert.equal(read.code, 0, read.stderr);
@@ -189,6 +196,85 @@ test('external page edits retain OKF metadata but invalidate cached Markdown', a
   assert.equal(updated.metadata.custom, 'retain-me');
   assert.match(updated.body, /Edited in the browser/);
   assert.doesNotMatch(updated.body, /Original/);
+  assert.equal(updated.metadata.confluence.base_body_hash, bodyDigest(updated.body));
+  assert.notEqual(updated.metadata.confluence.base_body_hash, created.metadata.confluence.base_body_hash);
+});
+
+test('local status detects body edits without an API, configuration or baseline changes', async (t) => {
+  const fixture = await serverFixture(t);
+  const file = path.join(fixture.directory, 'status.md');
+  const body = '\n# Body\n\n```text\n  indentation  \n```\n';
+  const metadata = { type: 'Reference', title: 'Before', confluence: { id: '42', version: 3, base_body_hash: bodyDigest(body) } };
+  const unchanged = '\uFEFF' + formatDocument({ metadata, body }).replaceAll('\n', '\r\n');
+  await writeFile(file, unchanged);
+  const before = fixture.requests.length;
+  let result = await fixture.cli('status', file, '--json', '--env', 'does-not-exist.env');
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).bodyStatus, 'unchanged');
+  assert.equal(JSON.parse(result.stdout).bodyModified, false);
+  assert.equal(await readFile(file, 'utf8'), unchanged);
+  const edited = formatDocument({ metadata: { ...metadata, title: 'YAML edit only' }, body });
+  await writeFile(file, edited);
+  result = await fixture.cli('status', file, '--json');
+  assert.equal(JSON.parse(result.stdout).bodyStatus, 'unchanged');
+  const changed = edited.replace('  indentation  ', '    indentation  ');
+  await writeFile(file, changed);
+  for (let i = 0; i < 2; i++) {
+    result = await fixture.cli('status', file, '--json');
+    assert.equal(result.code, 0, result.stderr);
+    const state = JSON.parse(result.stdout);
+    assert.equal(state.bodyStatus, 'modified');
+    assert.equal(state.bodyModified, true);
+    assert.equal(state.baseBodyHash, metadata.confluence.base_body_hash);
+    assert.equal(state.currentBodyHash, bodyDigest(parseDocument(changed).body));
+  }
+  assert.equal(await readFile(file, 'utf8'), changed);
+  result = await fixture.cli('status', file, '-o', file, '--overwrite');
+  assert.notEqual(result.code, 0);
+  assert.equal(await readFile(file, 'utf8'), changed);
+  await writeFile(file, '# Older file without a baseline\n');
+  result = await fixture.cli('status', file, '--json');
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).bodyStatus, 'unknown');
+  assert.equal(JSON.parse(result.stdout).bodyModified, null);
+  assert.equal(JSON.parse(result.stdout).baseBodyHash, null);
+  assert.equal(fixture.requests.length, before);
+});
+
+test('downloads hash the returned Markdown after link rewriting, including empty pages', async (t) => {
+  const fixture = await serverFixture(t);
+  const created = await upload(fixture.api, '# Links');
+  const id = created.metadata.confluence.id;
+  const page = fixture.pages.get(id);
+  for (const storage of ['<p><a href="' + fixture.api.pageUrl(id) + '">Self</a></p>', '']) {
+    page.body.storage.value = storage;
+    page.version.number++;
+    const downloaded = await download(fixture.api, id, { pageLinks: { [id]: './self.md' } });
+    if (storage) assert.match(downloaded.body, /\.\/self\.md/);
+    const reopened = parseDocument(formatDocument(downloaded));
+    assert.equal(reopened.metadata.confluence.base_body_hash, bodyDigest(reopened.body));
+  }
+});
+
+test('dry runs and partial updates retain the body baseline until synchronization succeeds', async (t) => {
+  const fixture = await serverFixture(t);
+  const created = await upload(fixture.api, '# Baseline\n\nOriginal\n');
+  const baseline = created.metadata.confluence.base_body_hash;
+  assert.equal(baseline, bodyDigest(created.body));
+  const edited = formatDocument({ ...created, body: '# Baseline\n\nEdited\n' });
+  let saved;
+  const onWrite = async (doc) => { saved = doc; };
+  await upload(fixture.api, edited, { dryRun: true, onWrite });
+  assert.equal(saved, undefined);
+  const realSetProperty = fixture.api.setProperty.bind(fixture.api);
+  fixture.api.setProperty = async () => { throw new Error('simulated metadata failure'); };
+  await assert.rejects(upload(fixture.api, edited, { onWrite }), /was saved at version 2/);
+  assert.equal(saved.metadata.confluence.base_body_hash, baseline);
+  fixture.api.setProperty = realSetProperty;
+  const complete = await upload(fixture.api, formatDocument(saved), { onWrite });
+  assert.equal(complete.metadata.confluence.base_body_hash, bodyDigest(complete.body));
+  assert.equal(saved.metadata.confluence.base_body_hash, complete.metadata.confluence.base_body_hash);
+  assert.equal(fixture.properties.get(complete.metadata.confluence.id).value.metadata.confluence, undefined);
 });
 
 test('an explicit profile does not inherit credentials from a different active profile', async (t) => {
@@ -225,6 +311,7 @@ test('a partial metadata failure records identity and can resume without duplica
   await assert.rejects(upload(fixture.api, '# Partial page', { onWrite: async (doc) => { saved = doc; } }), /was saved at version 1/);
   assert.ok(saved.metadata.confluence.id);
   assert.equal(saved.metadata.confluence.version, 1);
+  assert.equal(saved.metadata.confluence.base_body_hash, undefined);
   fixture.api.setProperty = realSetProperty;
   await upload(fixture.api, formatDocument(saved));
   assert.equal(fixture.pages.size, 1);

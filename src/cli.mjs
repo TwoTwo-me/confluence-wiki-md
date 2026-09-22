@@ -2,7 +2,7 @@ import { parseArgs, parseEnv } from 'node:util';
 import { readFile, access } from 'node:fs/promises';
 import path from 'node:path';
 import { ConfluenceApi, readWikiConfig } from './api.mjs';
-import { parseDocument, formatDocument, markdownToStorage, storageToMarkdown } from './document.mjs';
+import { parseDocument, formatDocument, markdownToStorage, storageToMarkdown, bodyStatus } from './document.mjs';
 import { download, upload, saveFile, exportBundle, pushBundle, searchLocal } from './wiki.mjs';
 import { prepareDiagrams, diagramProfile, withoutDiagramPreservation } from './diagrams.mjs';
 
@@ -11,6 +11,7 @@ export const help = `Usage: cfwiki <command> [arguments] [options]
   doctor                          Verify the selected API profile and space
   read ID                         Return an OKF Markdown document on stdout
   download ID [-o FILE.md]         Same as read; --output saves a Markdown file
+  status FILE.md|-                Check local body edits against its saved hash; no API call
   upload FILE.md                  Create or version-check and update a page
   upload - --title TITLE          Read Markdown from stdin; return saved Markdown
   search QUERY                    Search Confluence; return a Markdown index
@@ -69,7 +70,7 @@ export async function runCli(args) {
   } });
   const [command, target, extra] = positionals;
   if (!command || values.help) { process.stdout.write(help); return; }
-  if (!['doctor', 'read', 'download', 'upload', 'search', 'list', 'export', 'push', 'delete', 'attachments', 'convert', 'validate'].includes(command)) throw new Error('Unknown command. Use --help.');
+  if (!['doctor', 'read', 'download', 'status', 'upload', 'search', 'list', 'export', 'push', 'delete', 'attachments', 'convert', 'validate'].includes(command)) throw new Error('Unknown command. Use --help.');
   const numeric = (value, name) => { if (value === undefined) return undefined; const number = Number(value); if (!Number.isSafeInteger(number) || number < 1) throw new Error(name + ' must be a positive integer.'); return number; };
   const version = numeric(values.version, '--version');
   const limit = numeric(values.limit, '--limit');
@@ -81,6 +82,14 @@ export async function runCli(args) {
     if (values.output) { await saveFile(values.output, content, { overwrite: values.overwrite }); process.stderr.write('Saved ' + values.output + '\n'); }
     else process.stdout.write(content);
   };
+  if (command === 'status') {
+    if (target !== '-' && !/\.md$/i.test(target)) throw new Error('status expects a .md file or - for stdin.');
+    if (values.output) throw new Error('status reports to stdout and does not write files.');
+    const doc = parseDocument(await readInput(target));
+    const state = { file: target === '-' ? null : path.resolve(target), id: doc.metadata.confluence?.id ?? null, version: doc.metadata.confluence?.version ?? null, ...bodyStatus(doc) };
+    await emit('# Local body status\n\n- Body: ' + state.bodyStatus + '\n- Base hash: ' + (state.baseBodyHash ?? 'missing') + '\n- Current hash: ' + state.currentBodyHash + '\n\nChecks Markdown body only; excludes YAML and remote changes.\n', state);
+    return;
+  }
   let fileEnv = {};
   try { fileEnv = parseEnv(await readFile(values.env ?? '.env', 'utf8')); } catch (error) { if (values.env || error.code !== 'ENOENT') throw error; }
   const inherited = values.env ? Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('CONFLUENCE_'))) : process.env;

@@ -12,6 +12,7 @@ Confluence를 Markdown 파일로 읽고 편집하는 Node.js CLI입니다. **Clo
 - [사내 Confluence / PAT](#사내-confluence--pat)
 - [첫 문서 게시와 수정](#첫-문서-게시와-수정)
 - [에이전트 스킬 설치](#에이전트-스킬-설치)
+- [로컬 본문 변경 확인](#로컬-본문-변경-확인)
 - [도표 자동 변환과 검사](#도표-자동-변환과-검사)
 - [무료 Cloud 도표 앱 설치](#무료-cloud-도표-앱-설치)
 - [매크로 설정값 확인](#매크로-설정값-확인)
@@ -224,6 +225,7 @@ cfwiki upload wiki/getting-started.md --env .env.cloud
 ```
 
 성공하면 `wiki/getting-started.md`의 YAML에 `confluence.id`, `version`, `url`이 기록됩니다.
+본문의 기준 해시 `confluence.base_body_hash`도 기록되어 이후 로컬 편집을 감지할 수 있습니다.
 `url`을 열어 게시 결과를 확인하세요. 다음 예시의 `12345`를 그 ID로 바꿉니다.
 
 ```sh
@@ -326,9 +328,44 @@ OKF의 concept ID는 번들 안의 파일 경로이며, Confluence 숫자 ID는 
 작은 문서는 원본 Markdown도 압축 저장해 불필요한 문법 변화를 줄입니다.
 원격 이미지·페이지 URL로 치환한 문서는 저장 위치에 독립적인 Markdown으로 내려받습니다.
 
-다운로드에 추가되는 `storage_hash`는 원격 본문 검증용이고, `preserved`는 네이티브 매크로의 원본 XML입니다.
-수정 파일에서 이 필드를 유지하세요. 서로 다른 서버로 잘못 쓰지 않도록 파일의 URL과 현재 프로필을 비교하며,
+다운로드에 추가되는 `storage_hash`는 Confluence 원본 본문 검증용이고,
+`base_body_hash`는 다운로드한 Markdown 본문의 기준 SHA-256입니다. 두 형식의 해시를 직접 비교하지 않습니다.
+`preserved`는 네이티브 매크로의 원본 XML입니다. 수정 파일에서 이 필드를 유지하세요.
+서로 다른 서버로 잘못 쓰지 않도록 파일의 URL과 현재 프로필을 비교하며,
 front matter의 주소로 토큰을 전송하지 않습니다.
+
+## 로컬 본문 변경 확인
+
+v0.1.1부터 `read`, `download`, `export` 결과의 YAML에 `confluence.base_body_hash`를 기록합니다.
+형식은 `sha256:` 뒤에 소문자 16진수 64자입니다. 다운로드한 본문이나 링크·첨부 경로 변환이 끝난
+최종 Markdown을 기준으로 계산합니다. 업로드와 번들 push는 페이지 저장·재조회 및 메타데이터·첨부·라벨
+동기화가 성공한 뒤 기준 해시를 갱신합니다. `--dry-run`, `status`, 실패한 업로드는 기준값을 갱신하지 않습니다.
+
+```sh
+cfwiki download 12345 -o page.md --env .env.company
+cfwiki status page.md
+cfwiki status page.md --json
+```
+
+`status`는 파일을 읽고 stdout에 결과를 반환합니다. 인증이나 API 호출이 필요 없으며,
+프로필·원격 버전을 조회하거나 파일을 수정하지 않습니다. `--output/-o`는 지원하지 않습니다.
+stdin의 Markdown을 확인하려면 `cfwiki status - --json`을 사용합니다.
+
+| `bodyStatus` | `bodyModified` | 의미 |
+| --- | --- | --- |
+| `unchanged` | `false` | 현재 본문 해시가 마지막 동기화 기준값과 같음 |
+| `modified` | `true` | 현재 본문이 기준값과 다름 |
+| `unknown` | `null` | 기존 파일에 기준 해시가 없어 판단할 수 없음 |
+
+JSON에는 `baseBodyHash`, `currentBodyHash`, 파일 경로와 저장된 페이지 ID·버전도 포함됩니다.
+정상 판정은 세 상태 모두 종료 코드 0이며, 잘못된 YAML·해시 형식·파일 오류는 0이 아닌 코드로 종료합니다.
+편집할 때 기준 해시를 직접 바꾸지 마세요. 해시가 없는 기존 수정본은 보존하고,
+원격 페이지를 다른 파일명으로 내려받아 비교한 뒤 작업하세요.
+
+해시는 YAML과 구분선을 제외한 본문을 UTF-8로 계산하며 `CRLF`만 `LF`로 통일합니다.
+파일 시작의 BOM은 파싱 시 제외합니다. 본문의 빈 줄·들여쓰기·후행 공백은 보존합니다.
+제목·태그 등 YAML만 바꾼 경우에는 `unchanged`이며, 원격 최신 여부도 이 명령의 판단 대상이 아닙니다.
+기존 원격 버전 및 `storage_hash` 충돌 검사는 업로드 시 계속 적용합니다.
 
 ## 변환 범위
 

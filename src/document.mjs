@@ -11,6 +11,15 @@ import { diagramKey } from './diagrams.mjs';
 import { freshForgeIds, readForgeDiagrams, finalizeForgeViewers } from './forge.mjs';
 
 export const hash = (value) => createHash('sha256').update(value).digest('hex');
+export const bodyHash = (body) => 'sha256:' + hash(body.replaceAll('\r\n', '\n'));
+
+export function bodyStatus({ metadata, body }) {
+  const baseBodyHash = metadata.confluence?.base_body_hash ?? null;
+  const currentBodyHash = bodyHash(body);
+  const bodyModified = baseBodyHash === null ? null : baseBodyHash !== currentBodyHash;
+  return { bodyStatus: bodyModified === null ? 'unknown' : bodyModified ? 'modified' : 'unchanged', bodyModified, baseBodyHash, currentBodyHash };
+}
+
 const escapeXml = (value) => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 const cdata = (value) => '<![CDATA[' + value.replaceAll(']]>', ']]]]><![CDATA[>') + ']]>';
 const languageMap = { js: 'javascript', ts: 'typescript', sh: 'bash', py: 'python', yml: 'yaml' };
@@ -28,7 +37,7 @@ export function parseDocument(source) {
   let metadata = {};
   let body = normalized;
   if (normalized.startsWith('---\n')) {
-    const closing = /^---\s*$/m.exec(normalized.slice(4));
+    const closing = /^---[\t ]*$/m.exec(normalized.slice(4));
     const end = closing ? closing.index + 3 : -1;
     if (end < 0) throw new Error('Unterminated YAML front matter.');
     const yaml = parseYaml(normalized.slice(4, end), { uniqueKeys: true });
@@ -47,6 +56,7 @@ export function parseDocument(source) {
     if (meta.id !== undefined && !/^\d+$/.test(String(meta.id))) throw new Error('confluence.id must be a numeric page ID.');
     if (meta.id !== undefined) meta.id = String(meta.id);
     if (meta.version !== undefined && (!Number.isSafeInteger(meta.version) || meta.version < 1)) throw new Error('confluence.version must be a positive integer.');
+    if (meta.base_body_hash !== undefined && (typeof meta.base_body_hash !== 'string' || !/^sha256:[a-f0-9]{64}$/.test(meta.base_body_hash))) throw new Error('confluence.base_body_hash must be sha256: followed by 64 lowercase hexadecimal characters.');
     if (meta.preserved !== undefined && (!Array.isArray(meta.preserved) || meta.preserved.some((item) => !item || typeof item.markdown !== 'string' || typeof item.storage !== 'string'))) throw new Error('Invalid preserved Confluence fragments.');
   }
   return { metadata, body };
