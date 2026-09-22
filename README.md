@@ -6,6 +6,7 @@ Confluence를 Markdown 파일로 읽고 편집하는 Node.js CLI입니다. **Clo
 도표가 필요하면 로컬 검사 도구와 Confluence 앱을 추가로 설치합니다.
 
 - [설치](#설치)
+- [자동 검증과 배포](#자동-검증과-배포)
 - [인증 방식 선택](#인증-방식-선택)
 - [Cloud 설정](#cloud-설정)
 - [사내 Confluence / PAT](#사내-confluence--pat)
@@ -18,43 +19,72 @@ Confluence를 Markdown 파일로 읽고 편집하는 Node.js CLI입니다. **Clo
 
 ## 설치
 
-[Git](https://git-scm.com/downloads), [Node.js 24 이상과 npm](https://nodejs.org/en/download)이 필요합니다.
+[Node.js 24 이상과 npm](https://nodejs.org/en/download)이 필요합니다. 일반 사용자는 Git이나 저장소 클론이 필요 없습니다.
 아래 설치 명령은 macOS/Linux 셸 기준입니다. 실제 Cloud 도표 왕복은 macOS에서 검증했습니다.
 Node.js 설치 후 새 터미널에서 버전을 먼저 확인하세요.
 
 ```sh
-git --version
 node --version
 npm --version
 ```
 
-저장소를 복제하고 CLI를 설치합니다.
+GitHub Releases에 올라온 설치 패키지를 npm으로 설치합니다.
+
+```sh
+npm install --global https://github.com/TwoTwo-me/confluence-wiki-md/releases/latest/download/confluence-wiki-md.tgz
+cfwiki --help
+```
+
+특정 버전을 고정하려면 URL의 `latest/download`를 `download/v0.1.0`처럼 바꿉니다.
+패키지에는 CLI, 인증 예제, Markdown 예제, 에이전트 스킬이 들어 있습니다. 사용자 토큰과 다운로드한 위키는 포함하지 않습니다.
+
+npm 레지스트리의 최초 배포와 계정 연결이 완료되면 아래 짧은 명령도 사용할 수 있습니다.
+그 전에는 위의 GitHub Releases 주소를 사용하세요. 유지관리자 절차는 [배포 안내](docs/RELEASING.md)에 있습니다.
+
+```sh
+npm install --global confluence-wiki-md
+npx --package confluence-wiki-md cfwiki --help
+```
+
+설치 과정에서 Puppeteer의 Chrome 다운로드가 실행될 수 있습니다.
+이미 Chrome이 있거나 일반 Markdown 기능만 쓴다면 설치 명령 앞에 `PUPPETEER_SKIP_DOWNLOAD=true`를 붙여
+다운로드를 생략할 수 있습니다. Mermaid를 사용할 때는 아래 [로컬 검사 환경](#로컬-검사-환경)을 준비하세요.
+브라우저 로그인은 CLI 실행 조건이 아닙니다. CLI는 `--env`로 선택한 프로필의 토큰으로 인증합니다.
+
+프로필과 문서를 보관할 작업 폴더를 만든 뒤 아래 Cloud 또는 PAT 설정으로 진행합니다.
+
+```sh
+mkdir -p confluence-work
+cd confluence-work
+```
+
+전역 설치가 권한 오류로 실패하면 사용자 권한으로 설치한 Node.js 환경을 사용하세요.
+
+### 소스 개발용 설치
+
+CLI를 개발할 때만 [Git](https://git-scm.com/downloads)으로 복제합니다.
 
 ```sh
 git clone https://github.com/TwoTwo-me/confluence-wiki-md.git
 cd confluence-wiki-md
 npm ci
 npm link
-cfwiki --help
+npm test
 ```
 
-`npm ci`는 잠금 파일의 버전으로 설치하며 Puppeteer의 Chrome 다운로드가 실행될 수 있습니다.
-이미 Chrome이 있거나 일반 Markdown 기능만 쓴다면 `PUPPETEER_SKIP_DOWNLOAD=true npm ci`로
-다운로드를 생략할 수 있습니다. Mermaid를 사용할 때는 아래 [로컬 검사 환경](#로컬-검사-환경)을 준비하세요.
-브라우저 로그인은 CLI 실행 조건이 아닙니다. CLI는 `--env`로 선택한 프로필의 토큰으로 인증합니다.
+`npm ci`는 잠금 파일을 사용합니다. 전역 연결 없이 `npm run -s confluence -- <명령>`으로도 실행할 수 있습니다.
+`-s`는 npm 안내 문구를 없애 stdout에 Markdown만 남깁니다.
 
-전역 연결 없이 `npm run -s confluence -- <명령>`으로도 실행할 수 있습니다.
-`-s`는 npm의 안내 문구를 없애 stdout에 Markdown만 남깁니다.
-현재 프로젝트는 공개 소스이며 npm 레지스트리에 배포하지 않습니다.
+## 자동 검증과 배포
 
-```sh
-npm run -s confluence -- --help
-# 저장소 밖에서는 CLI와 프로필의 절대 경로로도 실행할 수 있습니다.
-node /path/to/confluence-wiki-md/scripts/confluence.mjs doctor --env /path/to/confluence-wiki-md/.env.cloud
-```
+GitHub가 제공하는 Linux/macOS runner를 사용합니다. 별도 runner 서버를 설치할 필요가 없습니다.
 
-`npm link`가 권한 오류로 실패하면 전역 연결 없이 위 명령을 사용하거나,
-사용자 권한으로 설치한 Node.js 환경에서 다시 실행하세요.
+- `main` push와 Pull Request: 기존 테스트와 실제 npm 패키지 전역 설치 검사를 실행합니다.
+- `v0.1.0` 형태의 버전 태그 push: 버전·main 포함 여부를 확인하고 테스트한 `.tgz` 및 SHA-256 체크섬을 GitHub Releases에 게시합니다.
+- npm Trusted Publisher 연결 후: `NPM_PUBLISH_ENABLED=true`를 설정하면 같은 패키지를 npm에도 배포합니다. 장기 npm 토큰을 GitHub Secrets에 넣지 않습니다.
+
+자동 검증은 Confluence 계정 없이 실행합니다. 실제 Confluence 페이지를 생성하는 테스트나 로컬 도표 엔진 검사는 별도로 실행합니다.
+최초 npm 계정 연결, 배포 재시도, 버전 올리는 방법은 [docs/RELEASING.md](docs/RELEASING.md)를 참고하세요.
 
 ## 인증 방식 선택
 
@@ -89,7 +119,7 @@ cfwiki doctor --env .env.company --json
 Cloud용 예제를 복사합니다. 기존 파일이 있으면 덮어쓰지 않습니다.
 
 ```sh
-cp -n .env.cloud.example .env.cloud
+cp -n "$(npm root -g)/confluence-wiki-md/.env.cloud.example" .env.cloud
 chmod 600 .env.cloud
 ```
 
@@ -149,7 +179,7 @@ cfwiki doctor --env .env.cloud --json
 PAT용 예제를 복사하고 `.env.company`를 채웁니다.
 
 ```sh
-cp -n .env.company.example .env.company
+cp -n "$(npm root -g)/confluence-wiki-md/.env.company.example" .env.company
 chmod 600 .env.company
 ```
 
@@ -182,12 +212,12 @@ cfwiki read 12345 --env .env.company
 ## 첫 문서 게시와 수정
 
 도표 앱이 없어도 실행할 수 있는 [시작 예제](examples/getting-started.md)를 사용합니다.
-아래 명령은 저장소 루트에서 실행하며, 실제 게시 시 설정된 공간에 페이지가 생성됩니다.
+아래 명령은 프로필을 만든 작업 폴더에서 실행하며, 실제 게시 시 설정된 공간에 페이지가 생성됩니다.
 Cloud 프로필을 예로 들었습니다. 사내 PAT는 모든 `--env .env.cloud`를 `--env .env.company`로 바꿉니다.
 
 ```sh
 mkdir -p wiki
-cp -n examples/getting-started.md wiki/getting-started.md
+cp -n "$(npm root -g)/confluence-wiki-md/examples/getting-started.md" wiki/getting-started.md
 cfwiki validate wiki/getting-started.md
 cfwiki upload wiki/getting-started.md --dry-run --env .env.cloud
 cfwiki upload wiki/getting-started.md --env .env.cloud
@@ -210,16 +240,16 @@ cfwiki read 12345 --env .env.cloud
 
 ## 에이전트 스킬 설치
 
-CLI 설치를 마친 뒤 저장소 루트에서 실행합니다. 기존 `confluence-wiki` 설치가 있으면 먼저 확인하세요.
-심볼릭 링크는 이 저장소의 스킬 변경을 그대로 반영합니다.
+CLI 설치를 마친 뒤 어느 폴더에서든 실행할 수 있습니다. 기존 `confluence-wiki` 설치가 있으면 먼저 확인하세요.
+심볼릭 링크를 사용하므로 CLI 패키지를 업데이트하면 포함된 스킬도 함께 갱신됩니다.
 
 ```sh
 mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-ln -s "$(pwd)/skills/confluence-wiki" "${CODEX_HOME:-$HOME/.codex}/skills/confluence-wiki"
+ln -s "$(npm root -g)/confluence-wiki-md/skills/confluence-wiki" "${CODEX_HOME:-$HOME/.codex}/skills/confluence-wiki"
 ```
 
-스킬 디렉터리를 다르게 사용하는 에이전트는 [skills/confluence-wiki](skills/confluence-wiki)를
-해당 디렉터리에 복사합니다. 스킬에는 토큰을 넣지 않습니다. 에이전트가 다른 작업 폴더에서
+스킬 디렉터리를 다르게 사용하는 에이전트는 설치 패키지의 `skills/confluence-wiki`를
+해당 디렉터리에 복사하거나 링크합니다. 스킬에는 토큰을 넣지 않습니다. 에이전트가 다른 작업 폴더에서
 실행되면 다음처럼 **프로필의 절대 경로**를 함께 전달하세요.
 
 ```text
@@ -341,9 +371,9 @@ macOS에서 [Homebrew](https://brew.sh/)를 쓰는 경우:
 ```sh
 brew install plantuml
 plantuml -version
-# Google Chrome이 설치되지 않았다면 저장소 루트에서 실행합니다.
-npx puppeteer browsers install chrome
-cfwiki validate examples/diagrams.md
+# Google Chrome이 설치되지 않았다면 실행합니다.
+npx --package puppeteer@25.11.0 puppeteer browsers install chrome
+cfwiki validate "$(npm root -g)/confluence-wiki-md/examples/diagrams.md"
 ```
 
 `brew install plantuml`은 필요한 Java·Graphviz 의존성도 설치합니다.
@@ -421,12 +451,15 @@ cfwiki read 12345 --json -o artifacts/macro-probe.json --env .env.cloud
 ```
 
 아래 명령은 저장된 원본 XML에서 **앱 키와 설정 필드 이름만** 출력합니다.
-토큰이나 도표 본문을 출력하지 않으며, `node_modules`가 있는 저장소 루트에서 실행합니다.
+토큰이나 도표 본문을 출력하지 않으며, 위의 JSON을 저장한 작업 폴더에서 실행합니다.
+전역 CLI 패키지에 포함된 XML 파서를 사용합니다.
 
 ```sh
-node --input-type=module -e '
+CFWIKI_PACKAGE_DIR="$(npm root -g)/confluence-wiki-md" node --input-type=module -e '
 import { readFile } from "node:fs/promises";
-import { load } from "cheerio";
+import { createRequire } from "node:module";
+const require = createRequire(process.env.CFWIKI_PACKAGE_DIR + "/package.json");
+const { load } = require("cheerio");
 const doc = JSON.parse(await readFile("artifacts/macro-probe.json", "utf8"));
 for (const fragment of doc.metadata.confluence.preserved ?? []) {
   const $ = load(fragment.storage, { xmlMode: true });
@@ -473,7 +506,7 @@ Mermaid viewer는 웹에 소스 코드블록도 함께 표시합니다. 다운�
 
 ```sh
 mkdir -p wiki
-cp -n examples/diagrams.md wiki/diagrams.md
+cp -n "$(npm root -g)/confluence-wiki-md/examples/diagrams.md" wiki/diagrams.md
 cfwiki validate wiki/diagrams.md --env .env.cloud
 cfwiki validate wiki/diagrams.md --server --env .env.cloud
 cfwiki upload wiki/diagrams.md --dry-run --env .env.cloud
@@ -552,12 +585,17 @@ cfwiki delete 12345 --version 7 --yes --env .env.cloud
 
 ```sh
 npm test
+npm run test:package
 npm run test:diagrams
 npm run -s test:live
 ```
 
 `npm test`는 인증 정보 없이 변환, Cloud API 요청 형식, Data Center PAT HTTP 계약,
 실제 CLI CRUD, 버전 충돌, 프로필 격리, 경로 제한, 번들 링크, 비밀값 비노출을 검증합니다.
+
+`test:package`는 실제 `npm pack` 결과의 파일 목록을 검사하고, 저장소 밖 임시 폴더에 전역 설치해
+`cfwiki` 실행, Markdown 변환 왕복, 인증 예제와 에이전트 스킬 포함 여부를 확인합니다.
+`npm run test:package -- artifacts/release`는 검증한 압축파일과 체크섬을 남깁니다.
 
 `test:diagrams`는 실제 로컬 엔진으로 정상/오류 문법과 업로드 전 차단을 검사하며 Chrome·PlantUML이 필요합니다.
 `test:live`는 도표 앱 없는 환경에서도 일반 CRUD를 확인하도록 `--diagrams code`를 명시합니다.
@@ -579,8 +617,8 @@ npm run -s test:live
 
 | 오류 | 대응 |
 | --- | --- |
-| `cfwiki: command not found` | 저장소에서 `npm link` 실행 또는 `npm run -s confluence -- ...` 사용 |
-| Node 버전/모듈 오류 | `node --version`이 24 이상인지 확인하고 저장소에서 `npm ci` 실행 |
+| `cfwiki: command not found` | 전역 npm 설치 경로가 PATH에 있는지 확인하고 CLI 재설치. 소스 개발자는 `npm link` 실행 |
+| Node 버전/모듈 오류 | `node --version`이 24 이상인지 확인한 뒤 CLI 재설치. 소스 개발자는 `npm ci` 실행 |
 | `Missing CONFLUENCE_SITE_URL` | 현재 작업 폴더의 `.env` 또는 `--env /absolute/path/profile.env` 확인 |
 | `PlantUML executable is unavailable` | `plantuml -version` 확인 후 실행 파일을 `CFWIKI_PLANTUML_PATH`로 지정 |
 | Chrome 실행 파일 없음 | `npx puppeteer browsers install chrome` 실행 또는 `CFWIKI_CHROME_PATH` 지정 |
@@ -594,16 +632,26 @@ npm run -s test:live
 
 ## 업데이트와 설치 해제
 
-저장소 루트에서 업데이트합니다. 작업 중인 코드가 있으면 먼저 변경사항을 확인하세요.
+GitHub Releases에서 설치했다면 같은 명령으로 최신 버전을 설치합니다.
 
 ```sh
-git pull --ff-only
-npm ci
-npm link
+npm install --global https://github.com/TwoTwo-me/confluence-wiki-md/releases/latest/download/confluence-wiki-md.tgz
 ```
 
-CLI의 전역 연결만 해제하려면 저장소 루트에서 `npm unlink --global confluence-wiki-md`를 실행합니다.
-에이전트 스킬은 설치한 스킬 디렉터리의 링크를 제거합니다. Confluence 앱은
+npm 레지스트리 배포 후에는 다음 명령으로 업데이트합니다.
+
+```sh
+npm install --global confluence-wiki-md@latest
+```
+
+설치를 해제하려면 다음을 실행합니다.
+
+```sh
+npm uninstall --global confluence-wiki-md
+```
+
+소스 개발용 설치는 저장소에서 `git pull --ff-only`, `npm ci` 순서로 업데이트합니다.
+에이전트 스킬은 설치한 스킬 디렉터리의 링크를 별도로 제거합니다. Confluence 앱은
 **Connected apps**에서 별도로 제거하며, CLI 연결 해제만으로 원격 페이지나 앱이 삭제되지는 않습니다.
 
 ## 공식 자료

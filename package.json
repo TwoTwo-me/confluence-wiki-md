@@ -1,6 +1,29 @@
 {
   "name": "confluence-wiki-md",
-  "private": true,
+  "version": "0.1.0",
+  "description": "Read and edit Confluence Cloud and Data Center wiki pages as Markdown with OKF front matter.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TwoTwo-me/confluence-wiki-md.git"
+  },
+  "homepage": "https://github.com/TwoTwo-me/confluence-wiki-md#readme",
+  "bugs": "https://github.com/TwoTwo-me/confluence-wiki-md/issues",
+  "keywords": ["confluence", "markdown", "wiki", "cli", "okf"],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "scripts/confluence.mjs",
+    "src/*.mjs",
+    "skills/confluence-wiki/SKILL.md",
+    "skills/confluence-wiki/agents/openai.yaml",
+    "examples/*.md",
+    "examples/sample.svg",
+    ".env.example",
+    ".env.cloud.example",
+    ".env.company.example"
+  ],
   "type": "module",
   "bin": {
     "cfwiki": "scripts/confluence.mjs"
@@ -13,6 +36,7 @@
     "doctor": "node scripts/confluence.mjs doctor",
     "smoke": "node scripts/confluence.mjs smoke",
     "test": "node --test test/*.test.mjs",
+    "test:package": "node checks/package-install.mjs",
     "test:live": "node scripts/live-check.mjs",
     "test:diagrams": "node --test checks/diagram-engines.mjs"
   },
