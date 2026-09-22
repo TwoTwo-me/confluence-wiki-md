@@ -29,23 +29,42 @@ node --version
 npm --version
 ```
 
-GitHub Releases에 올라온 설치 패키지를 npm으로 설치합니다.
+패키지는 GitHub Packages의 **`@twotwo-me/confluence-wiki-md`**로 배포합니다.
+v0.1.1 이하의 `confluence-wiki-md`를 전역 설치했다면 먼저 이전 패키지를 제거해
+`cfwiki` 명령 충돌을 방지합니다. 작업 폴더의 문서와 연결 프로필은 별도로 보관됩니다.
 
 ```sh
-npm install --global https://github.com/TwoTwo-me/confluence-wiki-md/releases/latest/download/confluence-wiki-md.tgz
+npm uninstall --global confluence-wiki-md
+```
+
+GitHub Packages는 공개 npm 패키지 설치에도 인증이 필요합니다.
+GitHub에서 `read:packages` 권한의 **personal access token (classic)**을 준비하고 로그인합니다.
+Username은 본인의 GitHub 사용자명, Password는 GitHub 토큰을 입력합니다.
+Confluence API 토큰이나 사내 PAT와는 별개의 인증입니다.
+[GitHub 공식 인증 안내](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#authenticating-to-github-packages)
+
+```sh
+npm login --scope=@twotwo-me --auth-type=legacy --registry=https://npm.pkg.github.com
+npm install --global @twotwo-me/confluence-wiki-md
 cfwiki --help
 ```
 
-특정 버전을 고정하려면 URL의 `latest/download`를 `download/v0.1.0`처럼 바꿉니다.
-패키지에는 CLI, 인증 예제, Markdown 예제, 에이전트 스킬이 들어 있습니다. 사용자 토큰과 다운로드한 위키는 포함하지 않습니다.
-
-npm 레지스트리의 최초 배포와 계정 연결이 완료되면 아래 짧은 명령도 사용할 수 있습니다.
-그 전에는 위의 GitHub Releases 주소를 사용하세요. 유지관리자 절차는 [배포 안내](docs/RELEASING.md)에 있습니다.
+로그인 후 특정 버전을 설치하거나 전역 설치 없이 실행할 수도 있습니다.
 
 ```sh
-npm install --global confluence-wiki-md
-npx --package confluence-wiki-md cfwiki --help
+npm install --global @twotwo-me/confluence-wiki-md@0.1.2
+npx --package @twotwo-me/confluence-wiki-md cfwiki --help
 ```
+
+GitHub Packages 인증 없이 설치하려면 공개 GitHub Releases 압축파일을 사용합니다.
+
+```sh
+npm install --global https://github.com/TwoTwo-me/confluence-wiki-md/releases/latest/download/confluence-wiki-md.tgz
+```
+
+두 경로 모두 같은 패키지를 설치합니다. 패키지에는 CLI, 인증 예제, Markdown 예제, 에이전트 스킬이 들어 있으며
+사용자 토큰과 다운로드한 위키는 포함하지 않습니다. npmjs.org에는 배포하지 않습니다.
+기존 스킬 링크가 이전 패키지 경로를 가리킨다면 해당 링크를 제거하고 아래 새 경로로 다시 연결하세요.
 
 설치 과정에서 Puppeteer의 Chrome 다운로드가 실행될 수 있습니다.
 이미 Chrome이 있거나 일반 Markdown 기능만 쓴다면 설치 명령 앞에 `PUPPETEER_SKIP_DOWNLOAD=true`를 붙여
@@ -82,10 +101,11 @@ GitHub가 제공하는 Linux/macOS runner를 사용합니다. 별도 runner 서�
 
 - `main` push와 Pull Request: 기존 테스트와 실제 npm 패키지 전역 설치 검사를 실행합니다.
 - `v0.1.0` 형태의 버전 태그 push: 버전·main 포함 여부를 확인하고 테스트한 `.tgz` 및 SHA-256 체크섬을 GitHub Releases에 게시합니다.
-- npm Trusted Publisher 연결 후: `NPM_PUBLISH_ENABLED=true`를 설정하면 같은 패키지를 npm에도 배포합니다. 장기 npm 토큰을 GitHub Secrets에 넣지 않습니다.
+- 같은 버전을 GitHub Packages에 배포합니다. Actions의 `GITHUB_TOKEN`을 사용하므로 별도 배포 토큰을 등록할 필요가 없습니다.
+- 배포 후 별도 작업에서 읽기 권한만 가진 토큰으로 레지스트리 패키지를 내려받아 압축파일 해시와 CLI 실행을 검증합니다.
 
 자동 검증은 Confluence 계정 없이 실행합니다. 실제 Confluence 페이지를 생성하는 테스트나 로컬 도표 엔진 검사는 별도로 실행합니다.
-최초 npm 계정 연결, 배포 재시도, 버전 올리는 방법은 [docs/RELEASING.md](docs/RELEASING.md)를 참고하세요.
+패키지 공개 설정, 배포 재시도, 버전 올리는 방법은 [docs/RELEASING.md](docs/RELEASING.md)를 참고하세요.
 
 ## 인증 방식 선택
 
@@ -120,7 +140,7 @@ cfwiki doctor --env .env.company --json
 Cloud용 예제를 복사합니다. 기존 파일이 있으면 덮어쓰지 않습니다.
 
 ```sh
-cp -n "$(npm root -g)/confluence-wiki-md/.env.cloud.example" .env.cloud
+cp -n "$(npm root -g)/@twotwo-me/confluence-wiki-md/.env.cloud.example" .env.cloud
 chmod 600 .env.cloud
 ```
 
@@ -180,7 +200,7 @@ cfwiki doctor --env .env.cloud --json
 PAT용 예제를 복사하고 `.env.company`를 채웁니다.
 
 ```sh
-cp -n "$(npm root -g)/confluence-wiki-md/.env.company.example" .env.company
+cp -n "$(npm root -g)/@twotwo-me/confluence-wiki-md/.env.company.example" .env.company
 chmod 600 .env.company
 ```
 
@@ -218,7 +238,7 @@ Cloud 프로필을 예로 들었습니다. 사내 PAT는 모든 `--env .env.clou
 
 ```sh
 mkdir -p wiki
-cp -n "$(npm root -g)/confluence-wiki-md/examples/getting-started.md" wiki/getting-started.md
+cp -n "$(npm root -g)/@twotwo-me/confluence-wiki-md/examples/getting-started.md" wiki/getting-started.md
 cfwiki validate wiki/getting-started.md
 cfwiki upload wiki/getting-started.md --dry-run --env .env.cloud
 cfwiki upload wiki/getting-started.md --env .env.cloud
@@ -247,7 +267,7 @@ CLI 설치를 마친 뒤 어느 폴더에서든 실행할 수 있습니다. 기�
 
 ```sh
 mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-ln -s "$(npm root -g)/confluence-wiki-md/skills/confluence-wiki" "${CODEX_HOME:-$HOME/.codex}/skills/confluence-wiki"
+ln -s "$(npm root -g)/@twotwo-me/confluence-wiki-md/skills/confluence-wiki" "${CODEX_HOME:-$HOME/.codex}/skills/confluence-wiki"
 ```
 
 스킬 디렉터리를 다르게 사용하는 에이전트는 설치 패키지의 `skills/confluence-wiki`를
@@ -410,7 +430,7 @@ brew install plantuml
 plantuml -version
 # Google Chrome이 설치되지 않았다면 실행합니다.
 npx --package puppeteer@25.11.0 puppeteer browsers install chrome
-cfwiki validate "$(npm root -g)/confluence-wiki-md/examples/diagrams.md"
+cfwiki validate "$(npm root -g)/@twotwo-me/confluence-wiki-md/examples/diagrams.md"
 ```
 
 `brew install plantuml`은 필요한 Java·Graphviz 의존성도 설치합니다.
@@ -492,7 +512,7 @@ cfwiki read 12345 --json -o artifacts/macro-probe.json --env .env.cloud
 전역 CLI 패키지에 포함된 XML 파서를 사용합니다.
 
 ```sh
-CFWIKI_PACKAGE_DIR="$(npm root -g)/confluence-wiki-md" node --input-type=module -e '
+CFWIKI_PACKAGE_DIR="$(npm root -g)/@twotwo-me/confluence-wiki-md" node --input-type=module -e '
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 const require = createRequire(process.env.CFWIKI_PACKAGE_DIR + "/package.json");
@@ -543,7 +563,7 @@ Mermaid viewer는 웹에 소스 코드블록도 함께 표시합니다. 다운�
 
 ```sh
 mkdir -p wiki
-cp -n "$(npm root -g)/confluence-wiki-md/examples/diagrams.md" wiki/diagrams.md
+cp -n "$(npm root -g)/@twotwo-me/confluence-wiki-md/examples/diagrams.md" wiki/diagrams.md
 cfwiki validate wiki/diagrams.md --env .env.cloud
 cfwiki validate wiki/diagrams.md --server --env .env.cloud
 cfwiki upload wiki/diagrams.md --dry-run --env .env.cloud
@@ -675,16 +695,16 @@ GitHub Releases에서 설치했다면 같은 명령으로 최신 버전을 설�
 npm install --global https://github.com/TwoTwo-me/confluence-wiki-md/releases/latest/download/confluence-wiki-md.tgz
 ```
 
-npm 레지스트리 배포 후에는 다음 명령으로 업데이트합니다.
+GitHub Packages에서 설치했다면 로그인된 상태에서 다음 명령으로 업데이트합니다.
 
 ```sh
-npm install --global confluence-wiki-md@latest
+npm install --global @twotwo-me/confluence-wiki-md@latest
 ```
 
 설치를 해제하려면 다음을 실행합니다.
 
 ```sh
-npm uninstall --global confluence-wiki-md
+npm uninstall --global @twotwo-me/confluence-wiki-md
 ```
 
 소스 개발용 설치는 저장소에서 `git pull --ff-only`, `npm ci` 순서로 업데이트합니다.

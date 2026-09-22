@@ -1,4 +1,16 @@
-Clone the repository only if you want to develop the CLI. To install this release:
+The npm package is now `@twotwo-me/confluence-wiki-md` on GitHub Packages. If you
+installed version 0.1.1 or earlier, first run `npm uninstall --global confluence-wiki-md`
+and update your agent skill symlink after installing the new package.
+
+Authenticate with your GitHub username and a classic PAT with `read:packages`:
+
+```sh
+npm login --scope=@twotwo-me --auth-type=legacy --registry=https://npm.pkg.github.com
+npm install --global @twotwo-me/confluence-wiki-md
+cfwiki --help
+```
+
+To install the same package without GitHub Packages authentication:
 
 ```sh
 npm install --global https://github.com/TwoTwo-me/confluence-wiki-md/releases/latest/download/confluence-wiki-md.tgz

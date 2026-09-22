@@ -77,15 +77,13 @@ jobs:
             gh release create "$RELEASE_TAG" artifacts/release/confluence-wiki-md.tgz artifacts/release/SHA256SUMS --verify-tag --title "$RELEASE_TAG" --notes-file docs/release-notes.md
           fi
 
-  npm:
+  github-packages:
     needs: verify
-    if: vars.NPM_PUBLISH_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment: npm
     permissions:
       contents: read
-      id-token: write
+      packages: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -94,7 +92,8 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
-          registry-url: https://registry.npmjs.org
+          registry-url: https://npm.pkg.github.com
+          scope: '@twotwo-me'
           package-manager-cache: false
       - name: Download release package (download-artifact v8.0.1)
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
@@ -104,5 +103,35 @@ jobs:
       - name: Verify archive checksum
         working-directory: artifacts/release
         run: sha256sum --check SHA256SUMS
-      - name: Publish to npm with trusted publishing
+      - name: Publish to GitHub Packages
         run: npm publish artifacts/release/confluence-wiki-md.tgz --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+
+  registry-install:
+    needs: github-packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Check out release (checkout v7.0.1)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          persist-credentials: false
+      - name: Set up Node (setup-node v7.0.0)
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Download verified archive (download-artifact v8.0.1)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: release-package
+          path: artifacts/release
+      - name: Install published package with read-only package access
+        run: npm run test:registry -- artifacts/release/confluence-wiki-md.tgz
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
