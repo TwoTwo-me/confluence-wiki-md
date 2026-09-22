@@ -13,6 +13,7 @@ Confluence를 Markdown 파일로 읽고 편집하는 Node.js CLI입니다. **Clo
 - [첫 문서 게시와 수정](#첫-문서-게시와-수정)
 - [에이전트 스킬 설치](#에이전트-스킬-설치)
 - [로컬 본문 변경 확인](#로컬-본문-변경-확인)
+- [변환 템플릿](#변환-템플릿)
 - [도표 자동 변환과 검사](#도표-자동-변환과-검사)
 - [무료 Cloud 도표 앱 설치](#무료-cloud-도표-앱-설치)
 - [매크로 설정값 확인](#매크로-설정값-확인)
@@ -69,7 +70,8 @@ npm install --global https://github.com/TwoTwo-me/confluence-wiki-md/releases/la
 설치 과정에서 Puppeteer의 Chrome 다운로드가 실행될 수 있습니다.
 이미 Chrome이 있거나 일반 Markdown 기능만 쓴다면 설치 명령 앞에 `PUPPETEER_SKIP_DOWNLOAD=true`를 붙여
 다운로드를 생략할 수 있습니다. Mermaid를 사용할 때는 아래 [로컬 검사 환경](#로컬-검사-환경)을 준비하세요.
-브라우저 로그인은 CLI 실행 조건이 아닙니다. CLI는 `--env`로 선택한 프로필의 토큰으로 인증합니다.
+브라우저 로그인은 CLI 실행 조건이 아닙니다. CLI는 기본 인증 파일 `~/.config/cfwiki/.env` 또는
+`--env`로 선택한 프로필의 토큰으로 인증합니다.
 
 프로필과 문서를 보관할 작업 폴더를 만든 뒤 아래 Cloud 또는 PAT 설정으로 진행합니다.
 
@@ -94,6 +96,134 @@ npm test
 
 `npm ci`는 잠금 파일을 사용합니다. 전역 연결 없이 `npm run -s confluence -- <명령>`으로도 실행할 수 있습니다.
 `-s`는 npm 안내 문구를 없애 stdout에 Markdown만 남깁니다.
+
+## 변환 템플릿
+
+Confluence에 등록된 **네이티브 페이지 템플릿의 ID**를 기본값으로 지정할 수 있습니다.
+아래 `123456`은 예시이므로 `templates list`가 반환하는 실제 ID로 바꾸세요. 페이지 ID와 템플릿 ID는 다릅니다.
+
+```sh
+cfwiki templates list --space DOCS
+cfwiki templates list
+cfwiki templates list --space DOCS --blueprints
+cfwiki templates read 123456 -o draft.md
+```
+
+`templates list`는 공간을 생략하면 글로벌 템플릿을 조회합니다. `--blueprints`는 blueprint 목록을
+조회하며, 반환된 UUID·플러그인 식별자는 `--template confluence:식별자`로 지정합니다.
+
+```dotenv
+CONFLUENCE_TEMPLATE=123456
+```
+
+```sh
+cfwiki upload page.md
+cfwiki upload page.md --template 789012
+cfwiki upload page.md --template none
+cfwiki validate page.md --template 123456 --server
+cfwiki convert page.md --to storage --template 123456 --server -o page.xml
+cfwiki push wiki --template 123456
+```
+
+새 문서 생성 시 선택한 템플릿을 조회해 제목 구획·목차·본문 틀과 MD를 합칩니다.
+Confluence 템플릿 편집기에서 `{{cfwiki.body}}`를 **단독 문단 하나**로 넣으면 그 위치에 MD 본문을
+삽입하고, 표식이 없으면 템플릿 뒤에 붙입니다. 템플릿 자체는 수정하지 않습니다.
+페이지 제목은 입력 MD의 `title`이나 `--title`을 사용합니다.
+
+업로드 후 로컬 MD에도 적용된 전체 문서를 저장하고 `confluence.template_id`를 기록합니다.
+이후 해당 MD를 수정해 업로드하면 전체 문서를 갱신하며, 템플릿 틀을 다시 붙이지 않습니다.
+**기존 페이지 업데이트에는 네이티브 템플릿을 재적용하지 않습니다.** 템플릿을 웹에서 바꿔도
+이미 작성한 페이지가 자동으로 바뀌지는 않습니다. `templates read`로 받은 초안도 다시 감싸지 않습니다.
+`--template none`은 새 템플릿 적용을 끄며, 이미 본문에 들어간 내용은 삭제하지 않습니다.
+
+네이티브 템플릿에는 API 조회가 필요합니다. 새 문서의 로컬 `validate` / `convert`에 네이티브 ID를
+지정하면 `--server`가 필요하며, 옵션 없이 외부 조회하지 않습니다. 이미 템플릿이 적용된 초안이나
+기존 페이지 MD는 재조회 없이 로컬 검사할 수 있습니다. 완전한 로컬 검사에는 `--template none`도 사용할 수 있습니다.
+
+Cloud에서는 [템플릿 REST API](https://developer.atlassian.com/cloud/confluence/rest/v1/api-group-template/)를
+사용합니다. granular 토큰에는 `read:template:confluence`, `read:content-details:confluence`가 필요합니다.
+일반 페이지 API가 성공하더라도 템플릿 권한은 별도로 확인해야 합니다.
+Data Center는 [TemplateResource 문서](https://docs.atlassian.com/atlassian-confluence/1000.73.0/com/atlassian/confluence/plugins/restapi/resources/TemplateResource.html)의
+`/rest/experimental/template` 경로를 기본으로 사용합니다. 서버/게이트웨이 경로가 다르면
+`.env`의 `CONFLUENCE_TEMPLATE_API_URL`로 템플릿 API 베이스를 지정합니다. 사내 실서버 검증은 별도입니다.
+
+현재 자동 적용은 정적인 템플릿을 대상으로 합니다. 입력이 필요한 Confluence 변수, 템플릿 자체의
+첨부 파일, 편집 불가능한 매크로 내부의 본문 슬롯은 쓰기 전에 오류로 알려줍니다. 웹 wizard의
+동적 동작을 실행하는 기능은 아닙니다. 기존 Markdown 변환기의 `preserved` 보존 규칙은 유지합니다.
+
+### 로컬 변환 설정
+
+기존 YAML 설정과 내장 `default`도 호환 옵션으로 사용할 수 있습니다.
+목차와 도표의 공통 설정은 `.env`에서 기본 템플릿을 지정하고, 명령마다 `--template`으로 바꿉니다.
+내장 `default`는 페이지 맨 위에 H2~H3 목차 하나를 생성합니다. 기존 목차는 교체하므로
+반복 업로드해도 중복되지 않습니다. 도표는 선택한 인증 프로필의 설치 앱 설정을 사용합니다.
+
+```dotenv
+# ~/.config/cfwiki/.env 또는 --env로 선택한 파일
+CONFLUENCE_TEMPLATE=default
+CONFLUENCE_DIAGRAM_MODE=macro
+```
+
+```sh
+cfwiki upload guide.md
+cfwiki upload guide.md --template ./team-template.yaml
+cfwiki upload guide.md --template none
+cfwiki convert guide.md --to storage --template ./team-template.yaml -o page.xml
+cfwiki validate guide.md --template ./team-template.yaml --server
+cfwiki push wiki --template ./team-template.yaml
+```
+
+`none`은 템플릿 적용을 끄므로 문서에 이미 있는 목차는 기존 변환 규칙대로 처리합니다.
+목차를 명시적으로 없애려면 YAML의 `toc.enabled: false`를 사용하세요.
+`toc`를 생략한 사용자 템플릿은 목차를 변경하지 않습니다. 템플릿을 설정하지 않은 기존 프로필은
+기존 동작을 유지하며, 인증 예제에는 실제 템플릿 ID를 지정하기 전까지 `CONFLUENCE_TEMPLATE=none`이 들어 있습니다.
+
+사용자 템플릿은 [예제 YAML](examples/wiki-template.yaml)을 복사해 수정합니다. 전역 설치에도 포함됩니다.
+
+```sh
+mkdir -p ~/.config/cfwiki
+cp "$(npm root -g)/@twotwo-me/confluence-wiki-md/examples/wiki-template.yaml" ~/.config/cfwiki/wiki-template.yaml
+```
+
+```yaml
+version: 1
+toc:
+  enabled: true
+  position: top
+  parameters:
+    minLevel: 2
+    maxLevel: 4
+    outline: false
+diagrams:
+  mode: macro
+```
+
+이 파일을 기본으로 쓰려면 `.env`에 `CONFLUENCE_TEMPLATE=./wiki-template.yaml`을 지정합니다.
+`.env`에 적은 상대 경로는 **그 `.env` 파일의 폴더 기준**, CLI의 `--template ./file.yaml`은
+**현재 작업 폴더 기준**입니다. 절대 경로와 `~/` 경로도 지원합니다. 잘못된 YAML·알 수 없는 필드·
+없는 파일은 오류로 처리하며 다른 템플릿으로 조용히 전환하지 않습니다.
+
+설정 우선순위는 다음과 같습니다.
+
+- 템플릿 선택: `--template` → 선택한 프로필의 `CONFLUENCE_TEMPLATE` → 적용 안 함.
+- 도표 모드: `--diagrams` → 템플릿 `diagrams.mode` → `CONFLUENCE_DIAGRAM_MODE` → `macro`.
+- 도표 앱 옵션: 템플릿에 지정한 값 → `.env`의 기존 앱 설정. `parameters`는 키별로 합칩니다.
+
+`toc.position`은 `top` 또는 `bottom`, 목차 깊이는 1~6입니다. `parameters`에는 Confluence 목차
+매크로의 `include`, `exclude`, `style` 같은 옵션도 전달할 수 있습니다. 옵션의 실제 지원 여부는
+`validate --server` 또는 업로드 미리보기로 확인합니다.
+
+도표별 옵션이 필요하면 `diagrams.mermaid` 또는 `diagrams.plantuml`에 `parameters`를 추가합니다.
+예를 들어 설치된 앱이 지원한다면 `parameters: {theme: plain}`을 사용할 수 있습니다.
+앱 매핑을 템플릿마다 바꾸는 경우 같은 위치에 `macro`, `adapter`, `extension_key`, `source_parameter`,
+`title`을 지정할 수 있습니다. 앱마다 지원하는 값이 다르므로 실제 설치 앱의 매핑을 사용하세요.
+API URL·토큰·인증 정보는 `.env`에 두며 템플릿에는 넣지 않습니다.
+
+목차는 출력할 Confluence 본문에 적용되며 로컬 MD 본문에 자동 삽입하지 않습니다.
+업로드 및 `push`는 템플릿 목차도 서버 미리보기를 거쳐 저장합니다. 로컬 템플릿을 사용하는
+`convert --to storage`와 기본 `validate`는 로컬에서 실행하며, `--server`를 주면 서버 검사를 추가합니다.
+`read`, `download`, `export`, `convert --to markdown`은 템플릿의 앱 매핑을 도표 해석에 사용하고
+다운로드할 문서에 목차를 새로 삽입하지 않습니다. 기존 `preserved` 보존 방식 전체를 바꾸는 옵션은 아닙니다.
 
 ## 자동 검증과 배포
 
@@ -124,7 +254,33 @@ Cloud 인증과 사내 Data Center PAT 인증은 별개입니다. **사용 장�
 | API 기준 주소 | 범위 지정 토큰은 `api.atlassian.com/ex/confluence/{cloudId}/wiki/api/v2` | 사내 사이트의 `/rest/api` |
 | Cloud ID·이메일 | 필요 | 불필요 |
 
-두 프로필을 동시에 보관할 수 있으며, 명령마다 `--env`로 선택합니다. 서로의 토큰을 복사하지 않습니다.
+### 기본 인증 파일
+
+옵션 없이 실행하면 작업 폴더와 관계없이 **`~/.config/cfwiki/.env`**를 읽습니다.
+Cloud용 예제로 기본 파일을 만들려면 다음 명령을 실행하고, 파일의 URL과 토큰을 채우세요.
+사내 PAT를 사용한다면 예제 파일 이름만 `.env.company.example`로 바꿉니다.
+기존 기본 파일은 덮어쓰지 않습니다.
+
+```sh
+mkdir -p "$HOME/.config/cfwiki"
+chmod 700 "$HOME/.config/cfwiki"
+cp -n "$(npm root -g)/@twotwo-me/confluence-wiki-md/.env.cloud.example" "$HOME/.config/cfwiki/.env"
+chmod 600 "$HOME/.config/cfwiki/.env"
+# 편집기로 ~/.config/cfwiki/.env의 URL, 토큰, 공간을 설정한 뒤 실행
+cfwiki doctor --json
+cfwiki read 12345
+```
+
+절대 경로인 `XDG_CONFIG_HOME`이 설정되어 있으면 기본 파일은 `$XDG_CONFIG_HOME/cfwiki/.env`입니다.
+위 설치 경로도 그 위치로 바꾸세요. 상대 경로인 값은 무시합니다.
+기본 파일이 없으면 프로세스 환경 변수만 사용하며, 현재 폴더의 `.env`로 자동 전환하지 않습니다.
+기존 프로젝트의 인증 파일을 계속 쓰려면 `cfwiki doctor --env .env`처럼 지정하거나 기본 위치에 복사하세요.
+
+### 여러 연결 프로필
+
+두 프로필을 동시에 보관할 수 있으며, 기본 연결 외에는 명령마다 `--env`로 선택합니다.
+예를 들어 `cfwiki doctor --env ~/.config/cfwiki/.env.company`로 사내 프로필을 선택합니다.
+아래 설정 절차는 작업 폴더에 별도 프로필을 만드는 예입니다. 서로의 토큰을 혼합하지 않습니다.
 
 ```sh
 cfwiki doctor --env .env.cloud --json
@@ -132,8 +288,8 @@ cfwiki doctor --env .env.company --json
 ```
 
 `doctor`의 `deployment`와 `auth`에서 각각 `cloud/basic`, `datacenter/bearer`를 확인할 수 있습니다.
-토큰 자체는 출력하지 않습니다. 기존 `.env` 방식과 [.env.example](.env.example)은 호환용으로 유지합니다.
-`--env`를 생략하면 여전히 현재 디렉터리의 `.env`를 사용하며, `.env.cloud`나 `.env.company`를 자동 선택하지 않습니다.
+토큰 자체는 출력하지 않습니다. 기존 `.env` 파일은 `--env .env`로 선택할 수 있으며,
+[.env.example](.env.example)도 예제로 유지합니다. `.env.cloud`나 `.env.company`를 자동 선택하지 않습니다.
 
 ## Cloud 설정
 
@@ -226,7 +382,8 @@ cfwiki read 12345 --env .env.company
 ```
 
 `--env`는 독립적인 연결 프로필입니다. 다른 프로필의 토큰이나 URL을 프로세스 환경에서
-섞어 가져오지 않습니다. 옵션이 없으면 현재 디렉터리의 `.env`를 읽고 프로세스 환경 변수를 우선합니다.
+섞어 가져오지 않습니다. 옵션이 없으면 기본 인증 파일을 읽고 프로세스 환경 변수를 우선합니다.
+명시한 파일이 없거나 읽을 수 없으면 실패하며 다른 파일로 전환하지 않습니다.
 사내 인증서는 `NODE_EXTRA_CA_CERTS`로 신뢰할 CA를 추가하세요. TLS 검증을 끄지 않습니다.
 신뢰할 수 있는 HTTP 개발 서버에서만 `CONFLUENCE_ALLOW_HTTP=true`를 명시할 수 있습니다.
 
@@ -350,7 +507,9 @@ OKF의 concept ID는 번들 안의 파일 경로이며, Confluence 숫자 ID는 
 
 다운로드에 추가되는 `storage_hash`는 Confluence 원본 본문 검증용이고,
 `base_body_hash`는 다운로드한 Markdown 본문의 기준 SHA-256입니다. 두 형식의 해시를 직접 비교하지 않습니다.
-`preserved`는 네이티브 매크로의 원본 XML입니다. 수정 파일에서 이 필드를 유지하세요.
+`preserved`는 Markdown만으로 재생성할 수 없는 네이티브 요소의 원본 XML입니다.
+기본 `minimal` 모드는 일반 코드·표·이미지·페이지 링크와 설정된 Mermaid/PlantUML의 중복 XML을 제거합니다.
+보존할 항목이 없으면 `preserved` 필드 자체를 쓰지 않습니다. 남아 있는 항목은 해당 기능을 유지할 때 필요합니다.
 서로 다른 서버로 잘못 쓰지 않도록 파일의 URL과 현재 프로필을 비교하며,
 front matter의 주소로 토큰을 전송하지 않습니다.
 
@@ -395,6 +554,8 @@ JSON에는 `baseBodyHash`, `currentBodyHash`, 파일 경로와 저장된 페이�
 | 표준 링크, 자동 링크, 참조 링크, 이미지 | Markdown 링크/이미지로 변환 |
 | GFM 표, 취소선, 체크리스트, 각주 | storage 요소로 변환 |
 | 코드 블록·들여쓴 코드 | 네이티브 code 매크로 ↔ fenced code |
+| 목차 | `minimal` / `none`에서 `confluence-toc` YAML 코드블록 ↔ 네이티브 TOC |
+| Include Page | `minimal` / `all`에서 참조 매크로 XML을 보존. `none`에서는 포함 본문과 동적 포함 기능 유실 |
 | `mermaid`, `uml`, `plantuml` 코드블록 | 로컬 문법 검사 + 서버 미리보기 후 설정된 네이티브 매크로로 게시 |
 | 그 외 코드 언어 | 언어를 보존한 code 매크로 |
 | 기존 Mermaid/PlantUML 등 plain-text 매크로 | 언어 이름을 가진 코드 블록 |
@@ -403,10 +564,51 @@ JSON에는 `baseBodyHash`, `currentBodyHash`, 파일 경로와 저장된 페이�
 | 첨부 이미지 | 원격 URL 또는 `--assets`로 다운로드한 로컬 경로 |
 | 로컬 `[문서](./other.md)` 및 `[문서](/path.md)` | 게시된 Confluence 페이지 링크로 변환 |
 
-기존 매크로의 다운로드 표현을 수정하지 않으면 `preserved`를 사용해 원본을 복구합니다.
+보존된 매크로의 다운로드 표현을 수정하지 않으면 `preserved`를 사용해 원본을 복구합니다.
 표현을 수정하면 해당 부분은 새 Markdown 변환 결과로 대체됩니다.
 도표 코드블록은 서버에 설치된 앱의 매크로로 게시합니다. 매크로 설정이 없거나 검사가 실패하면 업로드를 중단합니다.
 코드 자체를 표시하려면 `--diagrams code`를 명시하세요. 이미지 첨부로 자동 대체하지 않습니다.
+
+## Markdown 보존 모드
+
+보존 모드는 `--preserve` → `CONFLUENCE_PRESERVE` → `minimal` 순서로 선택합니다.
+
+```sh
+cfwiki download 12345 -o page.md --assets
+cfwiki download 12345 -o full.md --preserve all
+cfwiki download 12345 -o plain.md --preserve none
+cfwiki upload page.md
+cfwiki upload full.md --preserve all
+```
+
+`read`, `download`, `export`, `upload`, `push`, `convert`, `validate`, `templates read`에 적용됩니다.
+`all`은 원래 XML을 MD에 보관합니다. 설정된 도표는 이 모드에서도 기존 업로드 동작대로 소스를 검사하고
+앱 매핑으로 다시 생성합니다. `minimal`은 알 수 없는 앱 매크로, 병합·중첩 표, 멘션, 사용자 지정 코드 제목·옵션,
+이미지 크기 등 Markdown으로 재생성할 수 없는 설정을 남깁니다. `none`은 이러한 정보도 제거하고 손실 가능 요소를 알립니다.
+이 경우 참조 링크나 소스 코드는 남지만 해당 네이티브 기능까지 유지된다는 뜻은 아닙니다.
+
+Include Page는 현재 `minimal`에서도 보존 항목 1개가 필요합니다. 포함 원문 전체를 복제하는 대신
+페이지 참조 매크로를 유지하므로, 웹에서는 원문 변경이 반영됩니다. `none`으로 제거하면 포함된 제목·본문·표가
+사라집니다. 남는 링크는 포함 원문이 아닌 참조 페이지의 매크로 위치를 가리키므로 원문 대체 링크로 사용할 수 없습니다.
+
+목차는 `minimal`과 `none`에서 다음처럼 짧은 코드블록으로 내려받습니다. 올릴 때는 실제 TOC 매크로가 되어
+웹에 목차로 표시됩니다. 템플릿 ID로 처음 삽입된 목차도 이 표현으로 유지하므로 원본 XML이나 별도 캐시가 필요 없습니다.
+
+````markdown
+```confluence-toc
+minLevel: 2
+maxLevel: 3
+```
+````
+
+일반 Markdown 문서의 제목·강조·목록·인용·표·코드·각주·링크·첨부·지원 도표는 `preserved` 없이 왕복할 수 있습니다.
+공백, 참조 링크의 표기, setext 제목, 들여쓰기 코드, `uml` 별칭은 같은 내용을 나타내는 다른 Markdown 표기로 정규화될 수 있습니다.
+도표별 앱 설정은 선택한 프로필에서 가져오며, 앱 전용 옵션이나 픽셀 단위 레이아웃까지 동일하게 보존하는 모드는 아닙니다.
+표 셀 안의 파이프와 줄바꿈은 이스케이프 및 `<br>`로, 위·아래첨자는 `<sup>` / `<sub>`로 유지합니다.
+Cloud에서는 중첩 인용을 펼치고 `›` 기호로 깊이를 표시합니다. 원래 중첩 HTML을 그대로 올리면
+일부 Cloud 렌더러가 내부 인용을 폭 0으로 표시하므로, 읽을 수 있는 형태로 정규화하고 업로드 시 안내합니다.
+Data Center에서는 기존 중첩 인용 구조를 유지합니다.
+[문법 비교 예제](examples/preservation-comparison.md)를 `sample.svg`와 함께 복사해 시험할 수 있습니다.
 
 ## 도표 자동 변환과 검사
 
@@ -656,7 +858,7 @@ npm run -s test:live
 
 `test:diagrams`는 실제 로컬 엔진으로 정상/오류 문법과 업로드 전 차단을 검사하며 Chrome·PlantUML이 필요합니다.
 `test:live`는 도표 앱 없는 환경에서도 일반 CRUD를 확인하도록 `--diagrams code`를 명시합니다.
-이 개발용 스크립트는 기존 `.env`의 공간에 예제 페이지를 생성하고 Markdown 다운로드,
+이 개발용 스크립트는 기본 인증 파일 또는 프로세스 환경 변수에 설정된 공간에 예제 페이지를 생성하고 Markdown 다운로드,
 이미지 바이트 일치, 수정, 충돌, 검색, 내보내기, 임시 페이지 휴지통 이동을 실행합니다.
 결과 예제 페이지는 남기고 `artifacts/live-test.json`에 기록합니다.
 검색 인덱스 반영 지연 등으로 중단되면 `npm run -s test:live -- artifacts/live-실행번호`로 같은 예제를 이어서 검증할 수 있습니다.
@@ -664,7 +866,8 @@ npm run -s test:live
 사용한다면 위의 CLI 업로드·다운로드 절차에 `--env`를 명시해 실제 연결을 검증하세요.
 테스트 계정·공간에서 실행하세요. 사내 실제 환경 검증은 해당 인스턴스에 연결해야 합니다.
 
-기존 `smoke` 명령은 Cloud 연결 검증용으로 유지합니다. 저장된 개발 테스트 페이지를 갱신하고 JSON을 출력합니다.
+기존 `smoke` 명령도 같은 기본 인증 파일과 `--env`를 사용하며, Cloud 연결 검증용으로 유지합니다.
+저장된 개발 테스트 페이지를 갱신하고 JSON을 출력합니다.
 일반 문서 작업에는 `upload/read/download`를 사용하세요.
 
 실제 `.env`, `.env.cloud`, `.env.company`, `artifacts/`, `wiki/`와 토큰은 Git에서 제외합니다.
@@ -676,7 +879,7 @@ npm run -s test:live
 | --- | --- |
 | `cfwiki: command not found` | 전역 npm 설치 경로가 PATH에 있는지 확인하고 CLI 재설치. 소스 개발자는 `npm link` 실행 |
 | Node 버전/모듈 오류 | `node --version`이 24 이상인지 확인한 뒤 CLI 재설치. 소스 개발자는 `npm ci` 실행 |
-| `Missing CONFLUENCE_SITE_URL` | 현재 작업 폴더의 `.env` 또는 `--env /absolute/path/profile.env` 확인 |
+| `Missing CONFLUENCE_SITE_URL` | `~/.config/cfwiki/.env`(또는 `$XDG_CONFIG_HOME/cfwiki/.env`)와 `--env` 지정 파일 확인. 기존 작업 폴더의 파일은 `--env .env`로 선택 |
 | `PlantUML executable is unavailable` | `plantuml -version` 확인 후 실행 파일을 `CFWIKI_PLANTUML_PATH`로 지정 |
 | Chrome 실행 파일 없음 | `npx puppeteer browsers install chrome` 실행 또는 `CFWIKI_CHROME_PATH` 지정 |
 | 매크로 설정 누락/서버 미리보기 거절 | 대상 사이트의 앱 설치 여부, 매크로 이름, Forge 키, 소스 파라미터 확인 |

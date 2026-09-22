@@ -20,6 +20,7 @@ const temporary = await mkdtemp(path.join(tmpdir(), 'cfwiki-registry-'));
 const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^(CONFLUENCE_|CFWIKI_|NPM_CONFIG_|npm_config_)/.test(key)));
 env.NPM_CONFIG_USERCONFIG = path.join(temporary, 'npmrc');
 env.PUPPETEER_SKIP_DOWNLOAD = 'true';
+env.XDG_CONFIG_HOME = path.join(temporary, 'config');
 const npm = (args) => exec(process.execPath, [process.env.npm_execpath, ...args], { cwd: temporary, env, timeout: 180000, maxBuffer: 2 * 1024 * 1024 });
 
 try {

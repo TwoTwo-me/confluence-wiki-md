@@ -7,23 +7,30 @@ description: Search, read, create, update, export, and delete Confluence wiki pa
 
 Use `cfwiki` with a configured environment profile. If the command is unavailable,
 run `node <this-skill-directory>/../../scripts/confluence.mjs` from the repository.
-Read `cfwiki --help` for options. Use `--env /absolute/path/to/profile.env` when the
-working directory differs from the project containing `.env`. Never print tokens.
+Read `cfwiki --help` for options. Without `--env`, all working directories use
+`~/.config/cfwiki/.env`, or `$XDG_CONFIG_HOME/cfwiki/.env` when XDG_CONFIG_HOME is
+an absolute path. Use `--env /absolute/path/to/profile.env` to select another
+connection. Never print tokens.
 
 Choose the deployment profile explicitly: `.env.cloud.example` configures Cloud
 Basic authentication with email and `CONFLUENCE_API_TOKEN`; `.env.company.example`
-configures Data Center Bearer authentication with `CONFLUENCE_PAT`. Copy to a private
-`.env.cloud` or `.env.company` and pass it through `--env`. A company may use Cloud;
-do not infer Data Center from an internal-use label. `doctor --json` reports
-`deployment` and `auth`. Without `--env`, only the legacy `.env` is selected.
+configures Data Center Bearer authentication with `CONFLUENCE_PAT`. Copy the matching
+example to the default location or a private `.env.cloud` / `.env.company` selected
+with `--env`. A company may use Cloud; do not infer Data Center from an internal-use
+label. `doctor --json` reports
+`deployment` and `auth`. The working directory's `.env` is never loaded implicitly;
+select legacy files with `--env .env`. Process environment values override the
+default file. An explicit profile isolates inherited CONFLUENCE_* values and does
+not merge the default file. A missing default permits environment-only operation;
+a missing explicit file is an error.
 
 ## Search and read
 
 ```sh
-cfwiki doctor --env /path/to/profile.env
-cfwiki search "deployment" --space DOCS --env /path/to/profile.env
-cfwiki read 12345 --env /path/to/profile.env
-cfwiki download 12345 -o wiki/guide.md --assets --env /path/to/profile.env
+cfwiki doctor
+cfwiki search "deployment" --space DOCS
+cfwiki read 12345
+cfwiki download 12345 -o wiki/guide.md --assets
 cfwiki status wiki/guide.md --json
 cfwiki search "deployment" --local wiki
 ```
@@ -53,14 +60,14 @@ metadata. Do not invent `verified`, provenance, or trust status.
 
 ```sh
 cfwiki validate wiki/guide.md
-cfwiki upload wiki/guide.md --space DOCS --dry-run --env /path/to/profile.env
-cfwiki upload wiki/guide.md --space DOCS --env /path/to/profile.env
+cfwiki upload wiki/guide.md --space DOCS --dry-run
+cfwiki upload wiki/guide.md --space DOCS
 ```
 
 Upload creates a page when no `confluence.id` exists. It writes the page identity
 and version back into the local file. For updates, first download current content,
 edit the body, and upload the same file. Keep `confluence.api_url`, `site_url`, `id`,
-`version`, `storage_hash`, `base_body_hash`, and `preserved` entries. Never bump versions manually or
+`version`, `storage_hash`, `base_body_hash`, and any remaining `preserved` entries. Never bump versions manually or
 remove binding metadata to bypass a conflict. Download and merge when stale.
 Front matter identifies the server; only the selected environment routes credentials.
 Do not recompute the baseline while editing. Downloads set it from the returned
@@ -85,16 +92,57 @@ native code block beside the macro and binds its index automatically. Download
 merges them into one Mermaid fence. Unknown Forge extensions retain a page URL
 and their complete original XML. See README for full profiles and limitations.
 
+Prefer native Confluence template IDs: `cfwiki templates list --space DOCS`
+lists space templates; omitting space lists global templates; `--blueprints` lists
+blueprints. `cfwiki templates read ID -o draft.md` creates an editable draft.
+Set `CONFLUENCE_TEMPLATE=123456` or use `--template ID`; prefix non-numeric IDs
+with `confluence:`. Native templates apply once when creating pages. A standalone
+`{{cfwiki.body}}` paragraph receives the Markdown body; otherwise it is appended.
+The returned MD includes the whole template and `confluence.template_id`, so later
+updates do not duplicate it or reapply changes made to the remote template.
+Native template lookup in local validate/convert requires `--server`; use
+`--template none` for local-only checks. Unresolved variables and template
+attachments fail before writing. Cloud template reads need `read:template:confluence`
+and `read:content-details:confluence`; Data Center defaults to `/rest/experimental`
+with `CONFLUENCE_TEMPLATE_API_URL` for explicit server/gateway overrides.
+
+For local conversion settings, `CONFLUENCE_TEMPLATE` also selects `default` (one top TOC for H2-H3), `none`, or a YAML
+template; `--template` overrides it for conversion, validation, upload and push.
+Relative paths in the environment resolve beside the selected `.env`; CLI paths
+resolve from the working directory. Missing files or invalid templates fail.
+YAML uses `version: 1`, optional `toc: {enabled, position, parameters}` and
+`diagrams: {mode, mermaid, plantuml}`. See `examples/wiki-template.yaml` in the
+installed package. `none` disables template processing; `toc.enabled: false`
+removes existing TOCs. Template TOCs replace existing ones instead of accumulating.
+`--diagrams` overrides template mode, then `CONFLUENCE_DIAGRAM_MODE`, then `macro`.
+Template app parameters override matching profile keys; credentials remain in
+the environment. Read/download/export use template app mappings to decode diagrams
+without inserting a TOC. Native TOCs download as compact `confluence-toc` YAML fences
+in minimal/none mode and regenerate as real TOC macros, including their parameters.
+Keep these fences to retain the TOC position and settings across edits.
+
 Local validation needs Chrome and, for UML, PlantUML/Java. Renderer versions appear
 in validation output. Confluence's app version can differ. A server preview may
 contain a dynamic iframe; acceptance does not prove its final diagram rendered.
 Confirm actual web output when testing a new app integration.
 
-Unrepresentable Confluence elements
-become URL references, with their original XML in `confluence.preserved`. Keep that
-metadata to avoid discarding native features. Editing a fallback replaces that
-feature with the edited Markdown. Consult the original page when interpretation
-requires a plugin's rendered content.
+Preservation defaults to `minimal`; `--preserve minimal|all|none` overrides
+`CONFLUENCE_PRESERVE`. Minimal drops redundant XML for ordinary Markdown, configured
+Mermaid/PlantUML diagrams, simple images and page links. An empty `preserved` field
+is omitted. Unknown apps, merged/nested tables, mentions, custom code titles/options
+and image sizes retain XML because Markdown alone cannot reconstruct them.
+`all` keeps original fragments in the file; configured diagrams still regenerate
+from validated sources on upload. `none` removes every preserved fragment and
+reports elements whose native behavior may be lost. Do not claim all native
+features survive none mode merely because their reference links remain.
+Remaining preserved elements restore when their Markdown representation is unchanged;
+editing a fallback replaces the element. Use ordinary MD plus `confluence-toc`
+fences for cache-free authoring of supported content. Tables keep literal pipes and
+line breaks; subscript/superscript use inline HTML. Markdown spelling and spacing
+may normalize without changing content. Consult the original page for unknown apps.
+Cloud uploads flatten nested quotes with visible `›` depth markers because native
+nested quote HTML can render at zero width. Keep these markers when editing the
+downloaded MD; they retain the readable quote depth without preserved XML.
 
 ## Bundles and attachments
 

@@ -18,6 +18,7 @@ assert.equal(extra.length, 0, 'Expected at most one output directory.');
 const env = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
   !/^(CONFLUENCE_|CFWIKI_|NPM_CONFIG_|npm_config_|NODE_AUTH_TOKEN$|NPM_TOKEN$|ACTIONS_ID_TOKEN_)/.test(key)));
 env.PUPPETEER_SKIP_DOWNLOAD = 'true';
+env.XDG_CONFIG_HOME = path.join(temporary, 'config');
 env.NPM_CONFIG_USERCONFIG = path.join(temporary, 'npmrc');
 env.NPM_CONFIG_REGISTRY = 'https://registry.npmjs.org/';
 const run = (command, args, cwd = temporary) => exec(command, args, { cwd, env, timeout: 180000, maxBuffer: 2 * 1024 * 1024 });
@@ -29,9 +30,9 @@ try {
   assert.equal(manifest.private, undefined, 'The package must be publishable.');
   assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
   const packed = JSON.parse((await npm(['pack', '--json', '--pack-destination', temporary], root)).stdout)[0];
-  const allowed = /^(?:package\.json|README\.md|\.env(?:\.cloud|\.company)?\.example|scripts\/confluence\.mjs|src\/[a-z-]+\.mjs|examples\/[a-z-]+\.md|examples\/sample\.svg|skills\/confluence-wiki\/(?:SKILL\.md|agents\/openai\.yaml))$/;
+  const allowed = /^(?:package\.json|README\.md|\.env(?:\.cloud|\.company)?\.example|scripts\/confluence\.mjs|src\/[a-z-]+\.mjs|examples\/[a-z-]+\.md|examples\/wiki-template\.yaml|examples\/sample\.svg|skills\/confluence-wiki\/(?:SKILL\.md|agents\/openai\.yaml))$/;
   for (const file of packed.files) assert.match(file.path, allowed, 'Unexpected published file: ' + file.path);
-  for (const required of ['src/diagram-worker.mjs', '.env.cloud.example', '.env.company.example', 'skills/confluence-wiki/SKILL.md', 'examples/getting-started.md']) {
+  for (const required of ['src/diagram-worker.mjs', 'src/env.mjs', 'src/templates.mjs', 'src/native-templates.mjs', '.env.cloud.example', '.env.company.example', 'skills/confluence-wiki/SKILL.md', 'examples/getting-started.md', 'examples/wiki-template.yaml']) {
     assert.ok(packed.files.some((file) => file.path === required), 'Missing published file: ' + required);
   }
   const tarball = path.join(temporary, packed.filename);
@@ -50,6 +51,9 @@ try {
   const storage = path.join(temporary, 'page.xml');
   await cli(['convert', example, '--to', 'storage', '-o', storage]);
   assert.match(await readFile(storage, 'utf8'), /<h1>Markdown wiki quickstart<\/h1>/);
+  const templateOutput = await cli(['convert', example, '--to', 'storage', '--template', path.join(packageRoot, 'examples/wiki-template.yaml')]);
+  assert.match(templateOutput.stdout, /^<ac:structured-macro ac:name="toc"/);
+  assert.match(templateOutput.stdout, /ac:name="maxLevel">3/);
   const markdown = path.join(temporary, 'roundtrip.md');
   await cli(['convert', storage, '--to', 'markdown', '-o', markdown]);
   assert.match(await readFile(markdown, 'utf8'), /# Markdown wiki quickstart/);

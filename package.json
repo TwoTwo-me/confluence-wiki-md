@@ -25,6 +25,7 @@
     "skills/confluence-wiki/SKILL.md",
     "skills/confluence-wiki/agents/openai.yaml",
     "examples/*.md",
+    "examples/*.yaml",
     "examples/sample.svg",
     ".env.example",
     ".env.cloud.example",

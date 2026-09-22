@@ -1,0 +1,10 @@
+version: 1
+toc:
+  enabled: true
+  position: top
+  parameters:
+    minLevel: 2
+    maxLevel: 3
+    outline: false
+diagrams:
+  mode: macro

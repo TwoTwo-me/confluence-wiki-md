@@ -2,8 +2,10 @@ import { readFile, writeFile, mkdir, rename, access, readdir, realpath } from 'n
 import path from 'node:path';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { randomUUID } from 'node:crypto';
-import { parseDocument, formatDocument, markdownToStorage, storageToMarkdown, references, hash, bodyHash } from './document.mjs';
+import { parseDocument, formatDocument, markdownToStorage, storageToMarkdown, reducePreservation, references, hash, bodyHash } from './document.mjs';
 import { prepareDiagrams, withoutDiagramPreservation } from './diagrams.mjs';
+import { applyTemplate, templateDiagrams } from './templates.mjs';
+import { prepareNativeTemplate } from './native-templates.mjs';
 
 export async function saveFile(filename, content, { overwrite = false } = {}) {
   await mkdir(path.dirname(path.resolve(filename)), { recursive: true });
@@ -23,6 +25,10 @@ function checkBinding(api, metadata) {
   if (meta?.site_url && meta.site_url.replace(/\/+$/, '') !== api.config.siteUrl) throw new Error('Document belongs to a different Confluence site.');
 }
 
+function preservationContext(api, id) {
+  return { preserve: api.config.preserve ?? 'minimal', pageUrl: id ? api.pageUrl(id) : api.config.webBase, siteUrl: api.config.webBase, pageId: id, diagramProfile: api.config.diagramProfile };
+}
+
 export async function download(api, id, { version, pageLinks, assetsDir, assetPrefix, overwrite = false } = {}) {
   const page = await api.getPage(id, version);
   const property = await api.getProperty(id);
@@ -38,7 +44,7 @@ export async function download(api, id, { version, pageLinks, assetsDir, assetPr
       attachmentLinks[title] = (assetPrefix ?? './assets') + '/' + encodeURIComponent(filename);
     }
   }
-  const converted = storageToMarkdown(page.storage, { pageUrl: page.url, siteUrl: api.config.webBase, pageId: page.id, pageLinks, attachments: attachmentLinks, diagramProfile: api.config.diagramProfile });
+  const converted = storageToMarkdown(page.storage, { ...preservationContext(api, page.id), pageLinks, attachments: attachmentLinks });
   let body = converted.markdown;
   let preserved = converted.preserved;
   if (!pageLinks && !assetsDir && stored?.pageVersion === page.version && stored?.source?.storageHash === hash(page.storage)) {
@@ -47,8 +53,10 @@ export async function download(api, id, { version, pageLinks, assetsDir, assetPr
     body = source.body;
     preserved = source.preserved;
   }
-  const metadata = boundMetadata(api, page, stored?.metadata ?? { type: 'Reference', tags: labels }, { labels, preserved, storage_hash: hash(page.storage), base_body_hash: bodyHash(body) });
-  return { metadata, body, warnings: converted.warnings };
+  const metadata = boundMetadata(api, page, stored?.metadata ?? { type: 'Reference', tags: labels }, { ...(stored?.templateId ? { template_id: stored.templateId } : {}), labels, preserved, storage_hash: hash(page.storage), base_body_hash: bodyHash(body) });
+  const doc = reducePreservation({ metadata, body, warnings: converted.warnings }, preservationContext(api, page.id));
+  doc.metadata.confluence.base_body_hash = bodyHash(doc.body);
+  return doc;
 }
 
 async function safeLocalPath(root, sourceDir, reference) {
@@ -62,18 +70,22 @@ async function safeLocalPath(root, sourceDir, reference) {
 
 const mimeTypes = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.avif': 'image/avif' };
 
-export async function upload(api, input, { filename, title, id, version, space, parent, root, dryRun = false, onWrite, diagrams = 'macro', diagramEnv = {}, preparedDiagrams } = {}) {
-  const doc = parseDocument(input);
+export async function upload(api, input, { filename, title, id, version, space, parent, root, dryRun = false, onWrite, diagrams, diagramEnv = {}, preparedDiagrams, template } = {}) {
+  let doc = parseDocument(input);
   checkBinding(api, doc.metadata);
+  doc = reducePreservation(doc, preservationContext(api, id ?? doc.metadata.confluence?.id));
+  const markdownTitle = doc.body.match(/^#\s+(.+)$/m)?.[1];
+  doc = await prepareNativeTemplate(api, doc, template, { id, space });
   const meta = doc.metadata.confluence ?? {};
   if (id && meta.id && id !== meta.id) throw new Error('--id conflicts with the page ID in front matter.');
   const pageId = id ?? meta.id;
   const expectedVersion = version ?? meta.version;
   if (pageId && (!Number.isInteger(expectedVersion) || expectedVersion < 1)) throw new Error('Updating a page requires confluence.version or --version. Download it first.');
-  const actualTitle = title ?? doc.metadata.title ?? doc.body.match(/^#\s+(.+)$/m)?.[1] ?? (filename ? path.basename(filename, path.extname(filename)) : null);
+  const actualTitle = title ?? doc.metadata.title ?? markdownTitle ?? (filename ? path.basename(filename, path.extname(filename)) : null);
   if (!actualTitle?.trim()) throw new Error('A page title is required in front matter or --title.');
-  const lineOffset = input.replace(/^\uFEFF/, '').replaceAll('\r\n', '\n').slice(0, -doc.body.length).split('\n').length - 1;
-  const prepared = preparedDiagrams ?? await prepareDiagrams(doc.body, { env: diagramEnv, mode: diagrams, lineOffset, requireMacros: true });
+  const lineOffset = template?.kind === 'confluence' ? 0 : input.replace(/^\uFEFF/, '').replaceAll('\r\n', '\n').slice(0, -doc.body.length).split('\n').length - 1;
+  const selected = templateDiagrams(template, diagramEnv, diagrams);
+  const prepared = preparedDiagrams ?? await prepareDiagrams(doc.body, { ...selected, lineOffset, requireMacros: true });
   const target = await api.getSpace(space ?? meta.space);
   let current;
   if (pageId) {
@@ -91,6 +103,14 @@ export async function upload(api, input, { filename, title, id, version, space, 
   const images = {};
   const assets = new Map();
   for (const ref of references(doc.body)) {
+    if (ref.kind === 'image' && pageId && /^https?:/i.test(ref.url ?? '')) {
+      const url = new URL(ref.url);
+      const prefix = new URL(api.config.webBase).pathname.replace(/\/$/, '') + '/download/attachments/' + pageId + '/';
+      if (url.origin === new URL(api.config.webBase).origin && url.pathname.startsWith(prefix)) {
+        const name = decodeURIComponent(url.pathname.slice(prefix.length));
+        if (name && !/[\/\\]/.test(name)) { images[ref.url] = name; continue; }
+      }
+    }
     if (!ref.url || /^(?:[a-z][a-z0-9+.-]*:|#|\/\/)/i.test(ref.url)) continue;
     if (ref.kind === 'link' && !/\.md(?:#.*)?$/i.test(ref.url)) continue;
     if (!filename) throw new Error('Relative Markdown links and images require a source file.');
@@ -109,12 +129,14 @@ export async function upload(api, input, { filename, title, id, version, space, 
       images[ref.url] = name;
     }
   }
-  const preserved = withoutDiagramPreservation(meta.preserved, prepared.blocks.length > 0);
-  const converted = markdownToStorage(doc.body, { preserved, links, images, diagrams: prepared.macros });
-  const serverPreview = prepared.blocks.length ? await api.previewStorage(converted.storage, { pageId, space: target.key }) : null;
-  if (dryRun) return { dryRun: true, id: pageId ?? null, title: actualTitle, version: pageId ? expectedVersion + 1 : 1, storage: converted.storage, attachments: [...assets.keys()], diagrams: prepared.checks, serverPreview };
+  const preserved = withoutDiagramPreservation(meta.preserved, prepared.blocks.length > 0 || selected.mode === 'code');
+  const converted = markdownToStorage(doc.body, { preserved, links, images, diagrams: prepared.macros, flattenNestedQuotes: api.config.deployment === 'cloud' });
+  converted.storage = applyTemplate(converted.storage, template);
+  const serverPreview = prepared.blocks.length || template?.toc || template?.kind === 'confluence' || converted.storage.includes('ac:name="toc"') ? await api.previewStorage(converted.storage, { pageId, space: target.key }) : null;
+  if (dryRun) return { dryRun: true, id: pageId ?? null, title: actualTitle, version: pageId ? expectedVersion + 1 : 1, storage: converted.storage, attachments: [...assets.keys()], diagrams: prepared.checks, serverPreview, template: template?.source ?? 'none', warnings: [...(doc.warnings ?? []), ...converted.warnings] };
   const written = await api.writePage({ id: pageId, title: actualTitle, storage: converted.storage, space: target, parentId: parent ?? meta.parent_id ?? current?.parentId, version: expectedVersion });
-  let result = { metadata: boundMetadata(api, written, doc.metadata, { space: target.key, preserved }), body: doc.body };
+  let result = { metadata: boundMetadata(api, written, doc.metadata, { space: target.key, ...(preserved.length ? { preserved } : {}) }), body: doc.body, warnings: [...(doc.warnings ?? []), ...converted.warnings] };
+  if (!preserved.length) delete result.metadata.confluence.preserved;
   delete result.metadata.confluence.storage_hash;
   if (onWrite) await onWrite(result);
   try {
@@ -123,7 +145,7 @@ export async function upload(api, input, { filename, title, id, version, space, 
     if (actual.version !== written.version) throw new Error('Page changed again immediately after saving. Download and merge before retrying.');
     result = { ...result, metadata: boundMetadata(api, actual, result.metadata, { storage_hash: hash(actual.storage) }) };
     if (onWrite) await onWrite(result);
-    const value = { schema: 1, pageVersion: actual.version, metadata: userMetadata };
+    const value = { schema: 1, pageVersion: actual.version, metadata: userMetadata, ...(meta.template_id ? { templateId: meta.template_id } : {}) };
     const source = { storageHash: hash(actual.storage), gzip: gzipSync(JSON.stringify({ body: doc.body, preserved })).toString('base64') };
     if (!Object.keys(images).length && !Object.keys(links).length && Buffer.byteLength(JSON.stringify({ ...value, source })) <= 30000) value.source = source;
     await api.setProperty(actual.id, value);
@@ -178,13 +200,16 @@ export async function exportBundle(api, directory, { space, parent, limit = 1000
 }
 
 export async function pushBundle(api, directory, options = {}) {
+  const selected = templateDiagrams(options.template, options.diagramEnv, options.diagrams);
   const files = await markdownFiles(directory);
   const targets = new Set(await Promise.all(files.map((filename) => realpath(filename))));
   const documents = [];
   const ids = new Set();
   for (const filename of files) {
-    const doc = parseDocument(await readFile(filename, 'utf8'));
+    let doc = parseDocument(await readFile(filename, 'utf8'));
     checkBinding(api, doc.metadata);
+    doc = reducePreservation(doc, preservationContext(api, doc.metadata.confluence?.id));
+    doc = await prepareNativeTemplate(api, doc, options.template, { space: options.space });
     if (doc.metadata.confluence?.id) {
       if (ids.has(doc.metadata.confluence.id)) throw new Error('Duplicate page ID in bundle: ' + doc.metadata.confluence.id);
       ids.add(doc.metadata.confluence.id);
@@ -203,8 +228,12 @@ export async function pushBundle(api, directory, options = {}) {
         if (!targets.has(local) && !linked.metadata.confluence?.id) throw new Error('Unpublished link target is excluded from the bundle: ' + ref.url);
       }
     }
-    const prepared = await prepareDiagrams(doc.body, { env: options.diagramEnv, mode: options.diagrams, requireMacros: true });
-    if (prepared.blocks.length) await api.previewStorage(markdownToStorage(doc.body, { diagrams: prepared.macros }).storage, { pageId: doc.metadata.confluence?.id, space: options.space ?? doc.metadata.confluence?.space ?? api.config.spaceKey });
+    const prepared = await prepareDiagrams(doc.body, { ...selected, requireMacros: true });
+    if (prepared.blocks.length || options.template?.toc || options.template?.kind === 'confluence' || /```confluence-toc\n/.test(doc.body)) {
+      const preserved = withoutDiagramPreservation(doc.metadata.confluence?.preserved, prepared.blocks.length > 0 || selected.mode === 'code');
+      const storage = applyTemplate(markdownToStorage(doc.body, { preserved, diagrams: prepared.macros, flattenNestedQuotes: api.config.deployment === 'cloud' }).storage, options.template);
+      await api.previewStorage(storage, { pageId: doc.metadata.confluence?.id, space: options.space ?? doc.metadata.confluence?.space ?? api.config.spaceKey });
+    }
     documents.push({ filename, doc, prepared });
   }
   for (const item of documents.filter((entry) => !entry.doc.metadata.confluence?.id)) {

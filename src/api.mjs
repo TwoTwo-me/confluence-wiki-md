@@ -1,4 +1,5 @@
 import { diagramProfile } from './diagrams.mjs';
+import { preservationMode } from './document.mjs';
 import { setTimeout } from 'node:timers/promises';
 import { load } from 'cheerio';
 
@@ -39,16 +40,19 @@ export function readWikiConfig(env) {
   }
   apiUrl = validate(apiUrl);
   const v1Url = env.CONFLUENCE_API_V1_URL ? validate(env.CONFLUENCE_API_V1_URL) : (deployment === 'cloud' ? apiUrl.replace(/\/api\/v2$/, '/rest/api') : apiUrl);
+  const templateApiUrl = validate(env.CONFLUENCE_TEMPLATE_API_URL || (deployment === 'datacenter' ? v1Url.replace(/\/rest\/api$/, '/rest/experimental') : v1Url));
   if (deployment === 'cloud' && !apiUrl.endsWith('/api/v2')) throw new Error('Cloud CONFLUENCE_API_URL must end with /api/v2.');
-  return { deployment, siteUrl, apiUrl, v1Url, token, auth, email, spaceKey: env.CONFLUENCE_SPACE_KEY, webBase: deployment === 'cloud' ? siteUrl + '/wiki' : siteUrl, diagramProfile: diagramProfile(env) };
+  return { deployment, siteUrl, apiUrl, v1Url, templateApiUrl, token, auth, email, spaceKey: env.CONFLUENCE_SPACE_KEY, webBase: deployment === 'cloud' ? siteUrl + '/wiki' : siteUrl, diagramProfile: diagramProfile(env), preserve: preservationMode(env.CONFLUENCE_PRESERVE) };
 }
 
 export class ConfluenceApi {
   constructor(config) { this.config = config; }
 
+  apiBase(version) { return version === 'template' ? this.config.templateApiUrl ?? this.config.v1Url : version === 1 ? this.config.v1Url : this.config.apiUrl; }
+
   async request(path, { method = 'GET', body, form, version = 2, raw = false } = {}) {
     if (!path.startsWith('/') || path.startsWith('//') || path.split('?')[0].split('/').includes('..')) throw new Error('Expected a relative API resource path.');
-    const base = version === 1 ? this.config.v1Url : this.config.apiUrl;
+    const base = this.apiBase(version);
     const auth = this.config.auth === 'bearer' ? 'Bearer ' + this.config.token : 'Basic ' + Buffer.from(this.config.email + ':' + this.config.token).toString('base64');
     const response = await fetch(base + path, {
       method,
@@ -76,14 +80,35 @@ export class ConfluenceApi {
       results.push(...data.results.slice(0, limit - results.length));
       const link = data._links?.next;
       if (!link) break;
-      const url = new URL(link, version === 1 ? this.config.v1Url : this.config.apiUrl);
-      if (![new URL(this.config.apiUrl).origin, new URL(this.config.v1Url).origin, new URL(this.config.siteUrl).origin].includes(url.origin)) throw new Error('Refusing pagination outside the configured Confluence origin.');
+      const url = new URL(link, this.apiBase(version));
+      if (![this.config.apiUrl, this.config.v1Url, this.config.siteUrl, this.apiBase(version)].map((base) => new URL(base).origin).includes(url.origin)) throw new Error('Refusing pagination outside the configured Confluence origin.');
       next = path.split('?')[0] + url.search;
     }
     return results;
   }
 
   pageUrl(id) { return this.config.webBase + '/pages/viewpage.action?pageId=' + encodeURIComponent(id); }
+
+  async templateRequest(operation) {
+    try { return await operation(); }
+    catch (error) {
+      if (error instanceof ApiError && [401, 403].includes(error.status)) throw new Error('Template API denied access (HTTP ' + error.status + '). Check template/space permissions and token scopes; Cloud granular tokens need read:template:confluence and read:content-details:confluence.', { cause: error });
+      throw error;
+    }
+  }
+
+  async listTemplates({ space, blueprint = false, limit = 50 } = {}) {
+    const query = new URLSearchParams({ start: '0', limit: String(Math.min(limit, 100)), ...(space ? { spaceKey: space } : {}) });
+    const result = await this.templateRequest(() => this.paginate('/template/' + (blueprint ? 'blueprint' : 'page') + '?' + query, { version: 'template', limit }));
+    return result.map((item) => ({ id: String(item.templateId), name: item.name, description: item.description ?? '', type: item.templateType, space: item.space?.key ?? null }));
+  }
+
+  async getTemplate(id) {
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,511}$/.test(String(id))) throw new Error('Invalid Confluence template ID.');
+    const result = await this.templateRequest(() => this.request('/template/' + encodeURIComponent(id) + '?expand=body.storage', { version: 'template' }));
+    if (String(result.templateId) !== String(id) || typeof result.body?.storage?.value !== 'string') throw new Error('Confluence did not return the requested template ID and storage body.');
+    return { id: String(result.templateId), name: result.name, description: result.description ?? '', type: result.templateType, space: result.space?.key ?? null, storage: result.body.storage.value, labels: (result.labels ?? []).map((item) => item.name) };
+  }
 
   async previewStorage(storage, { pageId, space } = {}) {
     const query = new URLSearchParams({ ...(pageId ? { contentIdContext: pageId } : {}), ...(space ? { spaceKeyContext: space } : {}) });

@@ -2,7 +2,9 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { realpathSync } from 'node:fs';
+import { parseArgs } from 'node:util';
 import { runCli } from '../src/cli.mjs';
+import { loadProfile } from '../src/env.mjs';
 
 const statePath = new URL('../.confluence-dev.json', import.meta.url);
 const reportPath = new URL('../artifacts/smoke-test.json', import.meta.url);
@@ -10,7 +12,7 @@ const reportPath = new URL('../artifacts/smoke-test.json', import.meta.url);
 export function readConfig(env) {
   const required = ['CONFLUENCE_SITE_URL', 'CONFLUENCE_EMAIL', 'CONFLUENCE_CLOUD_ID', 'CONFLUENCE_SPACE_KEY', 'CONFLUENCE_API_TOKEN'];
   for (const key of required) {
-    if (!env[key]?.trim()) throw new Error(`Missing ${key}. Configure .env using .env.example.`);
+    if (!env[key]?.trim()) throw new Error(`Missing ${key}. Configure ~/.config/cfwiki/.env or select a Cloud profile with --env.`);
   }
   const site = new URL(env.CONFLUENCE_SITE_URL);
   if (site.protocol !== 'https:' || !site.hostname.endsWith('.atlassian.net') || site.username || site.password || site.port || site.search || site.hash || site.pathname !== '/') {
@@ -143,26 +145,12 @@ async function smoke(config, client, space) {
 
 async function main(args) {
   if (args[0] !== 'smoke') return runCli(args);
-  try { process.loadEnvFile('.env'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
-  const [command, pageId] = args;
-  if (!command || command === '--help' || command === '-h') {
-    console.log('Usage: npm run confluence -- <doctor|read PAGE_ID|smoke>\n\ndoctor  Verify authentication and find the configured space.\nread    Read a page in Confluence storage format.\nsmoke   Create/reuse one test page, then update and verify it.\n\nConfigure credentials locally in .env. Tokens are never printed.');
-    return;
-  }
-  if (!['doctor', 'read', 'smoke'].includes(command) || (command === 'read' && !/^\d+$/.test(pageId ?? '')) || args.length > (command === 'read' ? 2 : 1)) {
-    throw new Error('Invalid command. Use --help; read requires a numeric page ID.');
-  }
-  const config = readConfig(process.env);
+  const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { env: { type: 'string' }, help: { type: 'boolean', short: 'h' } } });
+  if (values.help) return runCli(['--help']);
+  if (positionals.length !== 1) throw new Error('Usage: cfwiki smoke [--env FILE]');
+  const config = readConfig(await loadProfile(values.env));
   const client = createClient(config);
-  if (command === 'read') {
-    console.log(JSON.stringify(await client(`/pages/${pageId}?body-format=storage`), null, 2));
-    return;
-  }
   const space = await findSpace(client, config.spaceKey);
-  if (command === 'doctor') {
-    console.log(JSON.stringify({ authenticated: true, siteUrl: config.siteUrl, space: { id: space.id, key: space.key, name: space.name } }, null, 2));
-    return;
-  }
   await smoke(config, client, space);
 }
 

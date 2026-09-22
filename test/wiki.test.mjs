@@ -15,16 +15,57 @@ import { upload, download } from '../src/wiki.mjs';
 const entry = fileURLToPath(new URL('../scripts/confluence.mjs', import.meta.url));
 const bodyDigest = (body) => 'sha256:' + createHash('sha256').update(body.replaceAll('\r\n', '\n')).digest('hex');
 
+test('preservation modes reduce cached legacy TOCs and honor CLI overrides', async (t) => {
+  const f = await serverFixture(t);
+  const fullApi = new ConfluenceApi(readWikiConfig({ ...f.env, CONFLUENCE_PRESERVE: 'all' }));
+  const doc = await upload(fullApi, '---\ntitle: Preservation\n---\n## Content\n\n```js\nconst x = 1;\n```', { template: { kind: 'confluence', id: '42' } });
+  assert.ok(f.properties.get(doc.metadata.confluence.id).value.source);
+  const full = parseDocument((await f.cli('read', doc.metadata.confluence.id, '--preserve', 'all')).stdout);
+  assert.equal(full.metadata.confluence.preserved.length, 1);
+  for (const mode of ['minimal', 'none']) {
+    const result = await f.cli('read', doc.metadata.confluence.id, '--preserve', mode);
+    assert.equal(result.code, 0, result.stderr);
+    const reduced = parseDocument(result.stdout);
+    assert.equal(reduced.metadata.confluence.preserved, undefined);
+    assert.match(reduced.body, /```confluence-toc/);
+    assert.equal(reduced.metadata.confluence.base_body_hash, bodyDigest(reduced.body));
+  }
+  f.env.CONFLUENCE_PRESERVE = 'all';
+  const overridden = await f.cli('read', doc.metadata.confluence.id, '--preserve', 'minimal');
+  assert.equal(parseDocument(overridden.stdout).metadata.confluence.preserved, undefined);
+  const invalid = await f.cli('read', doc.metadata.confluence.id, '--preserve', 'typo');
+  assert.notEqual(invalid.code, 0);
+});
+
+test('a downloaded attachment URL updates its native attachment without preserved XML or local assets', async (t) => {
+  const f = await serverFixture(t);
+  const page = await f.api.writePage({ title: 'Attachment reference', storage: '<p><ac:image ac:alt="sample"><ri:attachment ri:filename="sample.svg"/></ac:image></p>', space: await f.api.getSpace('TEST') });
+  const doc = await download(f.api, page.id);
+  assert.equal(doc.metadata.confluence.preserved, undefined);
+  assert.match(doc.body, /download\/attachments/);
+  const preview = await upload(f.api, formatDocument(doc), { dryRun: true });
+  assert.match(preview.storage, /ri:attachment ri:filename="sample.svg"/);
+  assert.doesNotMatch(preview.storage, /ri:url/);
+  assert.deepEqual(preview.attachments, []);
+});
+
+test('a portable TOC receives a server preview without an active template', async (t) => {
+  const f = await serverFixture(t);
+  await upload(f.api, '---\ntitle: Portable TOC\n---\n```confluence-toc\nmaxLevel: 3\n```\n\n## Body');
+  assert.ok(f.requests.some((r) => r.path.endsWith('/contentbody/convert/view')));
+});
+
 async function serverFixture(t) {
   const directory = await mkdtemp(path.join(tmpdir(), 'cfwiki-test-'));
   const pages = new Map();
   const properties = new Map();
   const labels = new Map();
+  const templates = new Map([['42', { templateId: '42', name: 'Team template', templateType: 'page', space: { key: 'TEST' }, body: { storage: { value: '<h2>Team header</h2><ac:structured-macro ac:name="toc"/><p>{{cfwiki.body}}</p><p>Team footer</p>' } }, labels: [] }]]);
   const requests = [];
   let serial = 100;
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
-    const route = url.pathname.replace('/confluence/rest/api', '');
+    const route = url.pathname.replace(/^\/confluence\/rest\/(?:api|experimental)/, '');
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
     const raw = Buffer.concat(chunks).toString();
@@ -32,6 +73,9 @@ async function serverFixture(t) {
     requests.push({ method: req.method, path: url.pathname, query: url.search, body, authorization: req.headers.authorization });
     const send = (status, data) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(data === undefined ? '' : JSON.stringify(data)); };
     if (req.headers.authorization !== 'Bearer fixture-pat') return send(401, { token: 'must-not-leak' });
+    if (route === '/template/page' || route === '/template/blueprint') return send(200, { results: [...templates.values()] });
+    if (route.startsWith('/template/')) return templates.has(route.slice(10)) ? send(200, templates.get(route.slice(10))) : send(404, {});
+    if (route === '/contentbody/convert/view' && req.method === 'POST') return send(200, { value: '<p>Fixture preview accepted</p>' });
     if (route === '/space/TEST') return send(200, { id: '1', key: 'TEST', name: 'Test space' });
     if (route === '/search') return send(200, { results: [...pages.values()].map((page) => ({ content: { id: page.id, title: page.title }, excerpt: 'search match' })) });
     if (route === '/content' && req.method === 'POST') {
@@ -81,15 +125,64 @@ async function serverFixture(t) {
   const env = { CONFLUENCE_SITE_URL: base, CONFLUENCE_API_URL: base + '/rest/api', CONFLUENCE_DEPLOYMENT: 'datacenter', CONFLUENCE_PAT: 'fixture-pat', CONFLUENCE_SPACE_KEY: 'TEST', CONFLUENCE_ALLOW_HTTP: 'true' };
   const cleanEnv = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('CONFLUENCE_')));
   const cli = async (...args) => {
-    const child = spawn(process.execPath, [entry, ...args], { cwd: directory, env: { ...cleanEnv, ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(process.execPath, [entry, ...args], { cwd: directory, env: { ...cleanEnv, XDG_CONFIG_HOME: path.join(directory, 'config'), ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = ''; let stderr = '';
     child.stdout.on('data', (chunk) => { stdout += chunk; });
     child.stderr.on('data', (chunk) => { stderr += chunk; });
     const [code] = await once(child, 'close');
     return { code, stdout, stderr };
   };
-  return { directory, env, cli, pages, requests, properties, api: new ConfluenceApi(readWikiConfig(env)) };
+  return { directory, env, cli, pages, requests, properties, templates, api: new ConfluenceApi(readWikiConfig(env)) };
 }
+
+test('native template ID drives CLI creation, portable drafts, conversion and bundle publication', async (t) => {
+  const f = await serverFixture(t);
+  const file = path.join(f.directory, 'native.md');
+  await writeFile(file, '---\ntitle: Native example\n---\n## Edited body\n');
+  const list = await f.cli('templates', 'list', '--space', 'TEST', '--json');
+  assert.equal(list.code, 0, list.stderr);
+  assert.equal(JSON.parse(list.stdout)[0].id, '42');
+  const local = await f.cli('convert', file, '--to', 'storage', '--template', '42');
+  assert.notEqual(local.code, 0);
+  assert.match(local.stderr, /--server/);
+  const preview = await f.cli('convert', file, '--to', 'storage', '--template', '42', '--server');
+  assert.equal(preview.code, 0, preview.stderr);
+  assert.match(preview.stdout, /Team header/);
+  assert.match(preview.stdout, /Edited body/);
+  const create = await f.cli('upload', file, '--template', '42');
+  assert.equal(create.code, 0, create.stderr);
+  const doc = parseDocument(create.stdout);
+  assert.equal(doc.metadata.confluence.template_id, '42');
+  assert.match(doc.body, /Team footer/);
+  assert.equal((doc.body.match(/Team header/g) ?? []).length, 1);
+  await writeFile(file, formatDocument({ ...doc, body: doc.body.replace('Edited body', 'Updated body') }));
+  f.templates.get('42').body.storage.value = '<p>Changed template for future pages</p>';
+  const update = await f.cli('upload', file, '--template', '42');
+  assert.equal(update.code, 0, update.stderr);
+  const updated = f.pages.get(doc.metadata.confluence.id).body.storage.value;
+  assert.match(updated, /Updated body/);
+  assert.doesNotMatch(updated, /Changed template for future pages/);
+  const downloaded = await f.cli('read', doc.metadata.confluence.id);
+  assert.equal(parseDocument(downloaded.stdout).metadata.confluence.template_id, '42');
+  const draft = path.join(f.directory, 'draft.md');
+  const read = await f.cli('templates', 'read', '42', '-o', draft);
+  assert.equal(read.code, 0, read.stderr);
+  const conflictingDraft = await f.cli('convert', draft, '--to', 'storage', '--template', '43');
+  assert.notEqual(conflictingDraft.code, 0);
+  assert.match(conflictingDraft.stderr, /different Confluence template/);
+  const fromDraft = await f.cli('upload', draft, '--template', '42');
+  assert.equal(fromDraft.code, 0, fromDraft.stderr);
+  assert.equal((parseDocument(fromDraft.stdout).body.match(/Changed template for future pages/g) ?? []).length, 1);
+  const bundle = path.join(f.directory, 'native-bundle');
+  await mkdir(bundle);
+  await writeFile(path.join(bundle, 'first.md'), '---\ntitle: Bundle\n---\n## Bundle body\n');
+  const pushed = await f.cli('push', bundle, '--template', '42');
+  assert.equal(pushed.code, 0, pushed.stderr);
+  const bundled = parseDocument(await readFile(path.join(bundle, 'first.md'), 'utf8'));
+  assert.equal(bundled.metadata.confluence.template_id, '42');
+  assert.match(f.pages.get(bundled.metadata.confluence.id).body.storage.value, /Changed template for future pages/);
+  assert.ok(f.requests.filter((request) => request.path.includes('/template/')).every((request) => request.path.startsWith('/confluence/rest/experimental/template/')));
+});
 
 test('corporate PAT configuration retains context paths and does not require a Cloud ID', () => {
   const config = readWikiConfig({ CONFLUENCE_SITE_URL: 'https://wiki.company.test/confluence', CONFLUENCE_PAT: 'fake-pat', CONFLUENCE_DEPLOYMENT: 'datacenter' });
@@ -146,6 +239,53 @@ test('CLI supports create, Markdown download, edit, versioned update, search and
   assert.equal(fixture.pages.has(id), false);
   assert.ok(fixture.requests.every((request) => request.authorization === 'Bearer fixture-pat'));
   assert.ok(fixture.requests.filter((request) => request.method === 'DELETE').every((request) => !request.query.includes('purge')));
+});
+
+test('CLI applies profile templates, manual overrides and no-template conversion through upload and push', async (t) => {
+  const f = await serverFixture(t);
+  const profileDir = path.join(f.directory, 'profiles');
+  await mkdir(profileDir);
+  const profile = path.join(profileDir, '.env');
+  await writeFile(profile, Object.entries({ ...f.env, CONFLUENCE_TEMPLATE: 'team.yaml' }).map(([key, value]) => key + '=' + value).join('\n'));
+  await writeFile(path.join(profileDir, 'team.yaml'), 'version: 1\ntoc:\n  position: bottom\n  parameters:\n    minLevel: 2\n    maxLevel: 4');
+  const input = '---\ntitle: Template integration\n---\n## Heading\n\nBody\n';
+  await writeFile(path.join(f.directory, 'page.md'), input);
+  const convert = await f.cli('convert', 'page.md', '--to', 'storage', '--env', profile, '--json');
+  assert.equal(convert.code, 0, convert.stderr);
+  const converted = JSON.parse(convert.stdout);
+  assert.match(converted.storage, /<\/p>\s*<ac:structured-macro ac:name="toc"/);
+  assert.match(converted.storage, /ac:name="maxLevel">4/);
+  assert.equal(converted.template, path.join(profileDir, 'team.yaml'));
+  const manual = await f.cli('convert', 'page.md', '--to', 'storage', '--env', profile, '--template', 'default');
+  assert.equal(manual.code, 0, manual.stderr);
+  assert.match(manual.stdout, /^<ac:structured-macro ac:name="toc"/);
+  const disabled = await f.cli('convert', 'page.md', '--to', 'storage', '--env', profile, '--template', 'none');
+  assert.equal(disabled.code, 0, disabled.stderr);
+  assert.doesNotMatch(disabled.stdout, /ac:name="toc"/);
+  const validation = await f.cli('validate', 'page.md', '--env', profile, '--server', '--json');
+  assert.equal(validation.code, 0, validation.stderr);
+  assert.equal(JSON.parse(validation.stdout).serverPreview.verified, true);
+  const preview = await f.cli('upload', 'page.md', '--env', profile, '--dry-run', '--json');
+  assert.equal(preview.code, 0, preview.stderr);
+  assert.equal(JSON.parse(preview.stdout).storage, converted.storage);
+  assert.equal(f.pages.size, 0);
+  const posted = await f.cli('upload', 'page.md', '--env', profile);
+  assert.equal(posted.code, 0, posted.stderr);
+  const doc = parseDocument(posted.stdout);
+  assert.equal(f.pages.get(doc.metadata.confluence.id).body.storage.value, converted.storage);
+  const downloaded = await f.cli('read', doc.metadata.confluence.id, '--env', profile);
+  assert.equal(downloaded.code, 0, downloaded.stderr);
+  const uploadedAgain = await f.cli('upload', 'page.md', '--env', profile);
+  assert.equal(uploadedAgain.code, 0, uploadedAgain.stderr);
+  assert.equal((f.pages.get(doc.metadata.confluence.id).body.storage.value.match(/ac:name="toc"/g) ?? []).length, 1);
+  const bundle = path.join(f.directory, 'bundle');
+  await mkdir(bundle);
+  await writeFile(path.join(bundle, 'first.md'), input);
+  await writeFile(path.join(bundle, 'second.md'), input.replace('Template integration', 'Second'));
+  const pushed = await f.cli('push', bundle, '--env', profile);
+  assert.equal(pushed.code, 0, pushed.stderr);
+  assert.equal(f.pages.size, 3);
+  assert.ok([...f.pages.values()].every((page) => /ac:name="maxLevel">4/.test(page.body.storage.value)));
 });
 
 test('a downloaded document cannot redirect authenticated writes to another API URL', async (t) => {

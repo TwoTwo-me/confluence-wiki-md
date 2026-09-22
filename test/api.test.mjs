@@ -5,6 +5,38 @@ import { ConfluenceApi, readWikiConfig } from '../src/api.mjs';
 const config = (deployment = 'cloud') => readWikiConfig({ CONFLUENCE_SITE_URL: 'https://wiki.example.test/confluence', CONFLUENCE_API_URL: deployment === 'cloud' ? 'https://api.example.test/wiki/api/v2' : 'https://wiki.example.test/confluence/rest/api', CONFLUENCE_EMAIL: 'test@example.test', CONFLUENCE_API_TOKEN: 'test-token', CONFLUENCE_DEPLOYMENT: deployment, CONFLUENCE_SPACE_KEY: 'TEST' });
 const response = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } });
 
+for (const deployment of ['cloud', 'datacenter']) {
+  test(deployment + ' native templates use their own REST base and preserve opaque IDs', async (t) => {
+    const calls = [];
+    const id = 'com.example:runbook';
+    t.mock.method(globalThis, 'fetch', async (url, options) => {
+      calls.push({ url: String(url), authorization: options.headers.Authorization });
+      return response({ templateId: id, name: 'Runbook', templateType: 'page', space: { key: 'TEST' }, body: { storage: { value: '<p>Native body</p>' } }, labels: [{ name: 'runbook' }] });
+    });
+    const api = new ConfluenceApi(config(deployment));
+    assert.equal((await api.getTemplate(id)).storage, '<p>Native body</p>');
+    assert.ok(calls[0].url.endsWith('/template/com.example%3Arunbook?expand=body.storage'));
+    assert.match(calls[0].url, deployment === 'cloud' ? /\/wiki\/rest\/api\/template\// : /\/confluence\/rest\/experimental\/template\//);
+    assert.ok(calls[0].authorization.startsWith(deployment === 'cloud' ? 'Basic ' : 'Bearer '));
+    await assert.rejects(api.getTemplate('../42'), /Invalid/);
+    assert.equal(calls.length, 1);
+  });
+}
+
+test('native template list paginates and scope errors do not expose response bodies', async (t) => {
+  const calls = [];
+  t.mock.method(globalThis, 'fetch', async (url) => {
+    calls.push(String(url));
+    return response({ results: [{ templateId: String(calls.length), name: 'Template', templateType: 'page' }], _links: calls.length === 1 ? { next: '/wiki/rest/api/template/page?spaceKey=TEST&start=1&limit=1' } : {} });
+  });
+  const api = new ConfluenceApi(config());
+  assert.deepEqual((await api.listTemplates({ space: 'TEST', limit: 2 })).map((item) => item.id), ['1', '2']);
+  assert.match(calls[0], /spaceKey=TEST/);
+  assert.match(calls[1], /start=1/);
+  globalThis.fetch.mock.mockImplementation(async () => response({ secret: 'private-token' }, 401));
+  await assert.rejects(api.getTemplate('42'), (error) => /read:template:confluence/.test(error.message) && !error.message.includes('private-token'));
+});
+
 test('Cloud page writes use v2 bodies, Basic auth and explicit next version', async (t) => {
   const calls = [];
   t.mock.method(globalThis, 'fetch', async (url, options) => {
