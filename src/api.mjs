@@ -50,7 +50,7 @@ export class ConfluenceApi {
 
   apiBase(version) { return version === 'template' ? this.config.templateApiUrl ?? this.config.v1Url : version === 1 ? this.config.v1Url : this.config.apiUrl; }
 
-  async request(path, { method = 'GET', body, form, version = 2, raw = false } = {}) {
+  async request(path, { method = 'GET', body, form, version = 2, raw = false, metadata = false } = {}) {
     if (!path.startsWith('/') || path.startsWith('//') || path.split('?')[0].split('/').includes('..')) throw new Error('Expected a relative API resource path.');
     const base = this.apiBase(version);
     const auth = this.config.auth === 'bearer' ? 'Bearer ' + this.config.token : 'Basic ' + Buffer.from(this.config.email + ':' + this.config.token).toString('base64');
@@ -65,23 +65,49 @@ export class ConfluenceApi {
     if (!response.ok) throw new ApiError(response.status, method, path);
     if (raw) return response;
     if (response.status === 204) return null;
-    return response.json();
+    let data;
+    try { data = await response.json(); } catch { throw new Error("Confluence returned malformed JSON."); }
+    return metadata ? { data, headers: response.headers } : data;
   }
 
   async paginate(path, { version = 2, limit = 1000 } = {}) {
+    if (!Number.isSafeInteger(limit) || limit < 1) throw new Error('Result limit must be a positive integer.');
     const results = [];
+    const ids = new Set();
     const seen = new Set();
+    const base = this.apiBase(version);
+    const initial = new URL(base + path);
+    const resourcePaths = new Set([initial.pathname]);
+    if (this.config.deployment === 'cloud') {
+      const wikiPath = initial.pathname.replace(/^\/ex\/confluence\/[a-f0-9-]{36}(?=\/wiki\/)/i, '');
+      resourcePaths.add(wikiPath);
+      if (wikiPath.startsWith('/wiki/rest/api/')) resourcePaths.add(wikiPath.slice('/wiki'.length));
+    }
     let next = path;
     while (next && results.length < limit) {
-      if (seen.has(next)) throw new Error('Pagination cycle detected.');
-      seen.add(next);
-      const data = await this.request(next, { version });
-      if (!Array.isArray(data.results)) throw new Error('API result is missing its results array.');
-      results.push(...data.results.slice(0, limit - results.length));
-      const link = data._links?.next;
+      const current = new URL(base + next);
+      current.searchParams.sort();
+      if (seen.has(current.href)) throw new Error('Pagination cycle detected.');
+      seen.add(current.href);
+      const { data, headers } = await this.request(next, { version, metadata: true });
+      if (!Array.isArray(data?.results)) throw new Error('API result is missing its results array.');
+      for (const item of data.results) {
+        if (item.id !== undefined && ids.has(String(item.id))) continue;
+        if (item.id !== undefined) ids.add(String(item.id));
+        results.push(item);
+        if (results.length === limit) break;
+      }
+      const headerLink = headers.get('link')?.split(/,(?=\s*<)/).find((entry) => /;\s*rel\s*=\s*"?next"?(?:\s*;|\s*$)/i.test(entry))?.match(/<([^>]+)>/)?.[1];
+      const link = data._links?.next ?? headerLink;
       if (!link) break;
-      const url = new URL(link, this.apiBase(version));
-      if (![this.config.apiUrl, this.config.v1Url, this.config.siteUrl, this.apiBase(version)].map((base) => new URL(base).origin).includes(url.origin)) throw new Error('Refusing pagination outside the configured Confluence origin.');
+      const url = new URL(link, base + next);
+      if (url.origin !== initial.origin || url.username || url.password) throw new Error('Refusing pagination outside the configured Confluence origin.');
+      if (!resourcePaths.has(url.pathname) || url.hash) throw new Error('Refusing pagination outside the original resource path.');
+      for (const [key, value] of initial.searchParams) {
+        if (['cursor', 'start', 'limit'].includes(key)) continue;
+        if (url.searchParams.has(key) && url.searchParams.get(key) !== value) throw new Error('Pagination changed the original filtering.');
+        if (!url.searchParams.has(key)) url.searchParams.append(key, value);
+      }
       next = path.split('?')[0] + url.search;
     }
     return results;
@@ -170,11 +196,11 @@ export class ConfluenceApi {
     return results.map((entry) => ({ id: String(entry.content?.id ?? entry.id), title: entry.content?.title ?? entry.title, excerpt: entry.excerpt ?? '', url: this.pageUrl(entry.content?.id ?? entry.id) }));
   }
 
-  async writePage({ id, title, storage, space, parentId, version, message }) {
+  async writePage({ id, title, storage, space, parentId, version, message, privateCreate = false }) {
     const dc = this.config.deployment === 'datacenter';
     const body = dc ? { type: 'page', title, space: { key: space.key }, body: { storage: { representation: 'storage', value: storage } }, ...(parentId ? { ancestors: [{ id: parentId }] } : {}) } : { title, spaceId: String(space.id), status: 'current', body: { representation: 'storage', value: storage }, ...(parentId ? { parentId: String(parentId) } : {}) };
     if (id) Object.assign(body, { id: String(id), status: 'current', version: { number: version + 1, message: message ?? 'Update from Markdown' } });
-    const data = await this.request((dc ? '/content' : '/pages') + (id ? '/' + id : ''), { version: dc ? 1 : 2, method: id ? 'PUT' : 'POST', body });
+    const data = await this.request((dc ? '/content' : '/pages') + (id ? '/' + id : !dc && privateCreate ? '?private=true' : ''), { version: dc ? 1 : 2, method: id ? 'PUT' : 'POST', body });
     return this.normalize(data);
   }
 

@@ -5,6 +5,28 @@ import { ConfluenceApi, readWikiConfig } from '../src/api.mjs';
 const config = (deployment = 'cloud') => readWikiConfig({ CONFLUENCE_SITE_URL: 'https://wiki.example.test/confluence', CONFLUENCE_API_URL: deployment === 'cloud' ? 'https://api.example.test/wiki/api/v2' : 'https://wiki.example.test/confluence/rest/api', CONFLUENCE_EMAIL: 'test@example.test', CONFLUENCE_API_TOKEN: 'test-token', CONFLUENCE_DEPLOYMENT: deployment, CONFLUENCE_SPACE_KEY: 'TEST' });
 const response = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } });
 
+test('Cloud gateway pagination accepts the documented wiki-relative next path without rerouting credentials', async (t) => {
+  const calls = [];
+  const api = new ConfluenceApi(readWikiConfig({ CONFLUENCE_SITE_URL: 'https://wiki.example.test', CONFLUENCE_CLOUD_ID: '00000000-0000-0000-0000-000000000000', CONFLUENCE_EMAIL: 'test@example.test', CONFLUENCE_API_TOKEN: 'synthetic' }));
+  t.mock.method(globalThis, 'fetch', async (url) => {
+    calls.push(String(url));
+    return response({ results: [{ id: String(calls.length) }], _links: calls.length === 1 ? { next: '/wiki/api/v2/pages?cursor=second&limit=1' } : {} });
+  });
+  assert.deepEqual((await api.paginate('/pages?space-id=1&limit=1', { limit: 2 })).map((page) => page.id), ['1', '2']);
+  assert.equal(calls[1], api.config.apiUrl + '/pages?cursor=second&limit=1&space-id=1');
+});
+
+test('Cloud v1 search pagination accepts context-relative paths and preserves CQL', async (t) => {
+  const calls = [];
+  const api = new ConfluenceApi(readWikiConfig({ CONFLUENCE_SITE_URL: 'https://wiki.example.test', CONFLUENCE_CLOUD_ID: '00000000-0000-0000-0000-000000000000', CONFLUENCE_EMAIL: 'test@example.test', CONFLUENCE_API_TOKEN: 'synthetic' }));
+  t.mock.method(globalThis, 'fetch', async (url) => {
+    calls.push(String(url));
+    return response({ results: [{ id: String(calls.length) }], _links: calls.length === 1 ? { next: '/rest/api/search?cursor=two&limit=1' } : {} });
+  });
+  assert.equal((await api.paginate('/search?cql=type%3Dpage&limit=1', { version: 1, limit: 2 })).length, 2);
+  assert.equal(calls[1], api.config.v1Url + '/search?cursor=two&limit=1&cql=type%3Dpage');
+});
+
 for (const deployment of ['cloud', 'datacenter']) {
   test(deployment + ' native templates use their own REST base and preserve opaque IDs', async (t) => {
     const calls = [];
@@ -147,4 +169,28 @@ test('iframe previews are explicitly marked as dynamic app output', async (t) =>
 test('valid diagram labels mentioning syntax errors are not treated as renderer failures', async (t) => {
   t.mock.method(globalThis, 'fetch', async () => response({ value: '<svg><text>Syntax error handler</text></svg>' }));
   assert.equal((await new ConfluenceApi(config('datacenter')).previewStorage('<macro/>')).verified, true);
+});
+
+test('comments: Link pagination preserves filters and deduplicates results', async (t) => {
+  const calls = [];
+  t.mock.method(globalThis, 'fetch', async (url) => {
+    calls.push(String(url));
+    return new Response(JSON.stringify({ results: calls.length === 1 ? [{ id: '1' }] : [{ id: '1' }, { id: '2' }] }), { headers: calls.length === 1 ? { Link: '</wiki/api/v2/pages/42/footer-comments?cursor=two>; rel="next"' } : {} });
+  });
+  assert.deepEqual(await new ConfluenceApi(config()).paginate('/pages/42/footer-comments?body-format=storage&limit=1', { limit: 2 }), [{ id: '1' }, { id: '2' }]);
+  assert.match(calls[1], /body-format=storage/);
+});
+
+test('comments: body pagination limits, filters, and malformed JSON fail closed', async (t) => {
+  const api = new ConfluenceApi(config()); let calls = 0;
+  t.mock.method(globalThis, 'fetch', async () => { calls++; return response({ results: [{ id: String(calls) }], _links: calls < 3 ? { next: '/wiki/api/v2/pages/42/footer-comments?cursor=' + calls } : {} }); });
+  assert.deepEqual((await api.paginate('/pages/42/footer-comments?body-format=storage', { limit: 2 })).map((item) => item.id), ['1', '2']);
+  assert.equal(calls, 2);
+  await assert.rejects(api.paginate('/pages', { limit: 0 }), /positive/);
+  for (const link of ['/wiki/api/v2/pages/42/footer-comments?body-format=view', 'https://wiki.example.test/wiki/api/v2/pages/42/footer-comments', '/wiki/api/v2/pages/99/footer-comments']) {
+    globalThis.fetch.mock.mockImplementation(async () => response({ results: [], _links: { next: link } }));
+    await assert.rejects(api.paginate('/pages/42/footer-comments?body-format=storage'), /outside|filtering/);
+  }
+  globalThis.fetch.mock.mockImplementation(async () => new Response('secret invalid JSON'));
+  await assert.rejects(api.paginate('/pages'), (error) => /malformed JSON/.test(error.message) && !error.message.includes('secret'));
 });
