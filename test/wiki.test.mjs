@@ -60,6 +60,7 @@ async function serverFixture(t) {
   const pages = new Map();
   const properties = new Map();
   const labels = new Map();
+  const restrictions = new Map();
   const templates = new Map([['42', { templateId: '42', name: 'Team template', templateType: 'page', space: { key: 'TEST' }, body: { storage: { value: '<h2>Team header</h2><ac:structured-macro ac:name="toc"/><p>{{cfwiki.body}}</p><p>Team footer</p>' } }, labels: [] }]]);
   const requests = [];
   let serial = 100;
@@ -73,6 +74,7 @@ async function serverFixture(t) {
     requests.push({ method: req.method, path: url.pathname, query: url.search, body, authorization: req.headers.authorization });
     const send = (status, data) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(data === undefined ? '' : JSON.stringify(data)); };
     if (req.headers.authorization !== 'Bearer fixture-pat') return send(401, { token: 'must-not-leak' });
+    if (route === '/user/current') return send(200, { type: 'known', username: 'fixture-user' });
     if (route === '/template/page' || route === '/template/blueprint') return send(200, { results: [...templates.values()] });
     if (route.startsWith('/template/')) return templates.has(route.slice(10)) ? send(200, templates.get(route.slice(10))) : send(404, {});
     if (route === '/contentbody/convert/view' && req.method === 'POST') return send(200, { value: '<p>Fixture preview accepted</p>' });
@@ -80,7 +82,7 @@ async function serverFixture(t) {
     if (route === '/search') return send(200, { results: [...pages.values()].map((page) => ({ content: { id: page.id, title: page.title }, excerpt: 'search match' })) });
     if (route === '/content' && req.method === 'POST') {
       const id = String(++serial);
-      const page = { ...body, id, status: 'current', space: { id: '1', key: 'TEST' }, version: { number: 1 }, ancestors: body.ancestors ?? [] };
+      const page = { ...body, id, status: 'current', history: { createdBy: { type: 'known', username: 'fixture-user' } }, space: { id: '1', key: 'TEST' }, version: { number: 1 }, ancestors: body.ancestors ?? [] };
       pages.set(id, page);
       return send(200, page);
     }
@@ -94,6 +96,16 @@ async function serverFixture(t) {
     const [, id, suffix] = match;
     const page = pages.get(id);
     if (!page) return send(404, {});
+    if (suffix === '/restriction') {
+      restrictions.set(id, req.method === 'DELETE' ? [] : body);
+      return send(200, { results: restrictions.get(id) });
+    }
+    if (suffix.startsWith('/restriction/byOperation/')) {
+      const operation = suffix.split('/').at(-1);
+      const selected = restrictions.get(id)?.find((entry) => entry.operation === operation)?.restrictions ?? {};
+      const collection = (results) => ({ results: results ?? [], start: 0, size: results?.length ?? 0, limit: 100 });
+      return send(200, { operation, restrictions: { user: collection(selected.user), group: collection(selected.group) } });
+    }
     if (suffix === '') {
       if (req.method === 'GET') return send(200, page);
       if (req.method === 'DELETE') { pages.delete(id); return send(204); }
@@ -201,7 +213,7 @@ test('CLI supports create, Markdown download, edit, versioned update, search and
   const created = await fixture.cli('upload', file);
   assert.equal(created.code, 0, created.stderr);
   const first = parseDocument(created.stdout);
-  assert.equal(first.metadata.confluence.version, 1);
+  assert.equal(first.metadata.confluence.version, 2);
   assert.equal(first.metadata.confluence.base_body_hash, bodyDigest(first.body));
   assert.equal(first.metadata.confluence.api_url, fixture.env.CONFLUENCE_API_URL);
   const id = first.metadata.confluence.id;
@@ -218,7 +230,7 @@ test('CLI supports create, Markdown download, edit, versioned update, search and
   const saved = parseDocument(await readFile(file, 'utf8'));
   assert.equal(saved.metadata.confluence.base_body_hash, bodyDigest(saved.body));
   assert.notEqual(saved.metadata.confluence.base_body_hash, first.metadata.confluence.base_body_hash);
-  assert.equal(parseDocument(updated.stdout).metadata.confluence.version, 2);
+  assert.equal(parseDocument(updated.stdout).metadata.confluence.version, 3);
   const read = await fixture.cli('read', id);
   assert.equal(read.code, 0, read.stderr);
   assert.match(parseDocument(read.stdout).body, /Changed body/);
@@ -227,14 +239,14 @@ test('CLI supports create, Markdown download, edit, versioned update, search and
   const conflict = await fixture.cli('upload', stale);
   assert.notEqual(conflict.code, 0);
   assert.match(conflict.stderr, /Version conflict/);
-  assert.equal(fixture.pages.get(id).version.number, 2);
+  assert.equal(fixture.pages.get(id).version.number, 3);
   const search = await fixture.cli('search', 'Guide');
   assert.equal(search.code, 0, search.stderr);
   assert.match(search.stdout, /\[Integration guide\]/);
-  const unconfirmed = await fixture.cli('delete', id, '--version', '2');
+  const unconfirmed = await fixture.cli('delete', id, '--version', '3');
   assert.notEqual(unconfirmed.code, 0);
   assert.ok(fixture.pages.has(id));
-  const deleted = await fixture.cli('delete', id, '--version', '2', '--yes');
+  const deleted = await fixture.cli('delete', id, '--version', '3', '--yes');
   assert.equal(deleted.code, 0, deleted.stderr);
   assert.equal(fixture.pages.has(id), false);
   assert.ok(fixture.requests.every((request) => request.authorization === 'Bearer fixture-pat'));
@@ -408,7 +420,7 @@ test('dry runs and partial updates retain the body baseline until synchronizatio
   assert.equal(saved, undefined);
   const realSetProperty = fixture.api.setProperty.bind(fixture.api);
   fixture.api.setProperty = async () => { throw new Error('simulated metadata failure'); };
-  await assert.rejects(upload(fixture.api, edited, { onWrite }), /was saved at version 2/);
+  await assert.rejects(upload(fixture.api, edited, { onWrite }), /was saved at version 3/);
   assert.equal(saved.metadata.confluence.base_body_hash, baseline);
   fixture.api.setProperty = realSetProperty;
   const complete = await upload(fixture.api, formatDocument(saved), { onWrite });
@@ -448,9 +460,9 @@ test('a partial metadata failure records identity and can resume without duplica
   let saved;
   const realSetProperty = fixture.api.setProperty.bind(fixture.api);
   fixture.api.setProperty = async () => { throw new Error('simulated property failure'); };
-  await assert.rejects(upload(fixture.api, '# Partial page', { onWrite: async (doc) => { saved = doc; } }), /was saved at version 1/);
+  await assert.rejects(upload(fixture.api, '# Partial page', { onWrite: async (doc) => { saved = doc; } }), /was saved at version 2/);
   assert.ok(saved.metadata.confluence.id);
-  assert.equal(saved.metadata.confluence.version, 1);
+  assert.equal(saved.metadata.confluence.version, 2);
   assert.equal(saved.metadata.confluence.base_body_hash, undefined);
   fixture.api.setProperty = realSetProperty;
   await upload(fixture.api, formatDocument(saved));

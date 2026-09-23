@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import { readFile, access } from 'node:fs/promises';
+import { readFile, access, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { ConfluenceApi, readWikiConfig } from './api.mjs';
 import { parseDocument, formatDocument, markdownToStorage, storageToMarkdown, reducePreservation, preservationMode, bodyStatus } from './document.mjs';
@@ -7,10 +7,22 @@ import { download, upload, saveFile, exportBundle, pushBundle, searchLocal } fro
 import { prepareDiagrams, diagramProfile, withoutDiagramPreservation } from './diagrams.mjs';
 import { defaultEnvPath, loadProfile } from './env.mjs';
 import { loadTemplate, templateDiagrams, applyTemplate } from './templates.mjs';
+import { listComments, getComment, listReplies, createComment, updateComment, deleteComment, formatComment, formatComments } from './comments.mjs';
+import { restrictionPolicy, getRestrictions, setRestrictions } from './restrictions.mjs';
 import { instantiateTemplate, prepareNativeTemplate } from './native-templates.mjs';
 
 export const help = `Usage: cfwiki <command> [arguments] [options]
 
+  comments list PAGE_ID [--kind footer|inline]
+  comments read COMMENT_ID [--body-only]
+  comments replies COMMENT_ID
+  comments create PAGE_ID FILE.md|-
+  comments reply COMMENT_ID FILE.md|-
+  comments update COMMENT_ID FILE.md|- --version N
+  comments delete COMMENT_ID --version N --yes
+  comments resolve COMMENT_ID --kind inline --resolved true|false --version N
+  restrictions get PAGE_ID
+  restrictions set PAGE_ID --restrictions none|edit|view-edit
   doctor                          Verify the selected API profile and space
   read ID                         Return an OKF Markdown document on stdout
   download ID [-o FILE.md]         Same as read; --output saves a Markdown file
@@ -59,11 +71,22 @@ Options:
   --server         Enable remote template lookup and macro preview for validate/convert
   --cql EXPRESSION Use an explicit CQL search expression
   --limit N        Maximum list/search/export results (default: 1000 / 50)
-  --yes            Required acknowledgement for moving a page to trash
+  --kind KIND      Comment kind: footer (default) or inline
+  --selection TEXT --selection-count N --selection-index N
+                   Required for inline root creation; index starts at zero
+  --resolved BOOL  Inline resolution: true or false (requires --kind inline)
+  --restrictions MODE  none, edit, or view-edit; upload/push creation or restrictions set
+  --read-user ID --read-group ID --edit-user ID --edit-group ID
+                   Repeatable explicit allowlists; require --restrictions
+  --yes            Required acknowledgement for page or comment deletion
   --help, -h       Show this help
 
 Update files keep their page ID and version in YAML. Upload writes the new
 identity/version back to the source file. Stale versions are never overwritten.
+New pages default to view-edit; existing page uploads preserve restrictions.
+Comments use confluence_comment metadata. Comment update/delete/resolve require
+an explicit --version. Delete checks the version before the request; it is not
+an atomic server-side version condition and deleted comments cannot be recovered.
 Use npm run -s confluence -- ... for clean Markdown stdout.
 `;
 
@@ -79,20 +102,69 @@ async function readInput(filename) {
 
 export async function runCli(args) {
   const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: {
+    kind: { type: 'string' }, resolved: { type: 'string' }, selection: { type: 'string' }, 'selection-count': { type: 'string' }, 'selection-index': { type: 'string' }, restrictions: { type: 'string' }, 'read-user': { type: 'string', multiple: true }, 'read-group': { type: 'string', multiple: true }, 'edit-user': { type: 'string', multiple: true }, 'edit-group': { type: 'string', multiple: true },
     help: { type: 'boolean', short: 'h' }, output: { type: 'string', short: 'o' }, env: { type: 'string' }, json: { type: 'boolean' }, overwrite: { type: 'boolean' }, 'body-only': { type: 'boolean' }, assets: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, yes: { type: 'boolean' }, version: { type: 'string' }, id: { type: 'string' }, title: { type: 'string' }, space: { type: 'string' }, parent: { type: 'string' }, root: { type: 'string' }, cql: { type: 'string' }, local: { type: 'string' }, limit: { type: 'string' }, to: { type: 'string' }, diagrams: { type: 'string' }, server: { type: 'boolean' }, template: { type: 'string' }, blueprints: { type: 'boolean' }, preserve: { type: 'string' },
   } });
   const [command, target, extra] = positionals;
   if (!command || values.help) { process.stdout.write(help); return; }
-  if (!['doctor', 'read', 'download', 'status', 'upload', 'search', 'list', 'export', 'push', 'delete', 'attachments', 'templates', 'convert', 'validate'].includes(command)) throw new Error('Unknown command. Use --help.');
+  if (!['comments', 'restrictions', 'doctor', 'read', 'download', 'status', 'upload', 'search', 'list', 'export', 'push', 'delete', 'attachments', 'templates', 'convert', 'validate'].includes(command)) throw new Error('Unknown command. Use --help.');
   const templateCommands = ['read', 'download', 'upload', 'export', 'push', 'convert', 'validate'];
   if (values.template !== undefined && !templateCommands.includes(command)) throw new Error('--template is supported by read, download, upload, export, push, convert and validate.');
   if (values.preserve !== undefined && ![...templateCommands, 'templates'].includes(command)) throw new Error('--preserve is supported by document and template commands only.');
-  const numeric = (value, name) => { if (value === undefined) return undefined; const number = Number(value); if (!Number.isSafeInteger(number) || number < 1) throw new Error(name + ' must be a positive integer.'); return number; };
+  const numeric = (value, name) => { if (value === undefined) return undefined; const number = Number(value); if (!/^[0-9]+$/.test(value) || !Number.isSafeInteger(number) || number < 1) throw new Error(name + ' must be a positive integer.'); return number; };
   const version = numeric(values.version, '--version');
   const limit = numeric(values.limit, '--limit');
   for (const key of ['id', 'parent']) if (values[key] && !/^\d+$/.test(values[key])) throw new Error('--' + key + ' must be numeric.');
   if (!['doctor', 'list'].includes(command) && !target) throw new Error(command + ' requires an argument.');
-  if (!['attachments', 'templates'].includes(command) && positionals.length > 2) throw new Error('Unexpected extra arguments. Quote search queries containing spaces.');
+  if (!['attachments', 'templates', 'comments', 'restrictions'].includes(command) && positionals.length > 2) throw new Error('Unexpected extra arguments. Quote search queries containing spaces.');
+  const commentFlags = ['kind', 'resolved', 'selection', 'selection-count', 'selection-index'];
+  const aclFlags = ['restrictions', 'read-user', 'read-group', 'edit-user', 'edit-group'];
+  for (const flag of commentFlags) if (values[flag] !== undefined && command !== 'comments') throw new Error('--' + flag + ' is supported by comments only.');
+  for (const flag of aclFlags) if (values[flag] !== undefined && !['upload', 'push', 'restrictions'].includes(command)) throw new Error('--' + flag + ' is supported by upload, push, or restrictions set only.');
+  if (aclFlags.slice(1).some((flag) => values[flag] !== undefined) && values.restrictions === undefined) throw new Error('Allowlist flags require explicit --restrictions.');
+  const restrictions = values.restrictions === undefined ? undefined : restrictionPolicy({ mode: values.restrictions, readUsers: values['read-user'], readGroups: values['read-group'], editUsers: values['edit-user'], editGroups: values['edit-group'] });
+  const kind = values.kind ?? 'footer';
+  let selectionIndex;
+  if (command === 'comments' || command === 'restrictions') {
+    const options = command === 'comments' ? {
+      list: ['kind', 'limit'], read: ['kind', 'body-only'], replies: ['kind', 'limit'],
+      create: ['kind', 'selection', 'selection-count', 'selection-index'], reply: ['kind'],
+      update: ['kind', 'version'], delete: ['kind', 'version', 'yes'], resolve: ['kind', 'version', 'resolved'],
+    } : { get: [], set: aclFlags };
+    if (!Object.hasOwn(options, target)) throw new Error('Unknown ' + command + ' operation. Use --help.');
+    const allowed = new Set(['env', 'json', 'output', 'overwrite', ...options[target]]);
+    for (const flag of Object.keys(values)) if (!allowed.has(flag)) throw new Error('--' + flag + ' is not supported by ' + command + ' ' + target + '.');
+    const withSource = command === 'comments' && ['create', 'reply', 'update'].includes(target);
+    if (positionals.length !== (withSource ? 4 : 3)) throw new Error('Invalid arguments for ' + command + ' ' + target + '. Use --help.');
+    if (!/^[1-9]\d*$/.test(extra)) throw new Error('Comment/page ID must be numeric and positive.');
+    if (command === 'restrictions' && target === 'set' && !restrictions) throw new Error('restrictions set requires --restrictions.');
+    if (command === 'comments') {
+      if (!['footer', 'inline'].includes(kind)) throw new Error('--kind must be footer or inline.');
+      if (['update', 'delete', 'resolve'].includes(target) && version === undefined) throw new Error('comments ' + target + ' requires --version.');
+      if (target === 'delete' && !values.yes) throw new Error('comments delete requires --yes.');
+      if (target === 'resolve' && (kind !== 'inline' || !['true', 'false'].includes(values.resolved))) throw new Error('comments resolve requires --kind inline and --resolved true|false.');
+      if (target === 'create' && kind === 'inline') {
+        const count = numeric(values['selection-count'], '--selection-count');
+        selectionIndex = Number(values['selection-index']);
+        if (!values.selection?.trim() || count === undefined || !/^[0-9]+$/.test(values['selection-index'] ?? '') || !Number.isSafeInteger(selectionIndex) || selectionIndex < 0 || selectionIndex >= count) throw new Error('Inline creation requires --selection, --selection-count and a zero-based --selection-index below the count.');
+      } else if (['selection', 'selection-count', 'selection-index'].some((flag) => values[flag] !== undefined)) throw new Error('Selection options require inline root creation.');
+    }
+    if (withSource && positionals[3] !== '-' && !/\.md$/i.test(positionals[3])) throw new Error('Comment input must be a .md file or - for stdin.');
+    if (values.output) {
+      if (withSource && positionals[3] !== '-' && path.resolve(positionals[3]) === path.resolve(values.output)) throw new Error('Comment source and output paths must differ.');
+      let outputStat;
+      try { outputStat = await stat(values.output); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+      if (outputStat?.isDirectory()) throw new Error('Comment output must be a file.');
+      if (outputStat && withSource && positionals[3] !== '-') {
+        const sourceStat = await stat(positionals[3]);
+        if (sourceStat.dev === outputStat.dev && sourceStat.ino === outputStat.ino) throw new Error('Comment source and output paths must differ.');
+      }
+      if (!values.overwrite) {
+        try { await access(values.output); throw new Error('Output already exists. Use --overwrite explicitly.'); }
+        catch (error) { if (error.code !== 'ENOENT') throw error; }
+      }
+    }
+  }
   const emit = async (text, object) => {
     const content = values.json ? JSON.stringify(object, null, 2) + '\n' : text;
     if (values.output) { await saveFile(values.output, content, { overwrite: values.overwrite }); process.stderr.write('Saved ' + values.output + '\n'); }
@@ -151,6 +223,34 @@ export async function runCli(args) {
   if (command === 'search' && values.local) { const rows = await searchLocal(values.local, target); await emit(indexMarkdown('Local wiki search', rows), rows); return; }
   const api = new ConfluenceApi(readWikiConfig(selected.env));
   switch (command) {
+    case 'comments': {
+      let result;
+      let text;
+      if (target === 'list' || target === 'replies') {
+        result = await (target === 'list' ? listComments : listReplies)(api, extra, { kind, limit });
+        text = formatComments(api, result);
+      } else if (target === 'read') {
+        result = await getComment(api, extra, { kind });
+        text = values['body-only'] ? result.body : formatComment(api, result);
+      } else if (target === 'delete') {
+        result = await deleteComment(api, extra, { kind, version });
+        text = '# Comment deleted\n\n- ID: ' + result.id + '\n';
+      } else {
+        const input = target === 'resolve' ? undefined : await readInput(positionals[3]);
+        result = target === 'resolve' || target === 'update'
+          ? await updateComment(api, extra, input, { kind, version, ...(target === 'resolve' ? { resolved: values.resolved === 'true' } : {}) })
+          : await createComment(api, extra, input, { kind, reply: target === 'reply', selection: values.selection, selectionCount: values['selection-count'] === undefined ? undefined : Number(values['selection-count']), selectionIndex });
+        text = formatComment(api, result);
+        if (target !== 'resolve' && positionals[3] !== '-') await saveFile(positionals[3], text, { overwrite: true });
+      }
+      await emit(text, result);
+      break;
+    }
+    case 'restrictions': {
+      const result = target === 'get' ? await getRestrictions(api, extra) : await setRestrictions(api, extra, restrictions);
+      await emit('# Direct page restrictions\n\n```json\n' + JSON.stringify(result, null, 2) + '\n```\n\nInherited restrictions and effective access are not evaluated.\n', result);
+      break;
+    }
     case 'templates': {
       if (target === 'list' && positionals.length === 2) {
         const rows = await api.listTemplates({ space: values.space, blueprint: values.blueprints, limit });
@@ -189,7 +289,7 @@ export async function runCli(args) {
     case 'upload': {
       if (target !== '-' && !/\.md$/i.test(target)) throw new Error('upload expects a .md file or - for stdin.');
       const filename = target === '-' ? undefined : path.resolve(target);
-      const doc = await upload(api, await readInput(target), { filename, title: values.title, id: values.id, version, space: values.space, parent: values.parent, root: values.root ? path.resolve(values.root) : undefined, dryRun: values['dry-run'], template, diagrams: selected.mode, diagramEnv: selected.env, onWrite: filename ? (saved) => saveFile(filename, formatDocument(saved), { overwrite: true }) : undefined });
+      const doc = await upload(api, await readInput(target), { restrictions, defaultRestrictions: env.CONFLUENCE_RESTRICTIONS ?? 'view-edit', filename, title: values.title, id: values.id, version, space: values.space, parent: values.parent, root: values.root ? path.resolve(values.root) : undefined, dryRun: values['dry-run'], template, diagrams: selected.mode, diagramEnv: selected.env, onWrite: filename ? (saved) => saveFile(filename, formatDocument(saved), { overwrite: true }) : undefined });
       await emit(values['dry-run'] ? '# Upload preview\n\n' + '```json\n' + JSON.stringify(doc, null, 2) + '\n```\n' : formatDocument(doc), doc);
       for (const warning of doc.warnings ?? []) process.stderr.write('Note: ' + warning + '\n');
       break;
@@ -197,7 +297,7 @@ export async function runCli(args) {
     case 'search': { const rows = await api.search(target, { space: values.space, cql: values.cql, limit }); await emit(indexMarkdown('Confluence search', rows), rows); break; }
     case 'list': { const rows = (await api.listPages({ space: values.space, parent: values.parent, limit })).map((page) => ({ ...page, url: api.pageUrl(page.id) })); await emit(indexMarkdown('Confluence pages', rows), rows); break; }
     case 'export': { const result = await exportBundle(api, target, { space: values.space, parent: values.parent, limit, overwrite: values.overwrite }); await emit('# Exported OKF bundle\n\n- Pages: ' + result.pages + '\n- Index: ' + result.index + '\n', result); break; }
-    case 'push': { const result = await pushBundle(api, path.resolve(target), { space: values.space, parent: values.parent, template, diagrams: selected.mode, diagramEnv: selected.env }); await emit(indexMarkdown('Published bundle', result.map((item) => ({ ...item, title: item.file, url: api.pageUrl(item.id) }))), result); break; }
+    case 'push': { const result = await pushBundle(api, path.resolve(target), { restrictions, defaultRestrictions: env.CONFLUENCE_RESTRICTIONS ?? 'view-edit', space: values.space, parent: values.parent, template, diagrams: selected.mode, diagramEnv: selected.env }); await emit(indexMarkdown('Published bundle', result.map((item) => ({ ...item, title: item.file, url: api.pageUrl(item.id) }))), result); break; }
     case 'delete': {
       if (!values.yes) throw new Error('delete requires --yes and an expected version. It moves the page to trash, without purging it.');
       let id = target;

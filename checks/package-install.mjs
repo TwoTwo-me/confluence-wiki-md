@@ -32,7 +32,7 @@ try {
   const packed = JSON.parse((await npm(['pack', '--json', '--pack-destination', temporary], root)).stdout)[0];
   const allowed = /^(?:package\.json|README\.md|\.env(?:\.cloud|\.company)?\.example|scripts\/confluence\.mjs|src\/[a-z-]+\.mjs|examples\/[a-z-]+\.md|examples\/wiki-template\.yaml|examples\/sample\.svg|skills\/confluence-wiki\/(?:SKILL\.md|agents\/openai\.yaml))$/;
   for (const file of packed.files) assert.match(file.path, allowed, 'Unexpected published file: ' + file.path);
-  for (const required of ['src/diagram-worker.mjs', 'src/env.mjs', 'src/templates.mjs', 'src/native-templates.mjs', '.env.cloud.example', '.env.company.example', 'skills/confluence-wiki/SKILL.md', 'examples/getting-started.md', 'examples/wiki-template.yaml']) {
+  for (const required of ['src/comments.mjs', 'src/restrictions.mjs', 'src/diagram-worker.mjs', 'src/env.mjs', 'src/templates.mjs', 'src/native-templates.mjs', '.env.cloud.example', '.env.company.example', 'skills/confluence-wiki/SKILL.md', 'examples/getting-started.md', 'examples/wiki-template.yaml']) {
     assert.ok(packed.files.some((file) => file.path === required), 'Missing published file: ' + required);
   }
   const tarball = path.join(temporary, packed.filename);
@@ -44,6 +44,8 @@ try {
   const executable = process.platform === 'win32' ? process.execPath : path.join(prefix, 'bin', 'cfwiki');
   const cli = (args) => run(executable, process.platform === 'win32' ? [path.join(packageRoot, manifest.bin.cfwiki), ...args] : args);
   assert.match((await cli(['--help'])).stdout, /Usage: cfwiki/);
+  await assert.rejects(cli(['comments', 'delete', '42', '--version', '1']), (error) => /requires --yes/.test(error.stderr));
+  await assert.rejects(cli(['restrictions', 'set', '42', '--restrictions', 'invalid']), (error) => /Restrictions must be/.test(error.stderr));
   const example = path.join(temporary, 'guide.md');
   await copyFile(path.join(packageRoot, 'examples/getting-started.md'), example);
   assert.equal(JSON.parse((await cli(['validate', example, '--json'])).stdout).valid, true);

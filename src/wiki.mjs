@@ -6,6 +6,7 @@ import { parseDocument, formatDocument, markdownToStorage, storageToMarkdown, re
 import { prepareDiagrams, withoutDiagramPreservation } from './diagrams.mjs';
 import { applyTemplate, templateDiagrams } from './templates.mjs';
 import { prepareNativeTemplate } from './native-templates.mjs';
+import { restrictionPolicy, currentUser, getRestrictions, setRestrictions, expectedRestrictions, verifyRestrictions } from './restrictions.mjs';
 
 export async function saveFile(filename, content, { overwrite = false } = {}) {
   await mkdir(path.dirname(path.resolve(filename)), { recursive: true });
@@ -70,7 +71,44 @@ async function safeLocalPath(root, sourceDir, reference) {
 
 const mimeTypes = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.avif': 'image/avif' };
 
-export async function upload(api, input, { filename, title, id, version, space, parent, root, dryRun = false, onWrite, diagrams, diagramEnv = {}, preparedDiagrams, template } = {}) {
+async function createProtectedPage(api, fields, policy, onProgress, recovery) {
+  if (!recovery && policy.mode === 'none') {
+    const page = await api.writePage(fields);
+    await onProgress(page);
+    return page;
+  }
+  let page = recovery?.page;
+  let pending = recovery?.pending;
+  try {
+    const actor = await currentUser(api);
+    const privatePolicy = restrictionPolicy({ mode: 'view-edit' });
+    if (recovery) {
+      if (api.config.deployment !== 'datacenter' || !pending || !/^[a-f0-9-]{36}$/.test(pending.nonce ?? '') || pending.id !== page.id || page.title !== 'cfwiki-pending-' + pending.nonce || page.version !== 1 || page.storage !== '<p>Preparing restricted page.</p>') throw new Error('Invalid pending page recovery marker. Inspect the saved page; no content was published by this attempt.');
+    } else if (api.config.deployment === 'cloud') {
+      page = await api.writePage({ ...fields, privateCreate: true });
+      await onProgress(page);
+    } else {
+      const nonce = randomUUID();
+      page = await api.writePage({ ...fields, title: 'cfwiki-pending-' + nonce, storage: '<p>Preparing restricted page.</p>' });
+      pending = { nonce, id: page.id };
+      await onProgress(page, pending);
+    }
+    if (api.config.deployment === 'cloud') {
+      verifyRestrictions(await getRestrictions(api, page.id), expectedRestrictions(privatePolicy, actor));
+    } else {
+      await setRestrictions(api, page.id, privatePolicy);
+      page = await api.writePage({ ...fields, id: page.id, version: page.version });
+      await onProgress(page);
+    }
+    if (JSON.stringify(policy) !== JSON.stringify(privatePolicy)) await setRestrictions(api, page.id, policy);
+    return page;
+  } catch (error) {
+    const partial = page ? 'Page ' + page.id + ' exists at version ' + page.version + '. Its returned identity was offered to local writeback; inspect that file before retrying. Use restrictions get ' + page.id + ' to inspect access. ' : 'No page identity was returned. Do not blindly repeat an uncertain create. ';
+    throw new Error('Restricted page publication failed. ' + partial + 'Cloud Free cannot create restricted pages; check the plan, scopes, and permissions. ' + error.message, { cause: error });
+  }
+}
+
+export async function upload(api, input, { filename, title, id, version, space, parent, root, dryRun = false, onWrite, diagrams, diagramEnv = {}, preparedDiagrams, template, restrictions, defaultRestrictions = 'view-edit' } = {}) {
   let doc = parseDocument(input);
   checkBinding(api, doc.metadata);
   doc = reducePreservation(doc, preservationContext(api, id ?? doc.metadata.confluence?.id));
@@ -79,6 +117,8 @@ export async function upload(api, input, { filename, title, id, version, space, 
   const meta = doc.metadata.confluence ?? {};
   if (id && meta.id && id !== meta.id) throw new Error('--id conflicts with the page ID in front matter.');
   const pageId = id ?? meta.id;
+  const policy = restrictionPolicy(restrictions ?? { mode: defaultRestrictions });
+  if (pageId && !meta.pending_create && restrictions !== undefined) throw new Error('Use restrictions set to change existing page restrictions. Upload restriction flags apply only to new pages.');
   const expectedVersion = version ?? meta.version;
   if (pageId && (!Number.isInteger(expectedVersion) || expectedVersion < 1)) throw new Error('Updating a page requires confluence.version or --version. Download it first.');
   const actualTitle = title ?? doc.metadata.title ?? markdownTitle ?? (filename ? path.basename(filename, path.extname(filename)) : null);
@@ -133,10 +173,20 @@ export async function upload(api, input, { filename, title, id, version, space, 
   const converted = markdownToStorage(doc.body, { preserved, links, images, diagrams: prepared.macros, flattenNestedQuotes: api.config.deployment === 'cloud' });
   converted.storage = applyTemplate(converted.storage, template);
   const serverPreview = prepared.blocks.length || template?.toc || template?.kind === 'confluence' || converted.storage.includes('ac:name="toc"') ? await api.previewStorage(converted.storage, { pageId, space: target.key }) : null;
-  if (dryRun) return { dryRun: true, id: pageId ?? null, title: actualTitle, version: pageId ? expectedVersion + 1 : 1, storage: converted.storage, attachments: [...assets.keys()], diagrams: prepared.checks, serverPreview, template: template?.source ?? 'none', warnings: [...(doc.warnings ?? []), ...converted.warnings] };
-  const written = await api.writePage({ id: pageId, title: actualTitle, storage: converted.storage, space: target, parentId: parent ?? meta.parent_id ?? current?.parentId, version: expectedVersion });
+  if (dryRun) return { dryRun: true, id: pageId ?? null, title: actualTitle, version: pageId ? expectedVersion + 1 : api.config.deployment === 'datacenter' && policy.mode !== 'none' ? 2 : 1, storage: converted.storage, restrictions: pageId && !meta.pending_create ? { action: 'preserve-existing' } : { action: 'create', ...policy }, attachments: [...assets.keys()], diagrams: prepared.checks, serverPreview, template: template?.source ?? 'none', warnings: [...(doc.warnings ?? []), ...converted.warnings] };
+  const fields = { id: pageId, title: actualTitle, storage: converted.storage, space: target, parentId: parent ?? meta.parent_id ?? current?.parentId, version: expectedVersion };
+  const progress = async (page, pending) => {
+    const metadata = boundMetadata(api, page, doc.metadata, { space: target.key });
+    metadata.title = actualTitle;
+    delete metadata.confluence.storage_hash;
+    if (pending) metadata.confluence.pending_create = pending;
+    else delete metadata.confluence.pending_create;
+    if (onWrite) await onWrite({ metadata, body: doc.body, warnings: doc.warnings ?? [] });
+  };
+  const written = !pageId || meta.pending_create ? await createProtectedPage(api, fields, policy, progress, meta.pending_create ? { page: current, pending: meta.pending_create } : undefined) : await api.writePage(fields);
   let result = { metadata: boundMetadata(api, written, doc.metadata, { space: target.key, ...(preserved.length ? { preserved } : {}) }), body: doc.body, warnings: [...(doc.warnings ?? []), ...converted.warnings] };
   if (!preserved.length) delete result.metadata.confluence.preserved;
+  delete result.metadata.confluence.pending_create;
   delete result.metadata.confluence.storage_hash;
   if (onWrite) await onWrite(result);
   try {
@@ -200,6 +250,7 @@ export async function exportBundle(api, directory, { space, parent, limit = 1000
 }
 
 export async function pushBundle(api, directory, options = {}) {
+  const policy = restrictionPolicy(options.restrictions ?? { mode: options.defaultRestrictions ?? 'view-edit' });
   const selected = templateDiagrams(options.template, options.diagramEnv, options.diagrams);
   const files = await markdownFiles(directory);
   const targets = new Set(await Promise.all(files.map((filename) => realpath(filename))));
@@ -239,13 +290,19 @@ export async function pushBundle(api, directory, options = {}) {
   for (const item of documents.filter((entry) => !entry.doc.metadata.confluence?.id)) {
     const space = await api.getSpace(options.space ?? item.doc.metadata.confluence?.space);
     const title = item.doc.metadata.title ?? item.doc.body.match(/^#\s+(.+)$/m)?.[1] ?? path.basename(item.filename, '.md');
-    const page = await api.writePage({ title, storage: '<p>Markdown bundle publication in progress.</p>', space, parentId: options.parent });
+    const page = await createProtectedPage(api, { title, storage: '<p>Markdown bundle publication in progress.</p>', space, parentId: options.parent ?? item.doc.metadata.confluence?.parent_id }, policy, async (created, pending) => {
+      const metadata = boundMetadata(api, created, item.doc.metadata, { space: space.key });
+      metadata.title = title;
+      if (pending) metadata.confluence.pending_create = pending;
+      else delete metadata.confluence.pending_create;
+      await saveFile(item.filename, formatDocument({ ...item.doc, metadata }), { overwrite: true });
+    });
     item.doc.metadata = boundMetadata(api, page, item.doc.metadata, { space: space.key });
     await saveFile(item.filename, formatDocument(item.doc), { overwrite: true });
   }
   const result = [];
   for (const { filename, prepared } of documents) {
-    const doc = await upload(api, await readFile(filename, 'utf8'), { ...options, preparedDiagrams: prepared, filename, root: directory, onWrite: (saved) => saveFile(filename, formatDocument(saved), { overwrite: true }) });
+    const doc = await upload(api, await readFile(filename, 'utf8'), { ...options, restrictions: undefined, preparedDiagrams: prepared, filename, root: directory, onWrite: (saved) => saveFile(filename, formatDocument(saved), { overwrite: true }) });
     result.push({ file: filename, id: doc.metadata.confluence.id, version: doc.metadata.confluence.version });
   }
   return result;

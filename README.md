@@ -11,6 +11,8 @@ Confluence를 Markdown 파일로 읽고 편집하는 Node.js CLI입니다. **Clo
 - [Cloud 설정](#cloud-설정)
 - [사내 Confluence / PAT](#사내-confluence--pat)
 - [첫 문서 게시와 수정](#첫-문서-게시와-수정)
+- [페이지 보기·편집 제한](#페이지-보기편집-제한)
+- [댓글과 답글](#댓글과-답글)
 - [에이전트 스킬 설치](#에이전트-스킬-설치)
 - [로컬 본문 변경 확인](#로컬-본문-변경-확인)
 - [변환 템플릿](#변환-템플릿)
@@ -334,9 +336,29 @@ Cloud의 v1 경로는 자동으로 계산하며, 별도 게이트웨이는 `CONF
 | 라벨 읽기/쓰기 | `read:label:confluence`, `write:label:confluence` |
 | 도표 매크로 서버 미리보기 | `read:content.metadata:confluence` |
 | 페이지 휴지통 이동 | `delete:page:confluence` |
+| 댓글 조회 / 작성·수정 / 영구 삭제 | `read:comment:confluence`, `write:comment:confluence`, `delete:comment:confluence` |
+| 페이지 제한 조회 / 변경 | `read:content-details:confluence`, `write:content.restriction:confluence` |
+| 제한 설정 시 현재 사용자 조회 (`GET /user/current`) | `read:content-details:confluence` |
+| Cloud 생성자 확인 (`GET /pages/{id}`의 `authorId`) | `read:page:confluence` |
+
+댓글 scope는 [Cloud 댓글 API](https://developer.atlassian.com/cloud/confluence/rest/v2/api-group-comment/)의
+GET / POST·PUT / DELETE에 각각 대응합니다. 수정·삭제·해결은 현재 버전을 먼저 읽으므로
+쓰기·삭제 scope 외에 읽기 scope도 필요합니다.
+[제한 API](https://developer.atlassian.com/cloud/confluence/rest/v1/api-group-content-restrictions/)의
+`GET /content/{id}/restriction/byOperation/{operationKey}`에는 `read:content-details:confluence`,
+전체 제한 PUT·DELETE에는 이 scope와 `write:content.restriction:confluence`가 필요합니다.
+[현재 사용자 조회](https://developer.atlassian.com/cloud/confluence/rest/v1/api-group-users/#api-wiki-rest-api-user-current-get)도
+`read:content-details:confluence`를 사용합니다. 댓글 권한만으로 페이지 제한을 변경할 수는 없습니다.
 
 토큰 범위와 별도로 계정에 공간·페이지 접근 권한이 있어야 합니다.
 현재 기본 읽기는 라벨과 문서 메타데이터도 조회합니다.
+
+Cloud Free 플랜은 페이지의 보기·편집 제한을 설정할 수 없습니다. 제한 API 권한을 가진
+토큰이라도 요금제와 공간 권한을 넘어설 수 없습니다. 제한 설정에 실패한 페이지를
+공개로 다시 생성하지 않습니다. `none`은 해당 페이지의 직접 제한만 없애며, 상위 페이지의
+보기 제한과 공간 권한은 계속 적용됩니다.
+[Free 플랜 권한 제한](https://support.atlassian.com/confluence-cloud/docs/manage-permissions-in-the-free-edition-of-confluence-cloud/),
+[페이지 제한의 상속](https://support.atlassian.com/confluence-cloud/docs/add-or-remove-page-restrictions/)
 
 연결을 확인합니다. 성공하면 `authenticated: true`와 설정한 공간 정보가 표시됩니다.
 
@@ -392,6 +414,8 @@ cfwiki read 12345 --env .env.company
 도표 앱이 없어도 실행할 수 있는 [시작 예제](examples/getting-started.md)를 사용합니다.
 아래 명령은 프로필을 만든 작업 폴더에서 실행하며, 실제 게시 시 설정된 공간에 페이지가 생성됩니다.
 Cloud 프로필을 예로 들었습니다. 사내 PAT는 모든 `--env .env.cloud`를 `--env .env.company`로 바꿉니다.
+새 페이지의 기본값은 `view-edit`입니다. Cloud Free처럼 제한을 지원하지 않는 환경에서는 게시가 실패하며,
+공개 생성으로 자동 전환하지 않습니다. 아래 [페이지 제한](#페이지-보기편집-제한)을 먼저 확인하세요.
 
 ```sh
 mkdir -p wiki
@@ -416,6 +440,116 @@ cfwiki read 12345 --env .env.cloud
 
 수정 업로드는 같은 페이지 ID를 유지하고 버전을 올립니다. YAML의 ID·버전·해시를 직접 바꾸지 마세요.
 그 이후에는 최신 버전이 담긴 `getting-started-edit.md`를 기준으로 작업합니다.
+
+## 페이지 보기·편집 제한
+
+새 `upload`와 `push` 페이지는 기본적으로 생성자와 실행 사용자만 직접 보고 편집할 수 있게 제한합니다.
+우선순위는 `--restrictions` → 선택한 프로필의 `CONFLUENCE_RESTRICTIONS` → `view-edit`입니다.
+세 인증 예제에는 다음 값이 들어 있습니다.
+
+```dotenv
+CONFLUENCE_RESTRICTIONS=view-edit
+```
+
+| 모드 | 해당 페이지의 직접 제한 |
+| --- | --- |
+| `view-edit` | 보기와 편집을 허용 목록으로 제한 |
+| `edit` | 편집만 제한. 보기는 공간 권한·상위 페이지의 보기 제한에 따름 |
+| `none` | 직접 보기·편집 제한 제거. 상속된 제한과 공간 권한은 유지되므로 공개를 보장하지 않음 |
+
+다음 ID와 허용 목록 값은 실제 대상의 값으로 바꿉니다. `new-page.md`에는 아직 `confluence.id`가 없어야 합니다.
+
+```sh
+cfwiki upload new-page.md --space DOCS --restrictions view-edit
+cfwiki push wiki --space DOCS --restrictions view-edit
+cfwiki restrictions get 12345 --json
+cfwiki restrictions set 12345 --restrictions view-edit --read-user account-id-1 --read-user account-id-2 --read-group group-id-1 --edit-user account-id-3 --edit-group group-id-2
+cfwiki restrictions set 12345 --restrictions edit --edit-user account-id-3
+cfwiki restrictions set 12345 --restrictions none
+```
+
+`--read-user`, `--read-group`, `--edit-user`, `--edit-group`은 반복할 수 있고 `upload`와 `push`에도 쓸 수 있습니다.
+Cloud는 **account ID / group ID**, Data Center는 **사용자명 / 그룹명**을 사용합니다.
+표시 이름이나 이메일을 자동으로 식별자로 바꾸지 않습니다. 허용 목록을 지정할 때는 `--restrictions`도 명시해야 하며,
+`edit`에는 보기 허용 목록을, `none`에는 어떤 허용 목록도 지정할 수 없습니다.
+제한 모드는 생성자와 실행 사용자를 유지하고, `view-edit`에서는 편집 허용 대상도 보기 목록에 포함합니다.
+
+**기존 페이지의 제한은 `upload`와 `push`로 바뀌지 않습니다.** 프로필 기본값이나 다운로드한 YAML도
+기존 권한을 변경하는 지시로 쓰지 않습니다. 기존 페이지 하나를 `upload`하면서 생성용 제한 옵션을 주면
+`Use restrictions set to change existing page restrictions.` 오류가 납니다.
+새 페이지와 기존 페이지가 섞인 번들의 `push`에서는 해당 옵션을 새 페이지에만 적용합니다.
+
+`restrictions set`은 기존 직접 제한 전체를 교체하고 다시 읽어 확인합니다. 기존 허용 목록에 단순 추가하는
+명령이 아니므로 필요한 대상을 모두 지정하세요. `get`은 직접 제한만 보여 주며 실제 사용자별 접근 권한이나
+상속된 제한을 계산하지 않습니다. ACL 변경에는 버전 비교 후 교체(compare-and-swap)가 없어 다른 관리자의
+동시 변경과 경쟁할 수 있고, 본문 저장과 권한 변경도 하나의 트랜잭션이 아닙니다.
+
+Cloud의 제한된 생성은 [페이지 생성 API](https://developer.atlassian.com/cloud/confluence/rest/v2/api-group-page/#api-pages-post)의
+`private=true`로 시작하고 권한을 검증합니다. Data Center는 일반 UUID 제목과 빈 본문의 임시 페이지를 먼저
+만든 뒤 제한을 설정하고 다시 읽어 확인한 후 실제 제목·본문을 보냅니다. 그 사이 임시 페이지의 존재가
+보일 수 있으며, Data Center의 생성과 제한 설정이 원자적으로 실행된다는 뜻은 아닙니다.
+첨부·라벨·문서 메타데이터도 보호 상태를 확인한 뒤 저장합니다.
+
+제한 설정이나 확인이 실패하면 공개 생성으로 재시도하지 않습니다. 이미 생성된 페이지는 실패 전 반환된
+ID·버전과 진행 상태를 로컬 파일에 남겨 복구에 사용합니다. 실패 시 파일과 원격 페이지를 확인하고 같은 파일로
+이어가세요. 진행 상태나 ID를 지워 새로 만들지 마세요. CLI는 복구 대상의 사이트·페이지·보호 상태를 다시 확인합니다.
+표준입력으로 실행했다면 오류에 표시된 ID·버전·복구 안내를 보관하세요. 생성 응답을 받기 전에 연결이 끊겼다면
+생성 여부가 불확실하므로 자동 재시도하지 말고 원격 상태를 먼저 확인합니다.
+
+## 댓글과 답글
+
+댓글은 페이지 하단의 `footer`가 기본입니다. 인라인 댓글은 모든 명령에서 `--kind inline`으로 지정합니다.
+아래 페이지 ID `12345`, 댓글 ID `67890`·`78901`, 버전은 실제 조회 결과로 바꾸세요.
+`draft-comment.md`, `reply.md`, `inline.md`는 새 Markdown 본문을 담은 파일입니다.
+`comment.md`는 개별 읽기로 저장한 뒤 편집할 파일입니다.
+
+```sh
+cfwiki comments list 12345
+cfwiki comments list 12345 --kind inline --json
+cfwiki comments read 67890 -o comment.md
+cfwiki comments read 67890 --body-only
+cfwiki comments replies 67890
+cfwiki comments create 12345 draft-comment.md
+cfwiki comments reply 67890 reply.md
+cfwiki comments update 67890 comment.md --version 1
+cfwiki comments delete 67890 --version 2 --yes
+cfwiki comments create 12345 inline.md --kind inline --selection '검토할 문장' --selection-count 1 --selection-index 0
+cfwiki comments read 78901 --kind inline
+cfwiki comments replies 78901 --kind inline
+cfwiki comments reply 78901 reply.md --kind inline
+cfwiki comments resolve 78901 --kind inline --resolved true --version 1
+cfwiki comments resolve 78901 --kind inline --resolved false --version 2
+```
+
+예시는 각 작업의 형태를 보여 줍니다. 조회한 댓글 파일을 새 댓글 작성에 재사용하지 말고 새 본문 파일을 준비하세요.
+인라인 루트 생성에는 페이지에서 직접 확인한 `--selection` 문자열, 그 문자열의 출현 횟수인
+`--selection-count`(양의 정수), 대상 위치인 `--selection-index`(0부터 시작하며 횟수보다 작은 값)가 모두 필요합니다.
+CLI가 위치를 추측하지 않습니다. 답글은 페이지 ID 대신 부모 댓글 ID를 지정하며 Cloud API에는
+`parentCommentId`로 전달합니다. `resolve`는 본문을 유지하면서 해결 상태와 버전을 갱신합니다.
+
+기본 출력은 Markdown과 `confluence_comment` front matter입니다. 페이지의 `confluence.id`와 구분되며
+사이트/API 연결, 댓글 ID, 페이지 ID, 종류, 버전, 서버에서 제공한 작성자·위치·해결 상태를 보관합니다.
+읽기에는 `--json`, 개별 `read`에는 `--body-only`, 파일 저장에는 `--output`/`-o`와 `--overwrite`를 쓸 수 있습니다.
+댓글 작성·답글·수정의 파일 자리에 `-`를 쓰면 표준입력을 읽습니다. 성공한 쓰기는 입력 파일의 댓글 메타데이터를
+갱신하며 표준입력으로 받았다면 결과를 stdout으로 출력합니다. 댓글에는 페이지 템플릿·첨부 업로드·페이지 property를 적용하지 않습니다.
+
+수정·삭제·해결의 `--version`에는 **현재 댓글 버전**을 지정합니다. 오래된 버전이면 쓰기 전에 중단하므로
+최신 댓글을 다시 읽고 변경을 병합하세요. 메타데이터의 사이트·대상·종류가 명시한 값과 다르면 중단합니다.
+삭제는 페이지 휴지통 이동과 달리 댓글 삭제 API를 호출합니다. 삭제 버전 검사는 사전 조회이며,
+서버가 삭제 시점의 버전을 원자적으로 보장하지 않으므로 조회 이후 동시 수정과의 경쟁은 남습니다.
+댓글 생성 응답을 받지 못했다면 중복 작성을 피하기 위해 먼저 목록을 확인합니다.
+
+| 댓글 작업 | Cloud | Data Center |
+| --- | --- | --- |
+| footer 목록·개별 읽기 | 지원 | 지원. 목록은 서버가 반환한 답글 관계도 보존 |
+| footer 루트 생성·수정·삭제 | 지원 | 지원 |
+| 답글 조회(`replies`)·생성(`reply`) | footer·inline 지원 | 미지원 |
+| inline 목록·개별 읽기 | 지원 | 지원 |
+| inline 생성·수정·삭제·해결/재개 | 지원 | 미지원 |
+
+Data Center 미지원 작업은 `Data Center <operation> is not supported by this CLI.` 오류로 쓰기 전에 중단합니다.
+401·403·404를 빈 목록이나 성공으로 처리하지 않습니다. 토큰 범위, 계정 권한, 서버 지원 여부와 요금제를
+확인하세요. HTTP 상태만으로 원인을 scope 부족이라고 단정하지 않습니다.
 
 ## 에이전트 스킬 설치
 
@@ -851,6 +985,11 @@ npm run -s test:live
 
 `npm test`는 인증 정보 없이 변환, Cloud API 요청 형식, Data Center PAT HTTP 계약,
 실제 CLI CRUD, 버전 충돌, 프로필 격리, 경로 제한, 번들 링크, 비밀값 비노출을 검증합니다.
+로컬 HTTP fixture 검사는 댓글·제한 요청과 실패 처리 로직을 확인하는 것이며 실서버의 요금제나 다른 사용자의
+실제 접근 차단을 증명하지 않습니다. Cloud 실사이트에서 footer 댓글 CRUD·답글과 inline 생성·해결·재개·삭제를
+검증했습니다. 유료 Cloud의 제한된 생성 성공과 Data Center 실서버는 별도 검증이 필요합니다.
+현재 Free 테스트 사이트는 제한 설정을 지원하지 않으며
+`private=true` 생성은 404를 반환했습니다. 이 결과를 제한 생성 성공으로 보지 않습니다.
 
 `test:package`는 실제 `npm pack` 결과의 파일 목록을 검사하고, 저장소 밖 임시 폴더에 전역 설치해
 `cfwiki` 실행, Markdown 변환 왕복, 인증 예제와 에이전트 스킬 포함 여부를 확인합니다.
