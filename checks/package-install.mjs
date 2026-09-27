@@ -21,7 +21,7 @@ env.PUPPETEER_SKIP_DOWNLOAD = 'true';
 env.XDG_CONFIG_HOME = path.join(temporary, 'config');
 env.NPM_CONFIG_USERCONFIG = path.join(temporary, 'npmrc');
 env.NPM_CONFIG_REGISTRY = 'https://registry.npmjs.org/';
-const run = (command, args, cwd = temporary) => exec(command, args, { cwd, env, timeout: 180000, maxBuffer: 2 * 1024 * 1024 });
+const run = (command, args, cwd = temporary, overrides = {}) => exec(command, args, { cwd, env: { ...env, ...overrides }, timeout: 180000, maxBuffer: 2 * 1024 * 1024 });
 const npm = (args, cwd) => run(process.execPath, [npmCli, ...args], cwd);
 
 try {
@@ -43,7 +43,21 @@ try {
   assert.equal(installed.version, manifest.version);
   const executable = process.platform === 'win32' ? process.execPath : path.join(prefix, 'bin', 'cfwiki');
   const cli = (args) => run(executable, process.platform === 'win32' ? [path.join(packageRoot, manifest.bin.cfwiki), ...args] : args);
-  assert.match((await cli(['--help'])).stdout, /Usage: cfwiki/);
+  const help = (await cli(['--help'])).stdout;
+  assert.match(help, /Usage: cfwiki/);
+  for (const command of ['init', 'create', 'lookup', 'read', 'apply', 'explore', 'upload', 'push', 'export']) {
+    assert.match(help, new RegExp('^  ' + command + '\\s', 'm'));
+  }
+  for (const file of ['README.md', 'skills/confluence-wiki/SKILL.md']) {
+    assert.deepEqual(await readFile(path.join(packageRoot, file)), await readFile(path.join(root, file)));
+  }
+  const workflows = await run(process.execPath, [
+    '--test', '--test-reporter=tap',
+    '--test-name-pattern=CLI init create explore and term lifecycle|CLI reports unknown root create|CLI explore keeps host assessment|CLI rejects root deletion and foreign evidence|CLI scoped read|CLI lookup|CLI supports create, Markdown download|bundle push resolves cyclic',
+    path.join(root, 'test/confluence.test.mjs'), path.join(root, 'test/wiki.test.mjs'),
+  ], temporary, { CFWIKI_TEST_ENTRY: path.join(packageRoot, manifest.bin.cfwiki) });
+  process.stdout.write(workflows.stdout);
+  assert.equal(workflows.stderr, '');
   const example = path.join(temporary, 'guide.md');
   await copyFile(path.join(packageRoot, 'examples/getting-started.md'), example);
   assert.equal(JSON.parse((await cli(['validate', example, '--json'])).stdout).valid, true);
@@ -79,7 +93,8 @@ try {
     await copyFile(tarball, path.join(destination, 'confluence-wiki-md.tgz'));
     await writeFile(path.join(destination, 'SHA256SUMS'), sha256 + '  confluence-wiki-md.tgz\n');
   }
-  process.stdout.write(JSON.stringify({ name: manifest.name, version: manifest.version, files: packed.files.map((file) => file.path), bytes: bytes.length, sha256, checks: ['global CLI installation outside checkout', 'Markdown validation and conversion round trip', 'Cloud/PAT templates without credentials', 'agent skill and diagram worker included'] }, null, 2) + '\n');
+  process.stdout.write(JSON.stringify({ name: manifest.name, version: manifest.version, files: packed.files.map((file) => file.path), bytes: bytes.length, sha256, checks: ['global CLI installation outside checkout', 'Cloud/DC installed root, term, evidence and refusal workflows', 'installed legacy upload and cyclic bundle workflows', 'installed README and skill equal shipped source bytes', 'Markdown validation and conversion round trip', 'Cloud/PAT templates without credentials', 'agent skill and diagram worker included'] }, null, 2) + '\n');
 } finally {
   await rm(temporary, { recursive: true, force: true });
+  await assert.rejects(access(temporary), { code: 'ENOENT' });
 }

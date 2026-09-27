@@ -12,8 +12,246 @@ import { readWikiConfig, ConfluenceApi } from '../src/api.mjs';
 import { parseDocument, formatDocument } from '../src/document.mjs';
 import { upload, download } from '../src/wiki.mjs';
 
-const entry = fileURLToPath(new URL('../scripts/confluence.mjs', import.meta.url));
+const entry = process.env.CFWIKI_TEST_ENTRY ?? fileURLToPath(new URL('../scripts/confluence.mjs', import.meta.url));
 const bodyDigest = (body) => 'sha256:' + createHash('sha256').update(body.replaceAll('\r\n', '\n')).digest('hex');
+
+async function agentCliFixture(t, deployment, mode = 'success', { rooted = false } = {}) {
+  const dc = deployment === 'datacenter';
+  const directory = await mkdtemp(path.join(tmpdir(), 'cfwiki-apply-cli-'));
+  const token = 'private-apply-' + deployment;
+  const page = { id: '42', title: 'Integration guide', status: 'current', version: { number: 1 }, body: { storage: { value: '<h1>Guide</h1><p>Base sentence.</p>' } }, spaceId: '12', space: { id: '12', key: 'TEST' }, parentId: rooted ? '5' : null, ancestors: rooted ? [{ id: '5' }] : [] };
+  const requests = [];
+  const pages = new Map([['42', page]]);
+  if (rooted) pages.set('5', { id: '5', title: 'Operations Wiki', status: 'current', version: { number: 1 }, body: { storage: { value: '<p>Root navigation.</p>' } }, spaceId: '12', space: { id: '12', key: 'TEST' }, parentId: dc ? null : '800', ancestors: [] });
+  let rootMarker;
+  let serial = 70;
+  const server = createServer(async (req, res) => {
+    const url = new URL(req.url, 'http://fixture.invalid');
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    const raw = Buffer.concat(chunks).toString();
+    const body = raw ? JSON.parse(raw) : null;
+    requests.push({ method: req.method, path: url.pathname, query: url.search, body, authorization: req.headers.authorization });
+    const send = (status, result) => { res.writeHead(status, { 'content-type': 'application/json' }); res.end(result === undefined ? '' : JSON.stringify(result)); };
+    const expectedAuth = dc ? 'Bearer ' + token : 'Basic ' + Buffer.from('apply@example.test:' + token).toString('base64');
+    if (req.headers.authorization !== expectedAuth) return send(401, { message: token, storage: 'secret response body' });
+    const spacePath = dc ? '/confluence/rest/api/space/TEST' : '/wiki/api/v2/spaces';
+    if (url.pathname === spacePath) return send(200, dc ? { id: '12', key: 'TEST', name: 'Test' } : { results: [{ id: '12', key: 'TEST', name: 'Test', homepageId: '800' }] });
+    const pageMatch = url.pathname.match(dc ? /^\/confluence\/rest\/api\/content\/(\d+)$/ : /^\/wiki\/api\/v2\/pages\/(\d+)$/);
+    if (pageMatch) {
+      const selectedPage = pages.get(pageMatch[1]);
+      if (!selectedPage) return send(404, {});
+      if (req.method === 'GET') {
+        const selected = { ...selectedPage, status: url.searchParams.has('version') && Number(url.searchParams.get('version')) < selectedPage.version.number ? 'historical' : selectedPage.status };
+        return send(200, selected);
+      }
+      if (req.method === 'PUT') {
+        if (mode === 'conflict') return send(409, { token, body: 'must not leak' });
+        if (body.version.number !== selectedPage.version.number + 1) return send(409, { token });
+        const updatedBody = dc ? body.body : { storage: { value: body.body.value } };
+        Object.assign(selectedPage, { ...body, body: updatedBody, version: body.version, status: 'current' });
+        if (dc) selectedPage.space = { id: '12', key: 'TEST' };
+        if (!dc) selectedPage.spaceId = '12';
+        if (mode === 'message-omitted') delete selectedPage.version.message;
+        if (mode === 'lost-response') { req.socket.destroy(); return; }
+        return send(200, selectedPage);
+      }
+    }
+    if (rooted && dc && url.pathname === '/confluence/rest/api/content/5/property/cfwiki-root' && req.method === 'GET') return send(200, rootMarker);
+    if (rooted && !dc && url.pathname === '/wiki/api/v2/pages/5/properties' && url.searchParams.get('key') === 'cfwiki-root' && req.method === 'GET') return send(200, { results: [rootMarker] });
+    if (dc && /^\/confluence\/rest\/api\/content\/\d+\/property\/confluence-wiki-md$/.test(url.pathname) && req.method === 'GET') return send(404, {});
+    if (dc && /^\/confluence\/rest\/api\/content\/\d+\/property$/.test(url.pathname) && req.method === 'POST') {
+      if (mode === 'partial') return send(500, { token, body: 'secret response body' });
+      return send(200, { ...body, id: 'prop-42', version: { number: 1 } });
+    }
+    if (!dc && /^\/wiki\/api\/v2\/pages\/\d+\/properties$/.test(url.pathname) && req.method === 'GET') return send(200, { results: [] });
+    if (!dc && /^\/wiki\/api\/v2\/pages\/\d+\/properties$/.test(url.pathname) && req.method === 'POST') {
+      if (mode === 'partial') return send(500, { token, body: 'secret response body' });
+      return send(200, { ...body, id: 'prop-42', version: { number: 1 } });
+    }
+    if (url.pathname.endsWith('/label') || url.pathname.endsWith('/labels')) return send(200, { results: [] });
+    if (req.method === 'POST' && (url.pathname === (dc ? '/confluence/rest/api/content' : '/wiki/api/v2/pages'))) {
+      const created = { ...body, id: String(++serial), status: 'current', version: { number: 1 }, ...(dc ? { space: { id: '12', key: 'TEST' } } : { spaceId: '12' }) };
+      pages.set(created.id, created);
+      return send(200, created);
+    }
+    return send(404, {});
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  t.after(async () => { await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve())); await rm(directory, { recursive: true, force: true }); });
+  const origin = 'http://127.0.0.1:' + server.address().port;
+  const site = origin + (dc ? '/confluence' : '');
+  const env = { CONFLUENCE_DEPLOYMENT: deployment, CONFLUENCE_SITE_URL: site, CONFLUENCE_API_URL: site + (dc ? '/rest/api' : '/wiki/api/v2'), CONFLUENCE_SPACE_KEY: 'TEST', CONFLUENCE_ALLOW_HTTP: 'true', ...(dc ? { CONFLUENCE_PAT: token } : { CONFLUENCE_EMAIL: 'apply@example.test', CONFLUENCE_API_TOKEN: token }) };
+  const profile = path.join(directory, 'profile.env');
+  await writeFile(profile, Object.entries(env).map(([key, value]) => key + '=' + value).join('\n'));
+  const api = new ConfluenceApi(readWikiConfig(env));
+  if (rooted) rootMarker = { key: 'cfwiki-root', value: {
+    schema: 1, pageId: '5', spaceId: '12', spaceKey: 'TEST', topic: 'Operations',
+    tenant: { deployment, siteUrl: api.config.siteUrl, apiUrl: api.config.apiUrl },
+  }, id: 'root-property-5', version: { number: 1 } };
+  const baseDoc = await download(api, '42');
+  const baseText = formatDocument(baseDoc);
+  const draftText = formatDocument({
+    ...baseDoc,
+    ...(mode === 'partial' ? { metadata: { ...baseDoc.metadata, title: 'Edited integration guide' } } : {}),
+    body: baseDoc.body.replace('Base sentence.', 'Edited sentence.'),
+  });
+  const basePath = path.join(directory, 'base.md');
+  const draftPath = path.join(directory, 'draft.md');
+  await writeFile(basePath, baseText);
+  await writeFile(draftPath, draftText);
+  const cleanEnv = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('CONFLUENCE_')));
+  const cli = async (...args) => {
+    const child = spawn(process.execPath, [entry, ...args], { cwd: directory, env: cleanEnv, stdio: ['ignore', 'pipe', 'pipe'] });
+    let stdout = ''; let stderr = '';
+    child.stdout.on('data', (chunk) => { stdout += chunk; });
+    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    const [code] = await once(child, 'close');
+    return { code, stdout, stderr };
+  };
+  const runApply = (...args) => cli('apply', draftPath, '--base', basePath, '--space', 'TEST', '--env', profile, '--json', ...args);
+  return { api, baseDoc, basePath, baseText, draftPath, draftText, cli, runApply, requests, page, pages, token, directory, profile };
+}
+
+for (const deployment of ['cloud', 'datacenter']) {
+  test('CLI apply publishes one versioned AI edit (' + deployment + ')', async (t) => {
+    const f = await agentCliFixture(t, deployment);
+    const result = await f.runApply();
+    assert.equal(result.code, 0, result.stderr + result.stdout);
+    const report = JSON.parse(result.stdout);
+    assert.deepEqual(Object.keys(report).sort(), ['id', 'status', 'url', 'version', 'warnings', 'writeMessage']);
+    assert.equal(report.status, 'success');
+    assert.equal(report.id, '42');
+    assert.equal(report.version, 2);
+    assert.deepEqual(report.writeMessage, { requested: 'AI edit via cfwiki', confirmed: 'AI edit via cfwiki', outcome: 'accepted-response' });
+    assert.match(report.url, /pageId=42$/);
+    assert.ok(!result.stdout.includes('Edited sentence'));
+    assert.equal(f.page.version.message, 'AI edit via cfwiki');
+    assert.equal(f.requests.filter((request) => request.method === 'PUT').length, 1);
+    assert.equal(f.requests.find((request) => request.method === 'PUT').body.version.number, 2);
+    assert.equal(await readFile(f.basePath, 'utf8'), f.baseText);
+    assert.equal(await readFile(f.draftPath, 'utf8'), f.draftText);
+    const reread = await f.cli('read', '42', '--env', f.profile);
+    assert.equal(reread.code, 0, reread.stderr);
+    const saved = parseDocument(reread.stdout);
+    assert.equal(saved.metadata.confluence.id, '42');
+    assert.equal(saved.metadata.confluence.version, 2);
+    assert.match(saved.metadata.confluence.url, /pageId=42$/);
+    assert.match(saved.body, /Edited sentence/);
+    assert.ok(!result.stdout.includes(f.token));
+    const legacyFile = path.join(f.directory, 'legacy-upload.md');
+    await writeFile(legacyFile, '---\ntitle: Legacy upload\n---\nLegacy body\n');
+    const legacy = await f.cli('upload', legacyFile, '--env', f.profile);
+    assert.equal(legacy.code, 0, legacy.stderr);
+    assert.equal(f.page.version.number, 2);
+  });
+
+  test('CLI apply reports accepted and reconciled write messages (' + deployment + ')', async (t) => {
+    for (const rooted of [false, true]) {
+      for (const lost of [false, true]) {
+        const f = await agentCliFixture(t, deployment, lost ? 'lost-response' : 'success', { rooted });
+        const result = await f.runApply(...(rooted ? ['--wiki-root', '5'] : []));
+        assert.equal(result.code, 0, result.stderr + result.stdout);
+        const report = JSON.parse(result.stdout);
+        assert.equal(report.status, 'success');
+        assert.equal(report.version, 2);
+        assert.deepEqual(report.writeMessage, {
+          requested: 'AI edit via cfwiki', confirmed: 'AI edit via cfwiki',
+          outcome: lost ? 'reconciled-state' : 'accepted-response',
+          ...(lost ? { authorship: 'unknown' } : {}),
+        });
+        assert.equal(f.page.version.message, 'AI edit via cfwiki');
+        assert.equal(f.requests.filter((request) => request.method === 'PUT').length, 1);
+        if (rooted) assert.equal(report.resources.page.status, lost ? 'reconciled' : 'saved');
+        else assert.equal(report.resources, undefined);
+        if (lost) assert.ok(report.warnings.some((warning) => warning.includes('authorship is unknown')));
+        assert.doesNotMatch(result.stdout + result.stderr, new RegExp(f.token + '|secret response body'));
+      }
+    }
+
+    const unconfirmed = await agentCliFixture(t, deployment, 'message-omitted');
+    const unconfirmedResult = await unconfirmed.runApply();
+    assert.equal(unconfirmedResult.code, 0, unconfirmedResult.stderr + unconfirmedResult.stdout);
+    assert.deepEqual(JSON.parse(unconfirmedResult.stdout).writeMessage, {
+      requested: 'AI edit via cfwiki', confirmed: null, outcome: 'accepted-response',
+    });
+    assert.equal(unconfirmed.requests.filter((request) => request.method === 'PUT').length, 1);
+
+    const human = await agentCliFixture(t, deployment, 'success', { rooted: true });
+    const textResult = await human.cli('apply', human.draftPath, '--base', human.basePath,
+      '--space', 'TEST', '--wiki-root', '5', '--env', human.profile);
+    assert.equal(textResult.code, 0, textResult.stderr + textResult.stdout);
+    assert.match(textResult.stdout, /Write message requested: AI edit via cfwiki/);
+    assert.match(textResult.stdout, /Write message confirmed: AI edit via cfwiki/);
+    assert.match(textResult.stdout, /Write outcome: accepted-response/);
+    assert.doesNotMatch(textResult.stdout + textResult.stderr, new RegExp(human.token + '|secret response body'));
+
+    const humanLost = await agentCliFixture(t, deployment, 'lost-response', { rooted: true });
+    const lostText = await humanLost.cli('apply', humanLost.draftPath, '--base', humanLost.basePath,
+      '--space', 'TEST', '--wiki-root', '5', '--env', humanLost.profile);
+    assert.equal(lostText.code, 0, lostText.stderr + lostText.stdout);
+    assert.match(lostText.stdout, /Write message requested: AI edit via cfwiki/);
+    assert.match(lostText.stdout, /Write message confirmed: AI edit via cfwiki/);
+    assert.match(lostText.stdout, /Write outcome: reconciled-state/);
+    assert.match(lostText.stdout, /Authorship: unknown/);
+    assert.doesNotMatch(lostText.stdout + lostText.stderr, new RegExp(humanLost.token + '|secret response body'));
+  });
+
+  test('CLI apply refuses foreign version and profile override (' + deployment + ')', async (t) => {
+    const f = await agentCliFixture(t, deployment, 'conflict');
+    const before = f.requests.filter((request) => request.method === 'PUT').length;
+    const flags = [['--id', '42'], ['--version', '1'], ['--parent', '7'], ['--cql', 'type = page'], ['--local', f.directory], ['--overwrite']];
+    for (const flag of flags) {
+      const rejected = await f.runApply(...flag);
+      assert.notEqual(rejected.code, 0);
+      assert.match(rejected.stderr, /does not accept/);
+    }
+    assert.equal(f.requests.filter((request) => request.method === 'PUT').length, before);
+    const foreign = formatDocument({ ...f.baseDoc, metadata: { ...f.baseDoc.metadata, confluence: { ...f.baseDoc.metadata.confluence, space: 'OTHER' } } });
+    await writeFile(f.basePath, foreign);
+    const refused = await f.runApply();
+    assert.equal(refused.code, 1);
+    assert.equal(JSON.parse(refused.stdout).status, 'conflict');
+    assert.equal(f.requests.filter((request) => request.method === 'PUT').length, before);
+    assert.ok(!refused.stdout.includes(f.token));
+    await writeFile(f.basePath, f.baseText);
+    const profileMismatch = formatDocument({ ...f.baseDoc, metadata: { ...f.baseDoc.metadata, confluence: { ...f.baseDoc.metadata.confluence, api_url: 'https://other.example.test/rest/api' } } });
+    await writeFile(f.basePath, profileMismatch);
+    const mismatch = await f.runApply();
+    assert.equal(mismatch.code, 1);
+    assert.equal(JSON.parse(mismatch.stdout).status, 'conflict');
+    assert.equal(f.requests.filter((request) => request.method === 'PUT').length, before);
+    assert.ok(!mismatch.stderr.includes(f.token));
+    assert.equal(await readFile(f.draftPath, 'utf8'), f.draftText);
+    assert.ok(f.requests.every((request) => request.method !== 'POST'));
+    const unbound = formatDocument({ ...f.baseDoc, metadata: { ...f.baseDoc.metadata, confluence: { ...f.baseDoc.metadata.confluence, id: undefined } } });
+    await writeFile(f.basePath, unbound);
+    const noCreate = await f.runApply();
+    assert.equal(noCreate.code, 1);
+    assert.equal(JSON.parse(noCreate.stdout).status, 'conflict');
+    assert.equal(f.requests.filter((request) => request.method === 'POST').length, 0);
+  });
+}
+
+test('CLI apply refuses foreign version and profile override with redacted conflict and partial outcomes', async (t) => {
+  for (const mode of ['conflict', 'partial']) {
+    for (const deployment of ['cloud', 'datacenter']) {
+      const f = await agentCliFixture(t, deployment, mode);
+      const result = await f.runApply();
+      assert.equal(result.code, 1, mode + ' ' + deployment + ': ' + result.stdout + result.stderr);
+      const report = JSON.parse(result.stdout);
+      assert.equal(report.status, mode === 'conflict' ? 'conflict' : 'partial');
+      assert.equal(report.writeMessage, undefined);
+      assert.ok(!result.stdout.includes(f.token));
+      assert.ok(!result.stdout.includes('secret response body'));
+      assert.ok(!result.stderr.includes(f.token));
+      assert.ok(!result.stderr.includes('secret response body'));
+      assert.equal(await readFile(f.basePath, 'utf8'), f.baseText);
+      assert.equal(await readFile(f.draftPath, 'utf8'), f.draftText);
+    }
+  }
+});
 
 test('preservation modes reduce cached legacy TOCs and honor CLI overrides', async (t) => {
   const f = await serverFixture(t);
@@ -105,7 +343,10 @@ async function serverFixture(t) {
       }
     }
     if (suffix.startsWith('/property')) {
-      if (req.method === 'GET') return properties.has(id) ? send(200, properties.get(id)) : send(404, {});
+      if (req.method === 'GET') {
+        const property = properties.get(id);
+        return property && suffix === '/property/' + encodeURIComponent(property.key) ? send(200, property) : send(404, {});
+      }
       const property = { ...body, id: 'prop-' + id, version: body.version ?? { number: 1 } };
       properties.set(id, property);
       return send(200, property);
@@ -118,14 +359,23 @@ async function serverFixture(t) {
     if (suffix === '/child/attachment') return send(200, { results: [] });
     return send(404, {});
   });
+  t.after(async () => {
+    try {
+      server.closeAllConnections();
+      if (server.listening) await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+      assert.equal(server.listening, false);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+  const listening = once(server, 'listening');
   server.listen(0, '127.0.0.1');
-  await once(server, 'listening');
-  t.after(async () => { server.close(); await rm(directory, { recursive: true, force: true }); });
+  await listening;
   const base = 'http://127.0.0.1:' + server.address().port + '/confluence';
   const env = { CONFLUENCE_SITE_URL: base, CONFLUENCE_API_URL: base + '/rest/api', CONFLUENCE_DEPLOYMENT: 'datacenter', CONFLUENCE_PAT: 'fixture-pat', CONFLUENCE_SPACE_KEY: 'TEST', CONFLUENCE_ALLOW_HTTP: 'true' };
   const cleanEnv = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('CONFLUENCE_')));
   const cli = async (...args) => {
-    const child = spawn(process.execPath, [entry, ...args], { cwd: directory, env: { ...cleanEnv, XDG_CONFIG_HOME: path.join(directory, 'config'), ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(process.execPath, [entry, ...args], { cwd: directory, env: { ...cleanEnv, XDG_CONFIG_HOME: path.join(directory, 'config'), ...env }, timeout: 10000, stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = ''; let stderr = '';
     child.stdout.on('data', (chunk) => { stdout += chunk; });
     child.stderr.on('data', (chunk) => { stderr += chunk; });

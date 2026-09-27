@@ -1,8 +1,84 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseDocument, formatDocument, markdownToStorage, storageToMarkdown } from '../src/document.mjs';
+import { parseDocument, formatDocument, markdownToStorage, storageToMarkdown, loadStorageXml } from '../src/document.mjs';
 
 const context = { pageUrl: 'https://wiki.example.test/confluence/pages/viewpage.action?pageId=42', siteUrl: 'https://wiki.example.test/confluence', pageId: '42' };
+
+const sliceFragments = [
+  ['jira', "<ac:structured-macro ac:name='jira' ac:macro-id='raw'><ac:parameter ac:name='key'>DOC-&#49;</ac:parameter></ac:structured-macro>"],
+  ['code', "<ac:structured-macro ac:name='code'><ac:plain-text-body><![CDATA[raw <node> &amp;]]></ac:plain-text-body></ac:structured-macro>"],
+  ['emoticon', "<ac:emoticon ac:name='smile' />"],
+];
+const slicePrefixes = [
+  ['none', ''],
+  ['astral-comment', "<p>before \u{1f680}</p><!-- decoy <ac:emoticon ac:name='sad' /> -->"],
+];
+for (const [fragmentName, fragment] of sliceFragments) {
+  for (const [wrapper, open, close] of [
+    ['plain', '', ''],
+    ['layout', "<ac:layout><ac:layout-section ac:type='single'><ac:layout-cell>", '</ac:layout-cell></ac:layout-section></ac:layout>'],
+    ['rich-body', '<ac:rich-text-body>', '</ac:rich-text-body>'],
+  ]) {
+    for (const [prefixName, prefix] of slicePrefixes) {
+      test('storage wrapper source slices remain exact: ' + fragmentName + '/' + wrapper + '/' + prefixName, () => {
+        const storage = prefix + open + fragment + close;
+        assert.doesNotThrow(() => loadStorageXml(storage));
+        const converted = storageToMarkdown(storage, { ...context, preserve: 'all' });
+        const rendered = markdownToStorage(converted.markdown, { preserved: converted.preserved }).storage;
+        assert.deepEqual(converted.preserved.map((item) => item.storage), [fragment]);
+        assert.doesNotThrow(() => loadStorageXml(rendered));
+        assert.equal(rendered.split(fragment).length - 1, 1);
+      });
+    }
+  }
+}
+
+for (const [open, close] of [
+  ['<ac:task-list>', '</ac:task-list>'],
+  ['<section class="footnotes">', '</section>'],
+  ['<section class="footnotes"><ol class="footnotes-list">', '</ol></section>'],
+]) {
+  for (const [prefixName, prefix] of slicePrefixes) {
+    test('storage wrapper source slices survive other flattening: ' + open + '/' + prefixName, () => {
+      const fragment = "<ac:emoticon ac:name='smile' />";
+      const converted = storageToMarkdown(prefix + open + fragment + close, context);
+      assert.deepEqual(converted.preserved.map((item) => item.storage), [fragment]);
+      const rendered = markdownToStorage(converted.markdown, { preserved: converted.preserved }).storage;
+      assert.doesNotThrow(() => loadStorageXml(rendered));
+      assert.equal(rendered.split(fragment).length - 1, 1);
+    });
+  }
+}
+
+test('storage wrapper flattening retains original parser-loss refusal', () => {
+  const storage = "<ac:layout><ac:layout-section ac:type='single'><ac:layout-cell><ac:emoticon ac:name='smile' __proto__='keep'/></ac:layout-cell></ac:layout-section></ac:layout>";
+  for (const preserve of ['minimal', 'all']) {
+    assert.throws(() => storageToMarkdown(storage, { ...context, preserve }), /without losing/i);
+  }
+});
+
+for (const preserve of ['all', 'minimal', 'none']) {
+  test('storage conversion refuses original attribute loss before preservation: ' + preserve, () => {
+    for (const storage of [
+      '<p __proto__="keep">ordinary</p>',
+      '<ac:structured-macro ac:name="jira"><ac:parameter ac:name="key" __proto__="keep">DOC-1</ac:parameter></ac:structured-macro>',
+      '<ac:structured-macro ac:name="info"><ac:rich-text-body><p __proto__="keep">inside</p></ac:rich-text-body></ac:structured-macro>',
+    ]) assert.throws(() => storageToMarkdown(storage, { ...context, preserve }), /without losing/i);
+  });
+}
+
+test('native preservation uses exact original slices rather than serialized XML', () => {
+  for (const fragment of [
+    "<ac:structured-macro ac:name='jira' ac:macro-id='raw'><ac:parameter ac:name='key'>DOC-&#49;</ac:parameter></ac:structured-macro>",
+    "<ac:structured-macro ac:name='code'><ac:plain-text-body><![CDATA[raw <code> &amp;]]></ac:plain-text-body></ac:structured-macro>",
+    "<ac:link><ri:page ri:content-id='99' /><ac:plain-text-link-body>Other</ac:plain-text-link-body></ac:link>",
+  ]) {
+    const storage = '<p>\u{1f680}</p><!-- <p __proto__="decoy"> -->' + fragment;
+    const converted = storageToMarkdown(storage, context);
+    assert.deepEqual(converted.preserved.map((item) => item.storage), [fragment]);
+    assert.ok(markdownToStorage(converted.markdown, { preserved: converted.preserved }).storage.includes(fragment));
+  }
+});
 
 test('OKF front matter preserves unknown structured fields and string page identity', () => {
   const input = '---\ntype: Playbook\ntitle: "문서"\nsources:\n  - id: source-a\n    resource: https://example.com\ncustom:\n  owner: team\nconfluence:\n  id: "42"\n  version: 7\n---\n# 문서\n';

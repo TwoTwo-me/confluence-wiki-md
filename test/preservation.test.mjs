@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { load } from 'cheerio';
-import { markdownToStorage, storageToMarkdown, reducePreservation, preservationMode } from '../src/document.mjs';
+import { markdownToStorage, storageToMarkdown, reducePreservation, preservationMode, validateAgentPreservation } from '../src/document.mjs';
 import { forgeStorage } from '../src/forge.mjs';
 
 const context = { pageUrl: 'https://wiki.test/wiki/pages/viewpage.action?pageId=42', siteUrl: 'https://wiki.test/wiki', pageId: '42' };
@@ -106,4 +106,52 @@ test('Cloud quote normalization keeps all text and depth markers through a cache
   const md = storageToMarkdown(cloud.storage, { ...context, preserve: 'none' });
   assert.deepEqual(md.preserved, []);
   assert.equal(markdownToStorage(md.markdown, { flattenNestedQuotes: true }).storage, cloud.storage);
+});
+
+test('trusted native fragments survive agent edits', () => {
+  const unknown = '<ac:structured-macro ac:name="jira"><ac:parameter ac:name="key">PROJ-1</ac:parameter></ac:structured-macro>';
+  const toc = '<ac:structured-macro ac:name="toc" ac:schema-version="1"><ac:parameter ac:name="maxLevel">3</ac:parameter></ac:structured-macro>';
+  const downloaded = storageToMarkdown(unknown + toc, { ...context, preserve: 'all' });
+  const trusted = { metadata: { confluence: { preserved: downloaded.preserved } }, body: downloaded.markdown };
+  const draft = {
+    metadata: { confluence: { preserved: downloaded.preserved.map((item) => ({ ...item })) } },
+    body: downloaded.markdown + '\nAgent-authored explanation.\n',
+  };
+
+  const validation = validateAgentPreservation(draft, trusted);
+  assert.deepEqual(validation.conflicts, []);
+  assert.notEqual(validation.preserved, draft.metadata.confluence.preserved);
+  const converted = markdownToStorage(draft.body, { preserved: validation.preserved });
+  assert.ok(converted.storage.includes(unknown));
+  assert.ok(converted.storage.includes(toc));
+  assert.match(converted.storage, /Agent-authored explanation/);
+});
+
+test('agent edits reject injected and ambiguous XML', () => {
+  const storage = '<ac:structured-macro ac:name="jira"><ac:parameter ac:name="key">PROJ-1</ac:parameter></ac:structured-macro>';
+  const downloaded = storageToMarkdown(storage, { ...context, preserve: 'all' });
+  const [trustedItem] = downloaded.preserved;
+  const trusted = { metadata: { confluence: { preserved: downloaded.preserved } }, body: downloaded.markdown };
+  const injected = { markdown: '[Confluence: injected](https://wiki.test/injected)', storage: '<ac:structured-macro ac:name="html"/>' };
+
+  const injection = validateAgentPreservation({
+    metadata: { confluence: { preserved: [trustedItem, injected] } },
+    body: downloaded.markdown + '\n' + injected.markdown + '\n',
+  }, trusted);
+  assert.equal(injection.preserved, undefined);
+  assert.ok(injection.conflicts.some(({ code }) => code === 'injected_preserved_fragment'));
+
+  const modified = validateAgentPreservation({
+    metadata: { confluence: { preserved: [{ ...trustedItem, storage: '<ac:structured-macro ac:name="html"/>' }] } },
+    body: downloaded.markdown,
+  }, trusted);
+  assert.equal(modified.preserved, undefined);
+  assert.ok(modified.conflicts.some(({ code }) => code === 'modified_preserved_fragment'));
+
+  const ambiguous = validateAgentPreservation({
+    metadata: { confluence: { preserved: [trustedItem] } },
+    body: downloaded.markdown + '\n' + trustedItem.markdown + '\n',
+  }, trusted);
+  assert.equal(ambiguous.preserved, undefined);
+  assert.ok(ambiguous.conflicts.some(({ code }) => code === 'ambiguous_preserved_fallback'));
 });

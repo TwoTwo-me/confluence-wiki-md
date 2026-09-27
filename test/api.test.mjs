@@ -6,6 +6,39 @@ const config = (deployment = 'cloud') => readWikiConfig({ CONFLUENCE_SITE_URL: '
 const response = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } });
 
 for (const deployment of ['cloud', 'datacenter']) {
+  test(deployment + ' named root property uses native wire without touching Markdown metadata', async (t) => {
+    const calls = [];
+    const properties = new Map([['confluence-wiki-md', { id: '8', key: 'confluence-wiki-md', value: { metadata: { type: 'Collection' } }, version: { number: 1 } }]]);
+    const api = new ConfluenceApi(config(deployment));
+    const dc = deployment === 'datacenter';
+    t.mock.method(globalThis, 'fetch', async (input, options) => {
+      const url = new URL(input);
+      const body = options.body && JSON.parse(options.body);
+      const key = body?.key ?? (dc ? decodeURIComponent(url.pathname.split('/').at(-1)) : url.searchParams.get('key'));
+      calls.push({ path: url.pathname, query: url.search, method: options.method, body });
+      if (options.method === 'GET') {
+        const property = properties.get(key);
+        return dc ? response(property ?? {}, property ? 200 : 404) : response({ results: property ? [property] : [] });
+      }
+      const property = { ...body, id: '9', version: body.version ?? { number: 1 } };
+      properties.set(key, property);
+      return response(property);
+    });
+    const value = { schema: 1, pageId: '42', topic: 'Release' };
+    await api.setProperty('42', value, 'cfwiki-root');
+    assert.deepEqual((await api.getProperty('42', 'cfwiki-root')).value, value);
+    await api.setProperty('42', { ...value, topic: 'Updated' }, 'cfwiki-root');
+    assert.deepEqual((await api.getProperty('42')).value, { metadata: { type: 'Collection' } });
+    const writes = calls.filter((call) => call.method !== 'GET');
+    assert.deepEqual(writes.map((call) => call.method), ['POST', 'PUT']);
+    assert.equal(writes[0].path, dc ? '/confluence/rest/api/content/42/property' : '/wiki/api/v2/pages/42/properties');
+    assert.equal(writes[1].path, dc ? '/confluence/rest/api/content/42/property/cfwiki-root' : '/wiki/api/v2/pages/42/properties/9');
+    assert.equal(writes[1].body.version.number, 2);
+    assert.ok(writes.every((call) => call.body.key === 'cfwiki-root'));
+  });
+}
+
+for (const deployment of ['cloud', 'datacenter']) {
   test(deployment + ' native templates use their own REST base and preserve opaque IDs', async (t) => {
     const calls = [];
     const id = 'com.example:runbook';
@@ -106,6 +139,86 @@ test('pagination refuses another origin and errors never expose response secrets
   await assert.rejects(new ConfluenceApi(config()).paginate('/pages'), /outside/);
   globalThis.fetch.mock.mockImplementation(async () => response({ secret: 'sensitive-server-content' }, 403));
   await assert.rejects(new ConfluenceApi(config()).getPage('42'), (error) => /HTTP 403/.test(error.message) && !error.message.includes('sensitive-server-content'));
+});
+
+test('scoped search returns candidates without body reads', async (t) => {
+  let handler;
+  t.mock.method(globalThis, 'fetch', (...args) => handler(...args));
+  for (const deployment of ['cloud', 'datacenter']) {
+    const calls = [];
+    handler = async (url) => {
+      calls.push(String(url));
+      return response({
+        results: [
+          { content: { id: '41', title: 'Markdown guide', space: { key: 'TEST' } }, excerpt: 'Title match' },
+          { content: { id: '42', title: 'Publishing', space: { key: 'TEST' } }, excerpt: 'Uses Markdown text' },
+        ],
+      });
+    };
+    const result = await new ConfluenceApi(config(deployment)).searchScoped('Markdown', { space: 'TEST', limit: 3 });
+    assert.deepEqual(result.results.map(({ id, title, excerpt }) => ({ id, title, excerpt })), [
+      { id: '41', title: 'Markdown guide', excerpt: 'Title match' },
+      { id: '42', title: 'Publishing', excerpt: 'Uses Markdown text' },
+    ]);
+    assert.equal(result.query, 'Markdown');
+    assert.equal(result.space, 'TEST');
+    assert.equal(result.truncated, false);
+    assert.match(result.searchedAt, /^\d{4}-\d{2}-\d{2}T/);
+    assert.equal(calls.length, 1);
+    assert.ok(calls.every((url) => new URL(url).pathname.endsWith('/search')));
+    const cql = new URL(calls[0]).searchParams.get('cql');
+    assert.match(cql, /space = "TEST"/);
+    assert.match(cql, /\(title ~ "Markdown" OR text ~ "Markdown"\)/);
+    assert.ok(result.results.every((item) => !('body' in item) && !('version' in item)));
+  }
+});
+
+test('scoped search rejects cross-space and CQL injection', async (t) => {
+  const calls = [];
+  t.mock.method(globalThis, 'fetch', async (url) => {
+    calls.push(String(url));
+    return response({
+      results: [
+        { content: { id: '41', title: 'Foreign', space: { key: 'OTHER' } }, excerpt: 'Out of scope' },
+        { content: { id: '42', title: 'Trusted', space: { key: 'TEST' } }, excerpt: 'In scope' },
+      ],
+    });
+  });
+  const api = new ConfluenceApi(config());
+  await assert.rejects(api.searchScoped('Markdown'), /explicit trusted space/);
+  const query = 'Markdown" OR space = "OTHER';
+  const result = await api.searchScoped(query, { space: 'TEST', cql: 'type = page' });
+  assert.deepEqual(result.results.map((item) => item.id), ['42']);
+  assert.equal(calls.length, 1);
+  const cql = new URL(calls[0]).searchParams.get('cql');
+  assert.match(cql, /^type = page AND space = "TEST" AND \(title ~ /);
+  assert.ok(cql.includes('Markdown\\" OR space = \\"OTHER'));
+  assert.notEqual(cql, 'type = page');
+});
+
+test('scoped search caps empty pagination and retains filter', async (t) => {
+  let handler;
+  t.mock.method(globalThis, 'fetch', (...args) => handler(...args));
+  for (const deployment of ['cloud', 'datacenter']) {
+    const calls = [];
+    handler = async (url) => {
+      calls.push(String(url));
+      return response({
+        results: [],
+        _links: { next: '/rest/api/search?cql=type%20%3D%20page&cursor=cursor-' + calls.length + '&start=' + calls.length },
+      });
+    };
+    const result = await new ConfluenceApi(config(deployment)).searchScoped('Markdown', { space: 'TEST', limit: 100, maxPages: 99 });
+    assert.deepEqual(result.results, []);
+    assert.equal(result.truncated, true);
+    assert.equal(calls.length, 2);
+    for (const url of calls) {
+      const params = new URL(url).searchParams;
+      assert.equal(params.get('cql'), 'type = page AND space = "TEST" AND (title ~ "Markdown" OR text ~ "Markdown")');
+      assert.equal(params.get('limit'), '50');
+    }
+    assert.equal(new URL(calls[1]).searchParams.get('cursor'), 'cursor-1');
+  }
 });
 
 test('Cloud macro previews use asynchronous conversion without publishing content', async (t) => {
