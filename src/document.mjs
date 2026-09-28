@@ -10,6 +10,130 @@ import { createHash, randomUUID } from 'node:crypto';
 import { diagramKey } from './diagrams.mjs';
 import { freshForgeIds, readForgeDiagrams, finalizeForgeViewers } from './forge.mjs';
 
+export function validateStorageXml(storage) {
+  const invalid = () => { throw new Error('Confluence storage is malformed XML.'); };
+  const validXmlCodePoint = (point) => point === 0x9 || point === 0xa || point === 0xd ||
+    (point >= 0x20 && point <= 0xd7ff) || (point >= 0xe000 && point <= 0xfffd) ||
+    (point >= 0x10000 && point <= 0x10ffff);
+  for (const character of storage) {
+    if (!validXmlCodePoint(character.codePointAt(0))) invalid();
+  }
+  const validateReferences = (value) => {
+    for (let index = 0; index < value.length; index++) {
+      if (value[index] !== '&') continue;
+      const match = value.slice(index).match(/^&(?:#(?:[0-9]+|x[0-9a-fA-F]+)|[A-Za-z_:][\w.:-]*);/);
+      if (!match) invalid();
+      const reference = match[0].slice(1, -1);
+      if (reference[0] === '#') {
+        const hexadecimal = reference[1] === 'x';
+        const digits = reference.slice(hexadecimal ? 2 : 1);
+        const point = Number.parseInt(digits, hexadecimal ? 16 : 10);
+        if (!Number.isFinite(point) || !validXmlCodePoint(point)) invalid();
+      } else if (!['amp', 'lt', 'gt', 'apos', 'quot'].includes(reference)) {
+        invalid();
+      }
+      index += match[0].length - 1;
+    }
+  };
+  const name = /^[A-Za-z_][\w.:-]*/;
+  const validQName = (value) => {
+    const firstColon = value.indexOf(':');
+    if (firstColon !== value.lastIndexOf(':')) return false;
+    const components = firstColon < 0 ? [value] : value.split(':');
+    return components.every((component) => /^[A-Za-z_][A-Za-z0-9._-]*$/.test(component));
+  };
+  const stack = [];
+  const elements = new Map();
+  let at = 0;
+  while (at < storage.length) {
+    if (storage[at] !== '<') {
+      const nextTag = storage.indexOf('<', at);
+      const text = storage.slice(at, nextTag < 0 ? storage.length : nextTag);
+      if (text.includes(']]>')) invalid();
+      validateReferences(text);
+      at = nextTag < 0 ? storage.length : nextTag;
+      continue;
+    }
+    if (storage.startsWith('<!--', at)) {
+      const end = storage.indexOf('-->', at + 4);
+      if (end < 0 || storage.slice(at + 4, end).includes('--')) invalid();
+      at = end + 3;
+      continue;
+    }
+    if (storage.startsWith('<![CDATA[', at)) {
+      const end = storage.indexOf(']]>', at + 9);
+      if (end < 0) invalid();
+      at = end + 3;
+      continue;
+    }
+    if (storage.startsWith('<?', at)) {
+      const end = storage.indexOf('?>', at + 2);
+      if (end < 0) invalid();
+      at = end + 2;
+      continue;
+    }
+    const nextTag = storage.indexOf('<', at);
+    validateReferences(storage.slice(at, nextTag < 0 ? storage.length : nextTag));
+    let cursor = at + 1;
+    const closing = storage[cursor] === '/';
+    if (closing) cursor++;
+    const tag = storage.slice(cursor).match(name)?.[0];
+    if (!tag || !validQName(tag)) invalid();
+    cursor += tag.length;
+    if (closing) {
+      if (!/^[ \t\r\n]*>/.test(storage.slice(cursor)) || stack.pop() !== tag) invalid();
+      at = storage.indexOf('>', cursor) + 1;
+      continue;
+    }
+    let selfClosing = false;
+    const attributes = new Set();
+    while (cursor < storage.length) {
+      const rest = storage.slice(cursor);
+      const whitespace = rest.match(/^[ \t\r\n]*/)[0].length;
+      cursor += whitespace;
+      if (storage.startsWith('/>', cursor)) { selfClosing = true; cursor += 2; break; }
+      if (storage[cursor] === '>') { cursor++; break; }
+      if (!whitespace) invalid();
+      const attribute = storage.slice(cursor).match(name)?.[0];
+      if (!attribute || !validQName(attribute)) invalid();
+      if (attributes.has(attribute)) invalid();
+      attributes.add(attribute);
+      cursor += attribute.length;
+      cursor += storage.slice(cursor).match(/^[ \t\r\n]*/)[0].length;
+      if (storage[cursor++] !== '=') invalid();
+      cursor += storage.slice(cursor).match(/^[ \t\r\n]*/)[0].length;
+      const quote = storage[cursor++];
+      if (quote !== '"' && quote !== "'") invalid();
+      const end = storage.indexOf(quote, cursor);
+      if (end < 0 || storage.slice(cursor, end).includes('<')) invalid();
+      validateReferences(storage.slice(cursor, end));
+      cursor = end + 1;
+    }
+    if (cursor > storage.length || (storage[cursor - 1] !== '>' && !selfClosing)) invalid();
+    elements.set(at, { name: tag, attributes: [...attributes] });
+    if (!selfClosing) stack.push(tag);
+    at = cursor;
+  }
+  if (stack.length) invalid();
+  return elements;
+}
+
+export function loadStorageXml(storage) {
+  const elements = validateStorageXml(storage);
+  const $ = load(storage, { xmlMode: true, withStartIndices: true, withEndIndices: true });
+  const invalid = () => { throw new Error('Confluence storage cannot be represented without losing element or attribute data.'); };
+  // Check original input before conversion, including opaque/native descendants.
+  for (const node of $('*').toArray()) {
+    const original = elements.get(node.startIndex);
+    if (!original || original.name !== node.name ||
+        original.attributes.length !== Object.keys(node.attribs).length ||
+        original.attributes.some((name) => !Object.hasOwn(node.attribs, name) || typeof node.attribs[name] !== 'string')) invalid();
+    elements.delete(node.startIndex);
+  }
+  if (elements.size) invalid();
+  return $;
+}
+
 export const hash = (value) => createHash('sha256').update(value).digest('hex');
 export const bodyHash = (body) => 'sha256:' + hash(body.replaceAll('\r\n', '\n'));
 
@@ -153,6 +277,57 @@ export function markdownToStorage(source, { preserved = [], links = {}, images =
   return { storage: finalizeForgeViewers(storage).trim(), warnings };
 }
 
+export function validateAgentPreservation(draft, trusted) {
+  const conflict = (code, message, markdown) => ({ code, message, ...(markdown === undefined ? {} : { markdown }) });
+  const conflicts = [];
+  const body = draft?.body;
+  const draftItems = draft?.metadata?.confluence?.preserved ?? [];
+  const trustedItems = trusted?.metadata?.confluence?.preserved ?? [];
+  if (typeof body !== 'string') conflicts.push(conflict('invalid_draft', 'Agent draft body must be Markdown text.'));
+  if (!Array.isArray(draftItems)) conflicts.push(conflict('invalid_draft_preservation', 'Agent draft preserved fragments must be a list.'));
+  if (!Array.isArray(trustedItems)) conflicts.push(conflict('invalid_trusted_preservation', 'Trusted preserved fragments must be a list.'));
+  if (conflicts.length) return { conflicts };
+
+  const valid = (item) => item && typeof item.markdown === 'string' && item.markdown.length > 0 && typeof item.storage === 'string' && item.storage.length > 0;
+  const trustedByMarkdown = new Map();
+  for (const item of trustedItems) {
+    if (!valid(item)) {
+      conflicts.push(conflict('invalid_trusted_fragment', 'Trusted preserved fragment is malformed.', item?.markdown));
+      continue;
+    }
+    const matches = trustedByMarkdown.get(item.markdown) ?? [];
+    matches.push(item);
+    trustedByMarkdown.set(item.markdown, matches);
+  }
+  for (const [markdown, items] of trustedByMarkdown) {
+    if (items.length > 1) conflicts.push(conflict('ambiguous_preserved_fallback', 'Trusted preserved fallback is duplicated and cannot be mapped uniquely.', markdown));
+  }
+
+  const seenDraft = new Set();
+  for (const item of draftItems) {
+    if (!valid(item)) {
+      conflicts.push(conflict('invalid_draft_fragment', 'Agent draft preserved fragment is malformed.', item?.markdown));
+      continue;
+    }
+    if (seenDraft.has(item.markdown)) conflicts.push(conflict('ambiguous_preserved_fallback', 'Agent draft preserved fallback is duplicated and cannot be mapped uniquely.', item.markdown));
+    seenDraft.add(item.markdown);
+    const matches = trustedByMarkdown.get(item.markdown) ?? [];
+    if (matches.length === 0) conflicts.push(conflict('injected_preserved_fragment', 'Agent draft introduced an untrusted preserved fragment.', item.markdown));
+    else if (matches.length === 1 && item.storage !== matches[0].storage) conflicts.push(conflict('modified_preserved_fragment', 'Agent draft modified trusted preserved XML.', item.markdown));
+  }
+
+  for (const item of trustedItems.filter(valid)) {
+    if (!seenDraft.has(item.markdown)) {
+      conflicts.push(conflict('missing_preserved_fragment', 'Agent draft removed trusted preserved fragment metadata.', item.markdown));
+      continue;
+    }
+    const occurrences = body.split(item.markdown).length - 1;
+    if (occurrences !== 1) conflicts.push(conflict('ambiguous_preserved_fallback', 'Trusted preserved fallback must occur exactly once in the agent draft.', item.markdown));
+  }
+  if (conflicts.length) return { conflicts };
+  return { preserved: trustedItems.map((item) => ({ ...item })), conflicts: [] };
+}
+
 export function fenced(code, language = '') {
   const longest = Math.max(2, ...Array.from(code.matchAll(/`+/g), (match) => match[0].length));
   const fence = '`'.repeat(longest + 1);
@@ -174,7 +349,7 @@ export function references(markdown) {
 
 export function storageToMarkdown(storage, { pageUrl, siteUrl, pageId, pageLinks = {}, attachments = {}, diagramProfile = {}, preserve = 'all' } = {}) {
   preservationMode(preserve);
-  const $ = load(storage, { xmlMode: true });
+  const $ = loadStorageXml(storage);
   const snippets = [];
   const preserved = [];
   const warnings = [];
@@ -194,7 +369,7 @@ export function storageToMarkdown(storage, { pageUrl, siteUrl, pageId, pageLinks
   td.addRule('hard-break', { filter: 'br', replacement: () => '  \n' });
   const replace = (node, markdown, preserve = false, block = true) => {
     if (!block && $(node).parents('th,td').length) markdown = markdown.replace(/\|/g, '\\|').replace(/[ \t]*\n[ \t]*/g, '<br>');
-    if (preserve) preserved.push({ markdown, storage: $.xml(node), block });
+    if (preserve) preserved.push({ markdown, storage: storage.slice(node.startIndex, node.endIndex + 1), block });
     const index = snippets.push(markdown) - 1;
     $(node).replaceWith('<span data-cfwiki-md="' + index + '" data-cfwiki-block="' + block + '">cfwiki</span>');
   };
@@ -247,7 +422,8 @@ export function storageToMarkdown(storage, { pageUrl, siteUrl, pageId, pageLinks
     const content = td.turndown($(node).children('ac\\:task-body').html() ?? '').trim();
     replace(node, '- [' + (checked ? 'x' : ' ') + '] ' + content);
   });
-  $('ac\\:task-list').each((_i, node) => $(node).replaceWith($(node).html() ?? ''));
+  // Move existing children when unwrapping; reparsing resets raw-source offsets.
+  $('ac\\:task-list').each((_i, node) => $(node).replaceWith($(node).contents()));
   $('ac\\:image').each((_i, node) => {
     const attachment = $(node).find('ri\\:attachment').attr('ri:filename');
     const remote = $(node).find('ri\\:url').attr('ri:value');
@@ -293,8 +469,8 @@ export function storageToMarkdown(storage, { pageUrl, siteUrl, pageId, pageLinks
     replace(node, '[^' + id + ']: ' + td.turndown($(node).html() ?? '').trim().replaceAll('\n', '\n    '));
   });
   $('hr.footnotes-sep').remove();
-  $('section.footnotes, ol.footnotes-list').each((_i, node) => $(node).replaceWith($(node).html() ?? ''));
-  $('ac\\:layout, ac\\:layout-section, ac\\:layout-cell, ac\\:rich-text-body').each((_i, node) => $(node).replaceWith($(node).html() ?? ''));
+  $('section.footnotes, ol.footnotes-list').each((_i, node) => $(node).replaceWith($(node).contents()));
+  $('ac\\:layout, ac\\:layout-section, ac\\:layout-cell, ac\\:rich-text-body').each((_i, node) => $(node).replaceWith($(node).contents()));
   $('*').toArray().reverse().forEach((node) => {
     if (node.parent && /^(ac:|ri:)/.test(node.name)) replace(node, reference('Confluence: ' + node.name), true, false);
   });

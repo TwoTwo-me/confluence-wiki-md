@@ -108,7 +108,11 @@ async function createProtectedPage(api, fields, policy, onProgress, recovery) {
   }
 }
 
-export async function upload(api, input, { filename, title, id, version, space, parent, root, dryRun = false, onWrite, diagrams, diagramEnv = {}, preparedDiagrams, template, restrictions, defaultRestrictions = 'view-edit' } = {}) {
+// Legacy upload synchronizes all secondary resources by default. A caller that
+// owns only the page may explicitly preserve each resource with secondarySync.
+// An unknown create result is never retried: without a confirmed ID, inspect
+// Confluence before invoking upload again rather than risking a duplicate POST.
+export async function upload(api, input, { filename, title, id, version, space, parent, root, dryRun = false, onWrite, diagrams, diagramEnv = {}, preparedDiagrams, template, restrictions, defaultRestrictions = 'view-edit', secondarySync = {} } = {}) {
   let doc = parseDocument(input);
   checkBinding(api, doc.metadata);
   doc = reducePreservation(doc, preservationContext(api, id ?? doc.metadata.confluence?.id));
@@ -169,13 +173,22 @@ export async function upload(api, input, { filename, title, id, version, space, 
       images[ref.url] = name;
     }
   }
+  if (secondarySync.attachments === false && assets.size) throw new Error('This edit cannot publish local attachment bytes.');
   const preserved = withoutDiagramPreservation(meta.preserved, prepared.blocks.length > 0 || selected.mode === 'code');
   const converted = markdownToStorage(doc.body, { preserved, links, images, diagrams: prepared.macros, flattenNestedQuotes: api.config.deployment === 'cloud' });
   converted.storage = applyTemplate(converted.storage, template);
   const serverPreview = prepared.blocks.length || template?.toc || template?.kind === 'confluence' || converted.storage.includes('ac:name="toc"') ? await api.previewStorage(converted.storage, { pageId, space: target.key }) : null;
   if (dryRun) return { dryRun: true, id: pageId ?? null, title: actualTitle, version: pageId ? expectedVersion + 1 : api.config.deployment === 'datacenter' && policy.mode !== 'none' ? 2 : 1, storage: converted.storage, restrictions: pageId && !meta.pending_create ? { action: 'preserve-existing' } : { action: 'create', ...policy }, attachments: [...assets.keys()], diagrams: prepared.checks, serverPreview, template: template?.source ?? 'none', warnings: [...(doc.warnings ?? []), ...converted.warnings] };
-  const fields = { id: pageId, title: actualTitle, storage: converted.storage, space: target, parentId: parent ?? meta.parent_id ?? current?.parentId, version: expectedVersion };
+  const resources = {
+    page: { status: 'unresolved', attemptedVersion: pageId ? expectedVersion + 1 : api.config.deployment === 'datacenter' && policy.mode !== 'none' ? 2 : 1 },
+    property: { status: secondarySync.property === false ? 'preserved' : 'not_attempted' },
+    labels: { status: secondarySync.labels === false ? 'preserved' : labelList === undefined ? 'not_requested' : 'not_attempted' },
+    attachments: { status: secondarySync.attachments === false ? 'preserved' : assets.size ? 'not_attempted' : 'not_requested' },
+  };
+  const fields = { id: pageId, title: actualTitle, storage: converted.storage, space: target, parentId: parent ?? meta.parent_id ?? current?.parentId, version: expectedVersion, ...(api.config.versionMessage ? { message: api.config.versionMessage } : {}) };
+  let knownId = pageId ?? null;
   const progress = async (page, pending) => {
+    knownId = page.id;
     const metadata = boundMetadata(api, page, doc.metadata, { space: target.key });
     metadata.title = actualTitle;
     delete metadata.confluence.storage_hash;
@@ -183,28 +196,55 @@ export async function upload(api, input, { filename, title, id, version, space, 
     else delete metadata.confluence.pending_create;
     if (onWrite) await onWrite({ metadata, body: doc.body, warnings: doc.warnings ?? [] });
   };
-  const written = !pageId || meta.pending_create ? await createProtectedPage(api, fields, policy, progress, meta.pending_create ? { page: current, pending: meta.pending_create } : undefined) : await api.writePage(fields);
-  let result = { metadata: boundMetadata(api, written, doc.metadata, { space: target.key, ...(preserved.length ? { preserved } : {}) }), body: doc.body, warnings: [...(doc.warnings ?? []), ...converted.warnings] };
+  let written;
+  try {
+    written = !pageId || meta.pending_create ? await createProtectedPage(api, fields, policy, progress, meta.pending_create ? { page: current, pending: meta.pending_create } : undefined) : await api.writePage(fields);
+  } catch (error) {
+    throw Object.assign(new Error('Page publication is unresolved. No automatic create retry is safe. ' + error.message, { cause: error }), {
+      status: 'partial', outcome: 'unresolved', id: knownId ?? error.writtenPage?.id ?? error.cause?.writtenPage?.id ?? null, resources,
+    });
+  }
+  resources.page = { status: 'saved', version: written.version };
+  let result = { metadata: boundMetadata(api, written, doc.metadata, { space: target.key, ...(preserved.length ? { preserved } : {}) }), body: doc.body, warnings: [...(doc.warnings ?? []), ...converted.warnings], resources };
   if (!preserved.length) delete result.metadata.confluence.preserved;
   delete result.metadata.confluence.pending_create;
   delete result.metadata.confluence.storage_hash;
-  if (onWrite) await onWrite(result);
+  let syncing;
   try {
-    for (const [name, asset] of assets) await api.uploadAttachment(written.id, name, asset.bytes, asset.mime);
+    if (onWrite) await onWrite(result);
+    if (assets.size) {
+      syncing = 'attachments';
+      for (const [name, asset] of assets) await api.uploadAttachment(written.id, name, asset.bytes, asset.mime);
+      resources.attachments = { status: 'saved' };
+    }
+    syncing = 'page';
     const actual = await api.getPage(written.id);
     if (actual.version !== written.version) throw new Error('Page changed again immediately after saving. Download and merge before retrying.');
-    result = { ...result, metadata: boundMetadata(api, actual, result.metadata, { storage_hash: hash(actual.storage) }) };
+    syncing = undefined;
+    result = { ...result, metadata: boundMetadata(api, actual, result.metadata) };
     if (onWrite) await onWrite(result);
-    const value = { schema: 1, pageVersion: actual.version, metadata: userMetadata, ...(meta.template_id ? { templateId: meta.template_id } : {}) };
-    const source = { storageHash: hash(actual.storage), gzip: gzipSync(JSON.stringify({ body: doc.body, preserved })).toString('base64') };
-    if (!Object.keys(images).length && !Object.keys(links).length && Buffer.byteLength(JSON.stringify({ ...value, source })) <= 30000) value.source = source;
-    await api.setProperty(actual.id, value);
-    if (labelList !== undefined) await api.setLabels(actual.id, [...new Set(labelList)]);
-    result = { ...result, metadata: { ...result.metadata, confluence: { ...result.metadata.confluence, base_body_hash: bodyHash(result.body) } } };
+    if (secondarySync.property !== false) {
+      syncing = 'property';
+      const value = { schema: 1, pageVersion: actual.version, metadata: userMetadata, ...(meta.template_id ? { templateId: meta.template_id } : {}) };
+      const source = { storageHash: hash(actual.storage), gzip: gzipSync(JSON.stringify({ body: doc.body, preserved })).toString('base64') };
+      if (!Object.keys(images).length && !Object.keys(links).length && Buffer.byteLength(JSON.stringify({ ...value, source })) <= 30000) value.source = source;
+      await api.setProperty(actual.id, value);
+      resources.property = { status: 'saved' };
+    }
+    if (secondarySync.labels !== false && labelList !== undefined) {
+      syncing = 'labels';
+      await api.setLabels(actual.id, [...new Set(labelList)]);
+      resources.labels = { status: 'saved' };
+    }
+    syncing = undefined;
+    result = { ...result, metadata: { ...result.metadata, confluence: { ...result.metadata.confluence, storage_hash: hash(actual.storage), base_body_hash: bodyHash(result.body) } } };
     if (onWrite) await onWrite(result);
     return result;
   } catch (error) {
-    throw new Error('Page ' + written.id + ' was saved at version ' + written.version + ', but metadata/attachment synchronization failed. The local file identity was updated when a file was provided. ' + error.message, { cause: error });
+    if (syncing) resources[syncing] = { status: syncing === 'page' ? 'unresolved' : 'failed', outcome: 'unresolved' };
+    throw Object.assign(new Error('Page ' + written.id + ' was saved at version ' + written.version + ', but metadata/attachment synchronization failed. The local file identity was updated when a file was provided. ' + error.message, { cause: error }), {
+      status: 'partial', outcome: 'unresolved', id: written.id, version: written.version, resources,
+    });
   }
 }
 

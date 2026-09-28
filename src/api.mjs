@@ -196,12 +196,68 @@ export class ConfluenceApi {
     return results.map((entry) => ({ id: String(entry.content?.id ?? entry.id), title: entry.content?.title ?? entry.title, excerpt: entry.excerpt ?? '', url: this.pageUrl(entry.content?.id ?? entry.id) }));
   }
 
+  async searchScoped(query, { space, limit = 10, maxPages = 2 } = {}) {
+    if (typeof space !== 'string' || !space.trim()) throw new Error('Scoped search requires an explicit trusted space.');
+    if (typeof query !== 'string' || !query.trim()) throw new Error('Scoped search requires a query.');
+    const quote = (value) => '"' + value.replaceAll('\\', '\\\\').replaceAll('"', '\\"') + '"';
+    const trustedSpace = space.trim();
+    const resultLimit = Math.min(Math.max(Number.isInteger(limit) ? limit : 10, 1), 50);
+    const pageLimit = Math.min(Math.max(Number.isInteger(maxPages) ? maxPages : 2, 1), 2);
+    const expression = 'type = page AND space = ' + quote(trustedSpace) + ' AND (title ~ ' + quote(query) + ' OR text ~ ' + quote(query) + ')';
+    const results = [];
+    const searchedAt = new Date().toISOString();
+    let next = '/search?' + new URLSearchParams({ cql: expression, limit: String(resultLimit) });
+    let pages = 0;
+    let truncated = false;
+
+    while (next && results.length < resultLimit && pages < pageLimit) {
+      const data = await this.request(next, { version: 1 });
+      pages++;
+      if (!Array.isArray(data.results)) throw new Error('API result is missing its results array.');
+      for (const entry of data.results) {
+        const exposedSpace = entry.content?.space?.key ?? entry.content?.spaceKey ?? entry.space?.key ?? entry.spaceKey;
+        if (exposedSpace !== undefined && exposedSpace !== trustedSpace) continue;
+        const id = entry.content?.id ?? entry.id;
+        if (id === undefined || id === null) continue;
+        if (results.length === resultLimit) {
+          truncated = true;
+          break;
+        }
+        results.push({ id: String(id), title: entry.content?.title ?? entry.title, url: this.pageUrl(id), excerpt: entry.excerpt ?? '' });
+      }
+
+      const link = data._links?.next;
+      if (!link) break;
+      if (pages === pageLimit || results.length === resultLimit) {
+        truncated = true;
+        break;
+      }
+      const url = new URL(link, this.apiBase(1));
+      const allowedOrigins = [this.config.apiUrl, this.config.v1Url, this.config.siteUrl, this.apiBase(1)].map((base) => new URL(base).origin);
+      if (!allowedOrigins.includes(url.origin)) throw new Error('Refusing pagination outside the configured Confluence origin.');
+      const continuation = new URLSearchParams({ cql: expression, limit: String(resultLimit) });
+      for (const name of ['cursor', 'start']) if (url.searchParams.has(name)) continuation.set(name, url.searchParams.get(name));
+      if (!continuation.has('cursor') && !continuation.has('start')) throw new Error('Search continuation is missing its cursor.');
+      next = '/search?' + continuation;
+    }
+
+    return { query, space: trustedSpace, searchedAt, truncated, results };
+  }
+
   async writePage({ id, title, storage, space, parentId, version, message, privateCreate = false }) {
     const dc = this.config.deployment === 'datacenter';
     const body = dc ? { type: 'page', title, space: { key: space.key }, body: { storage: { representation: 'storage', value: storage } }, ...(parentId ? { ancestors: [{ id: parentId }] } : {}) } : { title, spaceId: String(space.id), status: 'current', body: { representation: 'storage', value: storage }, ...(parentId ? { parentId: String(parentId) } : {}) };
     if (id) Object.assign(body, { id: String(id), status: 'current', version: { number: version + 1, message: message ?? 'Update from Markdown' } });
     const data = await this.request((dc ? '/content' : '/pages') + (id ? '/' + id : !dc && privateCreate ? '?private=true' : ''), { version: dc ? 1 : 2, method: id ? 'PUT' : 'POST', body });
-    return this.normalize(data);
+    try {
+      return this.normalize(data);
+    } catch (error) {
+      // A malformed accepted response must not erase a known create identity.
+      if (!id && /^\d+$/.test(String(data?.id ?? ''))) {
+        error.writtenPage = { id: String(data.id), url: this.pageUrl(data.id) };
+      }
+      throw error;
+    }
   }
 
   async deletePage(id) {
@@ -209,24 +265,24 @@ export class ConfluenceApi {
     return this.request((dc ? '/content/' : '/pages/') + id, { method: 'DELETE', version: dc ? 1 : 2 });
   }
 
-  async getProperty(id) {
+  async getProperty(id, key = 'confluence-wiki-md') {
     const dc = this.config.deployment === 'datacenter';
-    const path = dc ? '/content/' + id + '/property/confluence-wiki-md' : '/pages/' + id + '/properties?key=confluence-wiki-md';
+    const path = dc ? '/content/' + id + '/property/' + encodeURIComponent(key) : '/pages/' + id + '/properties?key=' + encodeURIComponent(key);
     try {
       const data = await this.request(path, { version: dc ? 1 : 2 });
-      return dc ? data : data.results.find((item) => item.key === 'confluence-wiki-md') ?? null;
+      return dc ? data : data.results.find((item) => item.key === key) ?? null;
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) return null;
       throw error;
     }
   }
 
-  async setProperty(id, value) {
+  async setProperty(id, value, key = 'confluence-wiki-md') {
     if (Buffer.byteLength(JSON.stringify(value)) > 30000) throw new Error('Front matter exceeds the Confluence content property size limit.');
-    const existing = await this.getProperty(id);
+    const existing = await this.getProperty(id, key);
     const dc = this.config.deployment === 'datacenter';
-    const path = dc ? '/content/' + id + '/property' + (existing ? '/confluence-wiki-md' : '') : '/pages/' + id + '/properties' + (existing ? '/' + existing.id : '');
-    return this.request(path, { version: dc ? 1 : 2, method: existing ? 'PUT' : 'POST', body: { key: 'confluence-wiki-md', value, ...(existing ? { version: { number: existing.version.number + 1 } } : {}) } });
+    const path = dc ? '/content/' + id + '/property' + (existing ? '/' + encodeURIComponent(key) : '') : '/pages/' + id + '/properties' + (existing ? '/' + existing.id : '');
+    return this.request(path, { version: dc ? 1 : 2, method: existing ? 'PUT' : 'POST', body: { key, value, ...(existing ? { version: { number: existing.version.number + 1 } } : {}) } });
   }
 
   async labels(id) {
