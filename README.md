@@ -54,7 +54,7 @@ cfwiki --help
 로그인 후 특정 버전을 설치하거나 전역 설치 없이 실행할 수도 있습니다.
 
 ```sh
-npm install --global @twotwo-me/confluence-wiki-md@0.2.0
+npm install --global @twotwo-me/confluence-wiki-md@0.3.0
 npx --package @twotwo-me/confluence-wiki-md cfwiki --help
 ```
 
