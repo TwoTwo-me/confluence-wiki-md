@@ -66,20 +66,24 @@ export async function gh(args) {
   const { stdout } = await run('gh', args, { maxBuffer: 48 * 1024 * 1024, timeout: 120_000 });
   return JSON.parse(stdout);
 }
-export async function collect({ owner = 'TwoTwo-me', output = 'artifacts/laya-wiki', notionDir, inventoryOnly = false, github = gh } = {}) {
+export async function collect({ owner = 'TwoTwo-me', output = 'artifacts/laya-wiki', notionDir, inventoryOnly = false, onlyRepo = [], github = gh } = {}) {
   if (!/^[A-Za-z0-9-]+$/.test(owner)) throw new Error('Invalid GitHub owner.');
+  if (!Array.isArray(onlyRepo) || onlyRepo.some((name) => typeof name !== 'string' || !/^[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)?$/.test(name))) throw new Error('Invalid repository selection.');
+  const selectedRepos = new Set(onlyRepo.map((name) => name.includes('/') ? name : owner + '/' + name));
   await mkdir(path.join(output, 'raw'), { recursive: true, mode: 0o700 });
   const manifestPath = path.join(output, 'source-manifest.json');
   const old = await readJson(manifestPath, { documents: [] });
   const cached = new Map(old.documents.map((d) => [d.id, d]));
-  const manifest = { schema: 1, started_at: new Date().toISOString(), owner, limits: { per_file_bytes: MAX_BYTES, concurrency: 4, repository_limit: 10000 }, repositories: [], documents: [], gaps: [], inventory_only: inventoryOnly };
+  const manifest = { schema: 1, started_at: new Date().toISOString(), owner, limits: { per_file_bytes: MAX_BYTES, concurrency: 4, repository_limit: 10000 }, repositories: [], documents: [], gaps: [], inventory_only: inventoryOnly, selected_repositories: [...selectedRepos] };
   const corpus = [];
   const save = () => saveJson(manifestPath, manifest);
   const repos = await github(['repo', 'list', owner, '--limit', '10000', '--json', 'nameWithOwner,url,isPrivate,isFork,defaultBranchRef,isArchived']);
   if (!Array.isArray(repos)) throw new Error('Malformed repository inventory.');
   if (repos.length === 10000) manifest.gaps.push({ reason: 'repository_inventory_limit_reached' });
   await saveJson(path.join(output, 'github-inventory.json'), repos);
+  for (const name of selectedRepos) if (!repos.some((repo) => repo.nameWithOwner === name)) manifest.gaps.push({ repository: name, reason: 'selected_repository_not_in_owned_inventory' });
   for (const repo of repos) {
+    if (selectedRepos.size && !selectedRepos.has(repo.nameWithOwner)) continue;
     if (!repo.nameWithOwner?.startsWith(owner + '/') || typeof repo.isPrivate !== 'boolean' || typeof repo.url !== 'string') throw new Error('Malformed or unowned repository.');
     const record = { ...repo, status: 'pending' }; manifest.repositories.push(record);
     if (!repo.defaultBranchRef?.name) { record.status = 'unavailable'; record.reason = 'no_default_branch'; await save(); continue; }
@@ -154,11 +158,11 @@ export async function collect({ owner = 'TwoTwo-me', output = 'artifacts/laya-wi
   manifest.finished_at = new Date().toISOString(); manifest.collected = corpus.length;
   manifest.complete = !inventoryOnly && !manifest.gaps.length && manifest.repositories.every((r) => r.status === 'inventoried') && manifest.documents.every((d) => ['collected', 'excluded'].includes(d.status));
   await saveJson(path.join(output, 'corpus.json'), corpus); await save();
-  return { collected: corpus.length, repositories: repos.length, unavailable: manifest.documents.filter((d) => d.status === 'unavailable').length, gaps: manifest.gaps.length, complete: manifest.complete, manifest: manifestPath };
+  return { collected: corpus.length, repositories: manifest.repositories.length, inventory_repositories: repos.length, unavailable: manifest.documents.filter((d) => d.status === 'unavailable').length, gaps: manifest.gaps.length, complete: manifest.complete, manifest: manifestPath };
 }
 async function main() {
-  const { values } = parseArgs({ options: { owner: { type: 'string', default: 'TwoTwo-me' }, output: { type: 'string', default: 'artifacts/laya-wiki' }, 'notion-dir': { type: 'string' }, 'inventory-only': { type: 'boolean' }, help: { type: 'boolean' } } });
-  if (values.help) { console.log('Usage: node experiments/laya-wiki/collect.mjs [--owner TwoTwo-me] [--output artifacts/laya-wiki] [--notion-dir artifacts/laya-wiki/notion-raw] [--inventory-only]\nReads owned GitHub repositories through gh, caches validated blobs, and consumes captured Notion JSON <content> bodies. No content execution. 512 KiB/file; four concurrent blob requests. Writes private corpus, raw cache, inventory and explicit gap/status manifest. Secret detection is heuristic, not a guarantee.'); return; }
-  console.log(JSON.stringify(await collect({ owner: values.owner, output: values.output, notionDir: values['notion-dir'], inventoryOnly: values['inventory-only'] })));
+  const { values } = parseArgs({ options: { owner: { type: 'string', default: 'TwoTwo-me' }, output: { type: 'string', default: 'artifacts/laya-wiki' }, 'notion-dir': { type: 'string' }, 'inventory-only': { type: 'boolean' }, 'only-repo': { type: 'string', multiple: true }, help: { type: 'boolean' } } });
+  if (values.help) { console.log('Usage: node experiments/laya-wiki/collect.mjs [--owner TwoTwo-me] [--output artifacts/laya-wiki] [--notion-dir artifacts/laya-wiki/notion-raw] [--inventory-only] [--only-repo OWNER/REPO ...]\nReads owned GitHub repositories through gh, caches validated blobs, and consumes captured Notion JSON <content> bodies. No content execution. 512 KiB/file; four concurrent blob requests. Writes private corpus, raw cache, inventory and explicit gap/status manifest. Secret detection is heuristic, not a guarantee.'); return; }
+  console.log(JSON.stringify(await collect({ owner: values.owner, output: values.output, notionDir: values['notion-dir'], inventoryOnly: values['inventory-only'], onlyRepo: values['only-repo'] })));
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) main().catch((e) => { console.error('Collection failed: ' + e.name + '. Inspect source-manifest.json; no source bodies are printed.'); process.exitCode = 1; });

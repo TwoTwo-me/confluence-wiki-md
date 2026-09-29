@@ -5,7 +5,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createServer } from 'node:http';
 import { collect, parseNotion, sourceId, sha256, validateCorpus, readJson, saveJson, MAX_BYTES } from './collect.mjs';
-import { importCorpus, readback, query, RecordedApi } from './confluence.mjs';
+import { importCorpus, reconcile, readback, query, RecordedApi } from './confluence.mjs';
 
 const evidence = path.resolve(process.env.LAYA_PIPELINE_EVIDENCE ?? '.omo/evidence/wiki-pipeline-' + Date.now());
 await mkdir(evidence, { recursive: true });
@@ -16,7 +16,7 @@ const fixtureDoc = (overrides = {}) => {
 const blobSha = (text) => createHash('sha1').update('blob ' + Buffer.byteLength(text) + '\0' + text).digest('hex');
 async function scenario(name, fn) { const output = path.join(evidence, name); await mkdir(output, { recursive: true }); await fn(output); await saveJson(path.join(output, 'PASS.json'), { scenario: name, passed: true, at: new Date().toISOString() }); }
 
-async function serverFixture(output, { denyProtection = false, unknownPost = false } = {}) {
+async function serverFixture(output, { denyProtection = false, unknownPost = false, htmlEntities = false } = {}) {
   const pages = new Map(); const properties = new Map(); const requests = []; let counter = 10;
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost'); let bodyText = ''; for await (const chunk of req) bodyText += chunk;
@@ -40,6 +40,7 @@ async function serverFixture(output, { denyProtection = false, unknownPost = fal
     if (url.pathname === '/rest/api/content' && req.method === 'POST') {
       const id = String(++counter);
       const page = { ...body, id, status: 'current', space: { id: '1', key: 'AGENTTEST' }, version: { number: 1 }, history: { createdBy: { username: 'fixture-actor' } } };
+      if (htmlEntities) page.body.storage.value = page.body.storage.value.replaceAll('&#xb7;', '&middot;').replaceAll('·', '&middot;').replaceAll('&#x2192;', '&rarr;').replaceAll('→', '&rarr;');
       pages.set(id, page);
       if (unknownPost && body.title.startsWith('GitHub')) { req.socket.destroy(); return; }
       return send(200, page);
@@ -115,6 +116,8 @@ test('protection failure never publishes private body/title and continues public
     const writes = fixture.requests.filter((r) => ['POST', 'PUT'].includes(r.method)); assert.ok(writes.some((r) => r.path.endsWith('/restriction')));
     assert.ok(!JSON.stringify(writes).includes('SENSITIVE FIXTURE BODY')); assert.ok(!JSON.stringify(writes).includes('Sensitive title'));
     const manifest = await readJson(path.join(output, 'confluence-manifest.json')); assert.ok(manifest.private_blocker.id); assert.ok(manifest.private_blocker.pending_create);
+    const beforeReconcile = fixture.requests.length; const reconciled = await reconcile(fixture.api, [privateDoc, fixtureDoc()], { output }); assert.equal(reconciled.confirmed, 0); assert.equal(reconciled.refused, 1); assert.ok(fixture.requests.slice(beforeReconcile).every((r) => r.method === 'GET'));
+    assert.ok((await readJson(path.join(output, 'confluence-manifest.json'))).private_blocker);
     const postCount = writes.filter((r) => r.method === 'POST').length; await importCorpus(fixture.api, [privateDoc, fixtureDoc()], { output }); assert.equal(fixture.requests.filter((r) => r.method === 'POST').length, postCount);
   } finally { await fixture.close(); }
 }));
@@ -139,4 +142,57 @@ test('secret-looking and malformed GitHub blobs are unavailable, never corpus te
   const result = await collect({ owner: 'fixture', output, github }); assert.equal(result.collected, 0); assert.equal(result.unavailable, 2);
   assert.deepEqual(await readJson(path.join(output, 'corpus.json')), []);
   const manifest = await readJson(path.join(output, 'source-manifest.json')); assert.deepEqual(manifest.documents.map((d) => d.reason), ['secret_looking_content', 'blob_fetch_or_validation_failed']);
+}));
+
+
+test('live Confluence named HTML entities preserve text without changing CDATA', async () => scenario('live-entity-regression', async (output) => {
+  const fixture = await serverFixture(output, { htmlEntities: true });
+  const doc = fixtureDoc({ text: '# Entities\n\nAlpha · Beta → Gamma\n\n```text\nLiteral &middot; remains literal.\n```' });
+  try {
+    const result = await importCorpus(fixture.api, [doc], { output }); assert.equal(result.confirmed, 1);
+    assert.equal((await readback(fixture.api, [doc], { output })).complete, true);
+    const corpus = await readJson(path.join(output, 'confluence-corpus.json'));
+    assert.ok(corpus[0].text.includes('Alpha · Beta → Gamma'));
+    assert.ok(corpus[0].text.includes('Literal &middot; remains literal.'));
+  } finally { await fixture.close(); }
+}));
+
+
+test('reconciliation confirms only unchanged known pages and performs no remote mutations', async () => scenario('safe-reconciliation', async (output) => {
+  const fixture = await serverFixture(output, { htmlEntities: true });
+  const docs = ['unchanged', 'version', 'content', 'unknown', 'parent'].map((name) => fixtureDoc({ title: name + '.md', text: 'Alpha · Beta → ' + name, source_path: 'fixture/repo/' + name + '.md', source_url: 'https://github.com/fixture/repo/blob/main/' + name + '.md' }));
+  try {
+    assert.equal((await importCorpus(fixture.api, docs, { output })).confirmed, 5);
+    const filename = path.join(output, 'confluence-manifest.json'); const manifest = await readJson(filename);
+    for (const doc of docs) { manifest.pages['doc/' + doc.id].status = 'unresolved'; manifest.documents[doc.id].status = 'blocked'; }
+    fixture.pages.get(manifest.pages['doc/' + docs[1].id].id).version.number++;
+    fixture.pages.get(manifest.pages['doc/' + docs[2].id].id).body.storage.value += '<p>Remote edit.</p>';
+    delete manifest.pages['doc/' + docs[3].id].id;
+    fixture.pages.get(manifest.pages['doc/' + docs[4].id].id).ancestors = [{ id: '999999' }];
+    await saveJson(filename, manifest);
+    const before = fixture.requests.length; const result = await reconcile(fixture.api, docs, { output });
+    assert.equal(result.confirmed, 1); assert.equal(result.refused, 4); assert.equal(result.remote_writes, 0);
+    assert.ok(fixture.requests.slice(before).every((r) => r.method === 'GET'));
+    const after = await readJson(filename); assert.equal(after.documents[docs[0].id].status, 'confirmed');
+    for (const doc of docs.slice(1)) assert.equal(after.pages['doc/' + doc.id].status, 'unresolved');
+    const report = await readJson(path.join(output, 'reconciliation.json'));
+    assert.ok(report.results.some((r) => r.reason === 'missing_created_identity_or_version'));
+    assert.ok(report.results.some((r) => r.reason === 'page_content_changed'));
+    assert.equal(report.results.filter((r) => r.reason === 'page_identity_or_version_changed').length, 2);
+  } finally { await fixture.close(); }
+}));
+
+test('repository allowlist bounds tree requests while retaining full owned inventory', async () => scenario('repository-selection', async (output) => {
+  const requests = [];
+  const github = async (args) => {
+    requests.push(args);
+    if (args[0] === 'repo') return ['selected', 'other'].map((name) => ({ nameWithOwner: 'fixture/' + name, url: 'https://github.com/fixture/' + name, isPrivate: false, isFork: false, defaultBranchRef: { name: 'main' } }));
+    return { sha: 'tree', truncated: false, tree: [] };
+  };
+  const result = await collect({ owner: 'fixture', output, github, onlyRepo: ['selected'] });
+  assert.equal(result.repositories, 1); assert.equal(result.inventory_repositories, 2);
+  assert.equal(requests.filter((args) => args[0] === 'api').length, 1);
+  assert.ok(requests.at(-1)[1].includes('/selected/'));
+  assert.equal((await readJson(path.join(output, 'github-inventory.json'))).length, 2);
+  assert.deepEqual((await readJson(path.join(output, 'source-manifest.json'))).selected_repositories, ['fixture/selected']);
 }));

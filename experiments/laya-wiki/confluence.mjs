@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { load } from 'cheerio';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
@@ -31,8 +32,19 @@ export function preparedBody(doc, deployment = 'cloud') {
 function expectedText(body, api) {
   return normalize(storageToMarkdown(markdownToStorage(body, { flattenNestedQuotes: api.config.deployment === 'cloud' }).storage, { preserve: 'none', siteUrl: api.config.webBase }).markdown);
 }
+function xmlCompatibleStorage(storage) {
+  return storage.split(/(<!\[CDATA\[[\s\S]*?\]\]>|<!--[\s\S]*?-->)/g).map((part) => {
+    if (part.startsWith('<![CDATA[') || part.startsWith('<!--')) return part;
+    return part.replace(/&[A-Za-z][A-Za-z0-9]+;/g, (entity) => {
+      if (['&amp;', '&lt;', '&gt;', '&apos;', '&quot;'].includes(entity)) return entity;
+      const decoded = load(entity, {}, false).text();
+      if (decoded === entity) return entity;
+      return [...decoded].map((character) => '&#' + character.codePointAt(0) + ';').join('');
+    });
+  }).join('');
+}
 function pageText(page, api) {
-  return storageToMarkdown(page.storage, { preserve: 'none', pageUrl: page.url, siteUrl: api.config.webBase, pageId: page.id }).markdown;
+  return storageToMarkdown(xmlCompatibleStorage(page.storage), { preserve: 'none', pageUrl: page.url, siteUrl: api.config.webBase, pageId: page.id }).markdown;
 }
 function requireBinding(api, manifest) {
   if (JSON.stringify(manifest.binding) !== JSON.stringify(binding(api))) throw new Error('Manifest tenant/space binding mismatch.');
@@ -150,6 +162,53 @@ export async function importCorpus(api, corpus, { output = 'artifacts/laya-wiki'
   manifest.finished_at = new Date().toISOString(); manifest.expected_documents = corpus.length; await save();
   return { root: manifest.root, confirmed: Object.values(manifest.documents).filter((d) => d.status === 'confirmed').length, blocked: Object.values(manifest.documents).filter((d) => d.status !== 'confirmed').length, private_blocker: Boolean(manifest.private_blocker), manifest: filename };
 }
+export async function reconcile(api, corpus, { output = 'artifacts/laya-wiki' } = {}) {
+  validateCorpus(corpus);
+  const filename = path.join(output, 'confluence-manifest.json');
+  const manifest = await readJson(filename); requireBinding(api, manifest);
+  if (manifest.root?.status !== 'confirmed') throw new Error('Reconciliation requires a confirmed owned root.');
+  const root = await initWiki(api, { space: SPACE, topic: manifest.topic, existingRoot: manifest.root.id });
+  if (root.status !== 'confirmed' || root.version !== manifest.root.version) throw new Error('Existing root identity/version verification failed.');
+  const sources = new Map(corpus.map((doc) => [doc.id, doc]));
+  const results = [];
+  for (const [key, entry] of Object.entries(manifest.pages)) {
+    if (entry.status === 'confirmed') continue;
+    const result = { key, id: entry.id ?? null, status: 'refused' };
+    try {
+      if (!/^\d+$/.test(entry.id ?? '') || !Number.isInteger(entry.version) || entry.version < 1) throw new Error('missing_created_identity_or_version');
+      if (entry.private && manifest.private_blocker) throw new Error('private_protection_blocker');
+      if (entry.pending_create) throw new Error('pending_protected_shell');
+      const source = key.startsWith('doc/') ? sources.get(key.slice(4)) : null;
+      const body = source ? preparedBody(source, api.config.deployment) : key.startsWith('section/') ? 'Collected source documents.' : key.startsWith('group/') ? 'Source document collection.' : null;
+      if (!body || (key.startsWith('doc/') && (!source || source.private !== entry.private || manifest.documents[source.id]?.source_sha256 !== source.sha256))) throw new Error('source_missing_or_changed');
+      const expected = expectedText(body, api);
+      if (sha256(body) !== entry.input_hash || sha256(expected) !== entry.expected_hash || expected !== entry.expected_text) throw new Error('journal_content_mismatch');
+      if (!entry.title.endsWith(' [' + sha256(manifest.topic + key).slice(0, 12) + ']')) throw new Error('journal_title_mismatch');
+      let parentId = String(entry.parent_id); const seen = new Set([entry.id]);
+      while (parentId !== root.id) {
+        if (seen.has(parentId)) throw new Error('journal_parent_cycle');
+        seen.add(parentId);
+        const parent = Object.values(manifest.pages).find((page) => page.id === parentId && page.status === 'confirmed');
+        if (!parent) throw new Error('unconfirmed_parent');
+        const liveParent = await api.getPage(parentId);
+        if (liveParent.title !== parent.title || liveParent.version !== parent.version || liveParent.spaceId !== root.spaceId || liveParent.status !== 'current' || String(liveParent.parentId) !== String(parent.parent_id)) throw new Error('parent_identity_or_version_changed');
+        parentId = String(parent.parent_id);
+      }
+      const page = await api.getPage(entry.id);
+      if (page.id !== entry.id || page.title !== entry.title || page.version !== entry.version || page.spaceId !== root.spaceId || page.status !== 'current' || String(page.parentId) !== String(entry.parent_id)) throw new Error('page_identity_or_version_changed');
+      if (entry.private) await protectedRead(api, entry.id);
+      if (normalize(pageText(page, api)) !== expected) throw new Error('page_content_changed');
+      Object.assign(entry, { status: 'confirmed', storage_sha256: sha256(page.storage), reconciled_at: new Date().toISOString() });
+      delete entry.error; delete entry.reason;
+      if (source) manifest.documents[source.id] = { status: 'confirmed', id: page.id, version: page.version, url: page.url, source_sha256: source.sha256, expected_hash: entry.expected_hash, anchor: 'Source ID: ' + source.id };
+      await saveJson(filename, manifest);
+      result.status = 'confirmed'; result.version = page.version;
+    } catch (error) { result.reason = /^[a-z_]+$/.test(error.message) ? error.message : 'read_or_validation_failed'; result.http_status = Number.isInteger(error.status) ? error.status : null; }
+    results.push(result);
+    await saveJson(path.join(output, 'reconciliation.json'), { read_only_remote: true, results });
+  }
+  return { confirmed: results.filter((r) => r.status === 'confirmed').length, refused: results.filter((r) => r.status === 'refused').length, remote_writes: 0, report: path.join(output, 'reconciliation.json') };
+}
 export async function readback(api, corpus, { output = 'artifacts/laya-wiki' } = {}) {
   validateCorpus(corpus);
   const manifest = await readJson(path.join(output, 'confluence-manifest.json')); requireBinding(api, manifest);
@@ -201,13 +260,13 @@ export async function query(api, text, { output = 'artifacts/laya-wiki', limit =
 }
 async function main() {
   const { values, positionals } = parseArgs({ allowPositionals: true, options: { env: { type: 'string' }, output: { type: 'string', default: 'artifacts/laya-wiki' }, corpus: { type: 'string' }, limit: { type: 'string', default: '10' }, help: { type: 'boolean' } } });
-  if (values.help || !positionals.length) { console.log('Usage: node experiments/laya-wiki/confluence.mjs <import|readback|query TEXT> [--env PROFILE] [--output artifacts/laya-wiki] [--corpus FILE] [--limit 10]\nUses only AGENTTEST. import creates a unique root and hierarchy; private uploads require verified view-edit protection. Journal blocks unknown/stale mutations; reconcile manually before retry. readback writes confluence-corpus.json and integrity report. query scopes CQL to the study root, max 20 candidates / 40 HTTP requests / 2 MiB per response. Diagram fences remain code; assets are links. Bodies and HTTP receipts stay in the output directory; stdout contains summaries.'); return; }
+  if (values.help || !positionals.length) { console.log('Usage: node experiments/laya-wiki/confluence.mjs <import|reconcile|readback|query TEXT> [--env PROFILE] [--output artifacts/laya-wiki] [--corpus FILE] [--limit 10]\nUses only AGENTTEST. import creates a unique root and hierarchy; private uploads require verified view-edit protection. Journal blocks unknown/stale mutations; reconcile performs fresh read-only remote checks of known IDs, exact versions, ancestry and source content before confirming a journal entry; unknown IDs and private blockers remain refused. readback writes confluence-corpus.json and integrity report. query scopes CQL to the study root, max 20 candidates / 40 HTTP requests / 2 MiB per response. Diagram fences remain code; assets are links. Bodies and HTTP receipts stay in the output directory; stdout contains summaries.'); return; }
   const command = positionals[0];
-  if (!['import', 'readback', 'query'].includes(command)) throw new Error('Unknown subcommand.');
+  if (!['import', 'reconcile', 'readback', 'query'].includes(command)) throw new Error('Unknown subcommand.');
   const config = readWikiConfig(await loadProfile(values.env));
   const api = new RecordedApi(config, { output: path.join(values.output, command + '-http.json'), requestLimit: command === 'query' ? 40 : Infinity });
   const options = { output: values.output, limit: Number(values.limit) };
-  const result = command === 'query' ? await query(api, positionals.slice(1).join(' '), options) : await (command === 'import' ? importCorpus : readback)(api, await readJson(values.corpus ?? path.join(values.output, 'corpus.json')), options);
+  const result = command === 'query' ? await query(api, positionals.slice(1).join(' '), options) : await (command === 'import' ? importCorpus : command === 'reconcile' ? reconcile : readback)(api, await readJson(values.corpus ?? path.join(values.output, 'corpus.json')), options);
   console.log(JSON.stringify(result));
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) main().catch((e) => { console.error('Confluence experiment failed: ' + e.name + '. Inspect the saved manifest/HTTP receipt; no automatic retry was attempted.'); process.exitCode = 1; });
