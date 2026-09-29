@@ -5,7 +5,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createServer } from 'node:http';
 import { collect, parseNotion, sourceId, sha256, validateCorpus, readJson, saveJson, MAX_BYTES } from './collect.mjs';
-import { importCorpus, reconcile, readback, query, RecordedApi } from './confluence.mjs';
+import { importCorpus, reconcile, readback, query, RecordedApi, preparedBody } from './confluence.mjs';
 
 const evidence = path.resolve(process.env.LAYA_PIPELINE_EVIDENCE ?? '.omo/evidence/wiki-pipeline-' + Date.now());
 await mkdir(evidence, { recursive: true });
@@ -195,4 +195,18 @@ test('repository allowlist bounds tree requests while retaining full owned inven
   assert.ok(requests.at(-1)[1].includes('/selected/'));
   assert.equal((await readJson(path.join(output, 'github-inventory.json'))).length, 2);
   assert.deepEqual((await readJson(path.join(output, 'source-manifest.json'))).selected_repositories, ['fixture/selected']);
+}));
+
+
+test('prepared publication links strip temporary credentials and preserve ordinary queries and image labels', async () => scenario('signed-link-cleanup', async (output) => {
+  const signed = 'https://assets.example.test/diagram.png?X-Amz-Security-Token=fixtureSessionSecret&X-Amz-Credential=fixtureCredentialSecret&X-Amz-Signature=fixtureSignatureSecret&X-Amz-Date=20260930&format=png&download=1';
+  const doc = fixtureDoc({ text: '[Download](' + signed + ')\n\n![System diagram](' + signed + ')\n\n<' + signed + '>\n\n[Google](https://assets.example.test/file?X-Goog-Credential=fixtureGoogleSecret&x-goog-signature=fixtureGoogleSig&token=fixtureTokenSecret&access_token=fixtureAccessSecret&SIGNATURE=fixtureGenericSig&format=pdf)\n\n[Relative](../next.md?token=fixtureRelativeSecret&view=compact&signature_version=2#part)' });
+  const body = preparedBody(doc);
+  await writeFile(path.join(output, 'prepared.txt'), body);
+  for (const secret of ['fixtureSessionSecret', 'fixtureCredentialSecret', 'fixtureSignatureSecret', 'fixtureGoogleSecret', 'fixtureGoogleSig', 'fixtureTokenSecret', 'fixtureAccessSecret', 'fixtureGenericSig', 'fixtureRelativeSecret']) assert.ok(!body.includes(secret), 'credential leaked: ' + secret);
+  assert.doesNotMatch(body, /X-Amz-|X-Goog-|access_token=|[?&]token=|[?&]signature=/i);
+  assert.ok(body.includes('format=png&download=1')); assert.ok(body.includes('format=pdf'));
+  assert.ok(body.includes('https://github.com/fixture/repo/blob/next.md?view=compact&signature_version=2#part'));
+  assert.ok(body.includes('Image source: System diagram (not read)')); assert.ok(!body.includes('![System diagram]'));
+  assert.throws(() => preparedBody(fixtureDoc({ text: '[Unsafe](https://user:fixturePassword@example.test/page)' })), /URL credentials/);
 }));

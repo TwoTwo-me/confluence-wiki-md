@@ -15,19 +15,34 @@ import { sha256, saveJson, readJson, validateCorpus, secretLooking } from './col
 const SPACE = 'AGENTTEST';
 const normalize = (text) => text.replaceAll('\r\n', '\n').trim();
 const binding = (api) => ({ deployment: api.config.deployment, site: api.config.siteUrl, api: api.config.apiUrl, space: SPACE });
+function publicationUrl(value, base) {
+  const url = new URL(value, base);
+  if (url.username || url.password) throw new Error('Embedded URL credentials are not permitted.');
+  for (const key of [...url.searchParams.keys()]) {
+    if (/^(?:x-amz-|x-goog-)/i.test(key) || /^(?:access_token|token|signature)$/i.test(key)) url.searchParams.delete(key);
+  }
+  return url.href;
+}
 export function preparedBody(doc, deployment = 'cloud') {
+  const sourceUrl = publicationUrl(doc.source_url);
   const converted = markdownToStorage(doc.text, { flattenNestedQuotes: deployment === 'cloud' });
   const $ = loadStorageXml(converted.storage);
-  $('a[href]').each((_i, node) => { const href = $(node).attr('href'); if (href && !href.startsWith('#')) $(node).attr('href', new URL(href, doc.source_url).href); });
-  $('ri\\:url').each((_i, node) => { const value = $(node).attr('ri:value'); if (value) $(node).attr('ri:value', new URL(value, doc.source_url).href); });
+  $('a[href]').each((_i, node) => {
+    const href = $(node).attr('href');
+    if (!href || href.startsWith('#')) return;
+    const cleaned = publicationUrl(href, sourceUrl);
+    $(node).attr('href', cleaned);
+    if ($(node).text() === href) $(node).text(cleaned);
+  });
+  $('ri\\:url').each((_i, node) => { const value = $(node).attr('ri:value'); if (value) $(node).attr('ri:value', publicationUrl(value, sourceUrl)); });
   $('ac\\:image').each((_i, node) => {
     const url = $(node).find('ri\\:url').attr('ri:value');
-    const link = $('<a></a>').text('Image: ' + ($(node).attr('ac:alt') || 'source asset'));
+    const link = $('<a></a>').text('Image source: ' + ($(node).attr('ac:alt') || 'source asset') + ' (not read)');
     if (url) link.attr('href', url);
     $(node).replaceWith(link);
   });
-  const body = storageToMarkdown($.xml(), { preserve: 'none', pageUrl: doc.source_url, siteUrl: new URL(doc.source_url).origin }).markdown;
-  return 'Source ID: ' + doc.id + '\n\nSource: <' + doc.source_url + '>\n\n' + body;
+  const body = storageToMarkdown($.xml(), { preserve: 'none', pageUrl: sourceUrl, siteUrl: new URL(sourceUrl).origin }).markdown;
+  return 'Source ID: ' + doc.id + '\n\nSource: <' + sourceUrl + '>\n\n' + body;
 }
 function expectedText(body, api) {
   return normalize(storageToMarkdown(markdownToStorage(body, { flattenNestedQuotes: api.config.deployment === 'cloud' }).storage, { preserve: 'none', siteUrl: api.config.webBase }).markdown);
