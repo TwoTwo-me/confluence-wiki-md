@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import html
 import json
 import math
 import re
@@ -78,6 +79,22 @@ def digest(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()
 
 
+def normalize_text(text: str) -> str:
+    """Keep textual captions and fenced code; discard URL payloads without fetching images."""
+    sections = re.split(r"(?ms)(^```[^\n]*\n.*?^```[^\n]*$|^~~~[^\n]*\n.*?^~~~[^\n]*$)", text)
+    for i in range(0, len(sections), 2):
+        part = html.unescape(sections[i])
+        part = re.sub(r'(?is)<img\b[^>]*>', lambda m: next(iter(re.findall(r"alt=[\"']([^\"']*)", m[0])), "[image: no textual caption]"), part)
+        part = re.sub(r"!\[([^\]]*)\]\([^\n]*?\)", lambda m: m[1] or "[image: no textual caption]", part)
+        part = re.sub(r"\[([^\]]+)\]\([^\n]*?\)", r"\1", part)
+        part = re.sub(r"(?im)^\s*\[[^\]]+\]:\s*https?://\S+.*$", "", part)
+        part = re.sub(r"(?is)</?(?:empty-block|columns?|database|page|div|span|a|p|br|table|tbody|thead|tr|td|th)\b[^>]*>", "\n", part)
+        sections[i] = part
+    # URLs also disappear inside code; surrounding code and fence delimiters survive.
+    result = re.sub(r"https?://[^\s<>\"']+", "[URL omitted]", "".join(sections))
+    return re.sub(r"\n{3,}", "\n\n", result).strip()
+
+
 def terms(text: str) -> list[str]:
     result = re.findall(r"[a-z0-9_]+", text.lower())
     for word in re.findall(r"[가-힣]+", text):
@@ -119,6 +136,7 @@ class Passage:
     text: str
     index: int
     tokens: int
+    policy: str = "raw-v1"
 
 
 def passages(doc: Document, query: str, tok: Tokenizer) -> list[Passage]:

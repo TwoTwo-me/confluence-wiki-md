@@ -162,3 +162,48 @@ def test_bad_revision_when_cli_invoked() -> None:
     # Given / When / Then: rejection must occur before loading a model.
     with pytest.raises(BenchmarkError):
         main(revision="main", mode=Mode.PREFIX)
+
+
+def test_normalized_passages_when_signed_images_precede_late_fact() -> None:
+    # Given: URL length overwhelms useful text in the original capture.
+    from types import SimpleNamespace
+    from benchmark import Runner
+    signed = "https://bucket.example/image.png?X-Amz-Signature=" + "deadbeef"*400
+    doc = document(f'<columns><column>![흐름도]({signed})<empty-block/></column></columns>\n# 비밀번호\n비밀번호 재설정 링크는 계정 설정에 있습니다.')
+    original = doc.model_dump()
+    runner = Runner.__new__(Runner)
+    runner.agent = SimpleNamespace(tok=CharacterTokenizer())
+    # When
+    selected = runner.select(doc, query(), Mode.NORMALIZED)
+    # Then
+    assert any("재설정 링크는 계정 설정" in p.text for p in selected)
+    assert all("X-Amz" not in p.text and "deadbeef" not in p.text for p in selected)
+    assert all(p.policy == "notion-text-v1" for p in selected)
+    assert doc.model_dump() == original
+    assert doc.id == "password"
+
+
+def test_normalization_when_code_and_database_labels_present() -> None:
+    # Given
+    from models import normalize_text
+    code = '```python\nvalue = "<column>literal</column>"\nprint(value)\n```'
+    text = '<database url="https://example.test/private">운영 규칙</database>\n' + code
+    # When
+    normalized = normalize_text(text)
+    # Then
+    assert code in normalized
+    assert "운영 규칙" in normalized
+    assert "example.test" not in normalized
+    assert "<database" not in normalized
+
+
+def test_normalization_when_images_links_and_bare_urls_present() -> None:
+    # Given
+    from models import normalize_text
+    text = '<img src="https://aws.test/x?secret=abc" alt="구성도"> [관리 안내](https://wiki.test/x?secret=abc)\nhttps://aws.test/y?secret=abc\n```sh\ncurl https://aws.test/z?secret=abc\n```'
+    # When
+    normalized = normalize_text(text)
+    # Then
+    assert "구성도" in normalized and "관리 안내" in normalized
+    assert "secret=abc" not in normalized and "https://" not in normalized
+    assert "```sh\ncurl [URL omitted]\n```" in normalized

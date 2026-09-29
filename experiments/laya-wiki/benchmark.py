@@ -23,7 +23,7 @@ from typing import Final, assert_never
 import typer
 from pydantic import BaseModel, TypeAdapter
 
-from models import BM25, BenchmarkError, Cache, Case, Document, Metrics, Passage, Prediction, digest, inputs, metrics, passages
+from models import BM25, BenchmarkError, Cache, Case, Document, Metrics, Passage, Prediction, digest, inputs, metrics, normalize_text, passages
 
 MODEL: Final = "convaiinnovations/laya-multilingual"
 REVISION: Final = "e4e9ddf21a7b1903b7acffd8814ad4307bf63a67"
@@ -32,6 +32,7 @@ REVISION: Final = "e4e9ddf21a7b1903b7acffd8814ad4307bf63a67"
 class Mode(StrEnum):
     PREFIX = "prefix"
     CHUNKS = "chunks"
+    NORMALIZED = "normalized"
     COMPARE = "compare"
 
 
@@ -58,6 +59,9 @@ class Row(BaseModel):
     raw_first10_tokens: int
     raw_first10_bytes: int
     final3_tokens: int
+    source_tokens_before: int
+    source_tokens_after: int
+    normalization_policy: str
     final3_bytes: int
 
 
@@ -88,7 +92,7 @@ class Runner:
     def score(self, case: Case, selections: list[tuple[Document, Passage]], reverse: bool = False, korean: bool = False) -> list[Prediction]:
         schema = questions(reverse, korean)
         states = [{"query": case.query, "document": passage.text} for _, passage in selections]
-        keys = [self.cache.key(doc, json.dumps({"state": state, "questions": schema}, ensure_ascii=False, sort_keys=True)) for (doc, _), state in zip(selections, states, strict=True)]
+        keys = [self.cache.key(doc, json.dumps({"state": state, "questions": schema, **({"normalization": passage.policy} if passage.policy != "raw-v1" else {})}, ensure_ascii=False, sort_keys=True)) for (doc, passage), state in zip(selections, states, strict=True)]
         missing = [i for i, key in enumerate(keys) if key not in self.cache.values]
         self.cache.hits += len(keys) - len(missing)
         self.cache.misses += len(missing)
@@ -108,9 +112,12 @@ class Runner:
             case Mode.PREFIX:
                 text = doc.title + "\n" + doc.text
                 return [Passage(text, 0, len(self.agent.tok.encode(text, add_special_tokens=False)))]
-            case Mode.CHUNKS:
-                chunks = passages(doc, case.query, self.agent.tok)
-                return [chunks[i] for i in BM25([p.text for p in chunks]).rank(case.query)[:2]]
+            case Mode.CHUNKS | Mode.NORMALIZED:
+                normalized = policy is Mode.NORMALIZED
+                prepared = doc.model_copy(update={"text": normalize_text(doc.text), "title": normalize_text(doc.title)}) if normalized else doc
+                chunks = passages(prepared, case.query, self.agent.tok)
+                chosen = [chunks[i] for i in BM25([p.text for p in chunks]).rank(case.query)[:2]]
+                return [Passage(p.text, p.index, p.tokens, "notion-text-v1" if normalized else "raw-v1") for p in chosen]
             case Mode.COMPARE:
                 raise BenchmarkError("Select needs one policy")
             case unreachable:
@@ -129,7 +136,9 @@ class Runner:
         raw = "\n".join(d.text for d in candidates[:10])
         final = "\n".join(best[doc_id][1].text for doc_id in ranked[:3])
         ids = [d.id for d in candidates]
-        return Row(case_id=case.id, split=case.split, kind=case.kind, policy=policy.value, budget=len(candidates), candidate_ids=ids, ranked_ids=ranked, scores=[best[i][0] for i in ranked], metrics=metrics(ranked, case, ids), chunk_count=len(selections), input_tokens=sum(p.usage.input_tokens for p in predictions), dropped_tokens=sum(p.usage.state_tokens_dropped for p in predictions), truncated_states=sum(p.usage.truncated for p in predictions), seconds=time.perf_counter()-started, raw_first10_tokens=len(self.agent.tok.encode(raw, add_special_tokens=False)), raw_first10_bytes=len(raw.encode()), final3_tokens=len(self.agent.tok.encode(final, add_special_tokens=False)), final3_bytes=len(final.encode()))
+        source_before = sum(len(self.agent.tok.encode(d.title + "\n" + d.text, add_special_tokens=False)) for d in candidates)
+        source_after = sum(len(self.agent.tok.encode(normalize_text(d.title) + "\n" + normalize_text(d.text), add_special_tokens=False)) for d in candidates) if policy is Mode.NORMALIZED else source_before
+        return Row(source_tokens_before=source_before, source_tokens_after=source_after, normalization_policy="notion-text-v1" if policy is Mode.NORMALIZED else "raw-v1", case_id=case.id, split=case.split, kind=case.kind, policy=policy.value, budget=len(candidates), candidate_ids=ids, ranked_ids=ranked, scores=[best[i][0] for i in ranked], metrics=metrics(ranked, case, ids), chunk_count=len(selections), input_tokens=sum(p.usage.input_tokens for p in predictions), dropped_tokens=sum(p.usage.state_tokens_dropped for p in predictions), truncated_states=sum(p.usage.truncated for p in predictions), seconds=time.perf_counter()-started, raw_first10_tokens=len(self.agent.tok.encode(raw, add_special_tokens=False)), raw_first10_bytes=len(raw.encode()), final3_tokens=len(self.agent.tok.encode(final, add_special_tokens=False)), final3_bytes=len(final.encode()))
 
 
 def probe_cases() -> tuple[list[Document], list[Case]]:
@@ -147,7 +156,7 @@ def execute(options: Options) -> None:
     index = BM25([d.title + "\n" + d.text for d in docs])
     index_seconds = time.perf_counter() - index_start
     lookup = {d.id: d for d in docs}
-    policies = [Mode.PREFIX, Mode.CHUNKS] if options.mode is Mode.COMPARE else [options.mode]
+    policies = [Mode.PREFIX, Mode.CHUNKS, Mode.NORMALIZED] if options.mode is Mode.COMPARE else [options.mode]
     rows: list[Row] = []
     lexical = []
     adaptive = []
@@ -194,7 +203,7 @@ def execute(options: Options) -> None:
         selected = [r for r in rows if (r.policy, r.budget, r.split) == (policy, budget, split)]
         aggregates.append({"policy": policy, "budget": budget, "split": split, "queries": len(selected), **{key: sum(getattr(r.metrics, key) for r in selected)/len(selected) for key in ("recall3", "recall10", "hit3", "mrr", "candidate_coverage")}})
     import torch
-    output = {"model": MODEL, "revision": options.revision, "device": options.device.value, "rows": [r.model_dump() for r in rows], "aggregates": aggregates, "lexical": lexical, "adaptive": adaptive, "probes": probes, "cache": {"hits": runner.cache.hits, "misses": runner.cache.misses, "repeat": repeat_result, "invalidation_probe": cache_invalidation, "invalidation": "actual document/title content, query, chunk, model revision, SDK, device, schema, max_len/head_max_len, batch size, policy version"}, "latency_seconds": {"startup": runner.startup_seconds, "index": index_seconds, "inference": runner.inference_seconds, "total": time.perf_counter()-started}, "peak_rss_bytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * (1 if sys.platform == "darwin" else 1024), "mps_allocated_bytes": torch.mps.current_allocated_memory() if options.device is Device.MPS else 0, "external_paid_inference_calls": 0, "external_paid_inference_usd": 0, "hypothetical": {"input_usd_per_million": options.input_price, "local_usd_per_hour": options.local_price, "saved_input_usd": sum(r.raw_first10_tokens-r.final3_tokens for r in rows)*options.input_price/1e6, "break_even_saved_tokens": runner.inference_seconds/3600*options.local_price/options.input_price*1e6 if options.input_price else None, "formula": "saved_tokens * input_price / 1e6 - local_seconds / 3600 * local_hour_price; scenarios overlap, do not sum as a deployment estimate", "billing_measured": False}, "threshold": {"value": options.threshold, "source": "fixed CLI heuristic; no test label tuning", "calibrated": False}}
+    output = {"normalization": {"policy": "notion-text-v1", "image_text_read": False, "source_corpus_modified": False, "urls_fetched": 0}, "model": MODEL, "revision": options.revision, "device": options.device.value, "rows": [r.model_dump() for r in rows], "aggregates": aggregates, "lexical": lexical, "adaptive": adaptive, "probes": probes, "cache": {"hits": runner.cache.hits, "misses": runner.cache.misses, "repeat": repeat_result, "invalidation_probe": cache_invalidation, "invalidation": "actual document/title content, query, chunk, model revision, SDK, device, schema, max_len/head_max_len, batch size, policy version"}, "latency_seconds": {"startup": runner.startup_seconds, "index": index_seconds, "inference": runner.inference_seconds, "total": time.perf_counter()-started}, "peak_rss_bytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * (1 if sys.platform == "darwin" else 1024), "mps_allocated_bytes": torch.mps.current_allocated_memory() if options.device is Device.MPS else 0, "external_paid_inference_calls": 0, "external_paid_inference_usd": 0, "hypothetical": {"input_usd_per_million": options.input_price, "local_usd_per_hour": options.local_price, "saved_input_usd": sum(r.raw_first10_tokens-r.final3_tokens for r in rows)*options.input_price/1e6, "break_even_saved_tokens": runner.inference_seconds/3600*options.local_price/options.input_price*1e6 if options.input_price else None, "formula": "saved_tokens * input_price / 1e6 - local_seconds / 3600 * local_hour_price; scenarios overlap, do not sum as a deployment estimate", "billing_measured": False}, "threshold": {"value": options.threshold, "source": "fixed CLI heuristic; no test label tuning", "calibrated": False}}
     options.output.parent.mkdir(parents=True, exist_ok=True)
     options.output.write_text(json.dumps(output, ensure_ascii=False, indent=2, allow_nan=False) + "\n")
 
