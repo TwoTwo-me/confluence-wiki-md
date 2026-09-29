@@ -1,0 +1,27 @@
+[project]
+name = "laya-wiki-study"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["laya==0.3.22", "torch==2.14.0", "transformers==5.17.0", "pydantic==2.13.5", "typer==0.27.2"]
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.8", "basedpyright>=1.21"]
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+addopts = ["-ra", "--strict-config", "--strict-markers"]
+
+[tool.basedpyright]
+typeCheckingMode = "all"
+pythonVersion = "3.12"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["COM812", "D203", "D213", "CPY001"]
+
+[tool.ruff.lint.per-file-ignores]
+"test_*.py" = ["S101", "PLR2004", "D", "ARG"]
