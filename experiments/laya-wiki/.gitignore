@@ -1,0 +1,11 @@
+__pycache__/
+.pytest_cache/
+.venv/
+.cache/
+artifacts/
+notion-raw/
+raw/
+corpus.json
+confluence-corpus.json
+*.sqlite
+*.safetensors
