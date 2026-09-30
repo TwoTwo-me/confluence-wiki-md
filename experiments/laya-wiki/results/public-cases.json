@@ -1,0 +1,99 @@
+[
+  {
+    "id": "cal01",
+    "query": "문서를 편집할 때 노트 내용과 파일명을 네트워크 요청이나 URL에 보내나요?",
+    "relevant_ids": [
+      "14ce9293c7865084031b8f7c034e1400b45c2ba0cba75fc4813dbe09175d9a33"
+    ],
+    "split": "calibration",
+    "kind": "korean",
+    "label_method": "preregistered_known_source_document; not exhaustive relevance labels"
+  },
+  {
+    "id": "cal02",
+    "query": "Which physical command suffix opens the global graph?",
+    "relevant_ids": [
+      "5123ca99dfd05a84e88364c1fd39f72197c2e2c9940d31869286eb38f30124f7"
+    ],
+    "split": "calibration",
+    "kind": "english",
+    "label_method": "preregistered_known_source_document; not exhaustive relevance labels"
+  },
+  {
+    "id": "q03",
+    "query": "한글 IME 입력 중 isComposing이나 키코드 229가 발생하면 명령 트리거를 어떻게 처리하나요?",
+    "relevant_ids": [
+      "5123ca99dfd05a84e88364c1fd39f72197c2e2c9940d31869286eb38f30124f7"
+    ],
+    "split": "test",
+    "kind": "korean-paraphrase",
+    "label_method": "preregistered_known_source_document; not exhaustive relevance labels"
+  },
+  {
+    "id": "q04",
+    "query": "Why do GitHub Pages project paths fail to isolate recovery drafts and directory handles from sibling apps?",
+    "relevant_ids": [
+      "73d66bd91f0c08552c6fbba1649e40a9a7f42012e1dfbdd4dbf5b8f6721b6074"
+    ],
+    "split": "test",
+    "kind": "english-paraphrase",
+    "label_method": "preregistered_known_source_document; not exhaustive relevance labels"
+  },
+  {
+    "id": "q05",
+    "query": "두 편집 패널에서 같은 문서를 열었을 때 문서 상태와 저장은 어떻게 공유되나요?",
+    "relevant_ids": [
+      "8ac472563beeb6ba7315c9ef20cff008e434595b398e76d4f101b09bf8cd15f6"
+    ],
+    "split": "test",
+    "kind": "korean",
+    "label_method": "preregistered_known_source_document; not exhaustive relevance labels"
+  },
+  {
+    "id": "q06",
+    "query": "How does offline installation of the editor work after a first online visit?",
+    "relevant_ids": [
+      "1a61cbeaa328e982cba434c64fea2e66a03fc59ca8a9db2ee943d8789f9f70a2"
+    ],
+    "split": "test",
+    "kind": "english",
+    "label_method": "preregistered_known_source_document; not exhaustive relevance labels"
+  },
+  {
+    "id": "q07",
+    "query": "cfwiki는 별도 env 옵션이 없을 때 Confluence 토큰 프로필을 어느 폴더에서 읽나요?",
+    "relevant_ids": [
+      "35610703a20b1cb971e75efcd53b1fef981697ba71e38c849b757f7b4cd0a138"
+    ],
+    "split": "test",
+    "kind": "korean-long-tail",
+    "label_method": "preregistered_known_source_document; not exhaustive relevance labels"
+  },
+  {
+    "id": "q08",
+    "query": "릴리스 전에 어떤 검증을 하고 GitHub Packages와 태그 배포를 어떻게 처리하나요?",
+    "relevant_ids": [
+      "04139f422f31397fa7b323f4265b3138c331e5efb42e4f07e7f71c0dafa820a5"
+    ],
+    "split": "test",
+    "kind": "korean",
+    "label_method": "preregistered_known_source_document; not exhaustive relevance labels"
+  },
+  {
+    "id": "q09",
+    "query": "노트 데이터 형식 버전과 앱 릴리스 버전은 어떻게 구분하나요?",
+    "relevant_ids": [
+      "f55a9c67a081184d6dd29a6f3e190a7c681ffbfbd2925d306a9382c80c02040d"
+    ],
+    "split": "test",
+    "kind": "korean",
+    "label_method": "preregistered_known_source_document; not exhaustive relevance labels"
+  },
+  {
+    "id": "q14",
+    "query": "2031년 유로파 우주 정거장의 예약 취소 위약금은 얼마인가요?",
+    "relevant_ids": [],
+    "split": "test",
+    "kind": "unanswerable"
+  }
+]
