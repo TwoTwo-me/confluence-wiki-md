@@ -1,0 +1,283 @@
+{
+  "schema": 1,
+  "updated_at": "2026-09-30T15:44:01.689Z",
+  "observation_timezone": "Asia/Seoul",
+  "source_coverage": {
+    "owned_repositories": 66,
+    "readable_trees": 65,
+    "captured_text_documents": 9434,
+    "public": 2238,
+    "private": 7196,
+    "utf8_bytes": 71382282,
+    "github_manifest_complete": false,
+    "github_coverage_accounted": true,
+    "unavailable_candidates": 129,
+    "media_blob_downloads": 0,
+    "notion_workspace_capture": "pending; native export and resumable live reader are in progress",
+    "corpus_sha256": "83b3f467fc10fff5e67dcfae24ab8827a7593539b5bf02b8af3e8c36b93dea36"
+  },
+  "publication": {
+    "collected": 2238,
+    "publishable": 2238,
+    "excluded": 0,
+    "sources": 2238,
+    "private": 0,
+    "redactedUrlCredentials": 1,
+    "redactedSignedUrls": 0,
+    "textUnits": 2322,
+    "units": 2436,
+    "groups": 23,
+    "preparedBytes": 25644546,
+    "confirmed": 2436,
+    "matched": 2238,
+    "verified": 2238,
+    "planHash": "660f7324adde40f6374eb632809b0c20e4e68ffc40c1f4b65f0a6bfee01d2eca",
+    "writesRetried": 0,
+    "root_id": "3834037",
+    "private_sources_published": 0,
+    "policy": "public source text only; private space-visibility consent pending",
+    "media_uploads": 0,
+    "original_study_sources_freshly_verified": 27
+  },
+  "primary": {
+    "cases": 14,
+    "positive_test_queries": 10,
+    "calibration_queries": 2,
+    "unanswerable_controls": 2,
+    "frozen_at": "2026-09-30T12:41:20.041Z",
+    "scores": [
+      {
+        "budget": 10,
+        "positive_queries": 10,
+        "global_bm25_hit3": 7,
+        "laya_hit3": 2,
+        "candidate_coverage": 7,
+        "mean_mrr": 0.2771825396825397,
+        "raw_first10_tokens_sum": 633964,
+        "final3_passage_tokens_sum": 8727,
+        "sdk_truncated_states": 0
+      },
+      {
+        "budget": 40,
+        "positive_queries": 10,
+        "global_bm25_hit3": 7,
+        "laya_hit3": 1,
+        "candidate_coverage": 7,
+        "mean_mrr": 0.10594246031746032,
+        "raw_first10_tokens_sum": 633964,
+        "final3_passage_tokens_sum": 11429,
+        "sdk_truncated_states": 0
+      }
+    ],
+    "controls": [
+      {
+        "case_id": "control-missing",
+        "budget": 10,
+        "top_score": 0.7612
+      },
+      {
+        "case_id": "control-missing",
+        "budget": 40,
+        "top_score": 0.7612
+      },
+      {
+        "case_id": "control-missing-ko",
+        "budget": 10,
+        "top_score": 0.3266
+      },
+      {
+        "case_id": "control-missing-ko",
+        "budget": 40,
+        "top_score": 0.7637
+      }
+    ],
+    "cache": {
+      "hits": 2755,
+      "misses": 1111,
+      "repeat": {
+        "seconds": 0.15960133296903223,
+        "new_inference_states": 0,
+        "same_ranking": true
+      },
+      "invalidation_probe": {
+        "same_content_same_key": true,
+        "changed_content_new_key": true,
+        "caller_sha256_retained": true
+      },
+      "invalidation": "actual document/title content, query, chunk, model revision, SDK, device, schema, max_len/head_max_len, batch size, policy version"
+    },
+    "latency_seconds": {
+      "startup": 5.3923557080561295,
+      "index": 5.603460042038932,
+      "inference": 69.40961449919268,
+      "total": 170.21099654200953
+    },
+    "peak_rss_bytes": 2422898688,
+    "mps_current_allocated_bytes": 1296026368,
+    "unique_cache_keys": 1103,
+    "actual_new_sdk_states": 1111,
+    "caveats": [
+      "Global BM25 order is distinct from BM25 rebuilt within the selected pool.",
+      "Known public sources and byte-identical aliases are labels; all other relevant documents are not exhaustively labeled.",
+      "Only positive test rows enter accuracy denominators.",
+      "Token counts use Laya tokenizer and are not OpenAI billable tokens."
+    ]
+  },
+  "metadata_probe": {
+    "frozen_at": "2026-09-30T14:26:37.717Z",
+    "budget": {
+      "candidates": 40,
+      "max_reads": 8,
+      "max_options": 4
+    },
+    "scope": "Fresh diagnostic subset over public GitHub only; differs from the all-9434 primary benchmark. Six questions cover three source documents and are not independent topic samples.",
+    "topology": "virtual BM25 retrieval menus, no native wiki edges",
+    "local": {
+      "corpus_documents": 2238,
+      "graph_sha256": "31e28c5e29072c8ae986201d80eab52c3124098dc1e454f0d41c06757dca3cad",
+      "cases_sha256": "357e68b6f903eb04de35f7bfd7f10f5a5ceb1e879cb18d6a06facd377794e860",
+      "policies": [
+        {
+          "policy": "fifo",
+          "positive_queries": 6,
+          "successes": 3,
+          "logical_reads": 30,
+          "content_reads_excluding_start_menus": 24,
+          "reachable_queries": 5,
+          "unanswerable_controls": 2,
+          "control_successes": 0
+        },
+        {
+          "policy": "bm25",
+          "positive_queries": 6,
+          "successes": 3,
+          "logical_reads": 30,
+          "content_reads_excluding_start_menus": 24,
+          "reachable_queries": 5,
+          "unanswerable_controls": 2,
+          "control_successes": 0
+        },
+        {
+          "policy": "laya",
+          "positive_queries": 6,
+          "successes": 3,
+          "logical_reads": 30,
+          "content_reads_excluding_start_menus": 24,
+          "reachable_queries": 5,
+          "unanswerable_controls": 2,
+          "control_successes": 0
+        },
+        {
+          "policy": "strictLaya",
+          "positive_queries": 6,
+          "successes": 3,
+          "logical_reads": 12,
+          "content_reads_excluding_start_menus": 6,
+          "reachable_queries": 5,
+          "unanswerable_controls": 2,
+          "control_successes": 0
+        }
+      ],
+      "uncached_states": 38,
+      "uncached_input_tokens": 19559,
+      "latency_seconds": {
+        "setup": 4.073611249914393,
+        "index": 0.0024967078352347016,
+        "inference": 2.908990502357483,
+        "total": 7.643615792039782
+      },
+      "peak_rss_bytes": 2798501888,
+      "repeat": {
+        "same_paths": true,
+        "new_inference": 0,
+        "cases": 8,
+        "seconds": 0.341557458974421,
+        "meaning": "Exact-state warm lookup, not unseen-query latency"
+      },
+      "http_reads_inside_harness": 0
+    },
+    "confluence_readback": {
+      "corpus_documents": 2238,
+      "graph_sha256": "f82b3e7a64bdd628c35953c18a58e103ddf0792bf26f4cc38f1784b8282ae676",
+      "cases_sha256": "357e68b6f903eb04de35f7bfd7f10f5a5ceb1e879cb18d6a06facd377794e860",
+      "policies": [
+        {
+          "policy": "fifo",
+          "positive_queries": 6,
+          "successes": 3,
+          "logical_reads": 30,
+          "content_reads_excluding_start_menus": 24,
+          "reachable_queries": 5,
+          "unanswerable_controls": 2,
+          "control_successes": 0
+        },
+        {
+          "policy": "bm25",
+          "positive_queries": 6,
+          "successes": 3,
+          "logical_reads": 30,
+          "content_reads_excluding_start_menus": 24,
+          "reachable_queries": 5,
+          "unanswerable_controls": 2,
+          "control_successes": 0
+        },
+        {
+          "policy": "laya",
+          "positive_queries": 6,
+          "successes": 3,
+          "logical_reads": 30,
+          "content_reads_excluding_start_menus": 24,
+          "reachable_queries": 5,
+          "unanswerable_controls": 2,
+          "control_successes": 0
+        },
+        {
+          "policy": "strictLaya",
+          "positive_queries": 6,
+          "successes": 3,
+          "logical_reads": 12,
+          "content_reads_excluding_start_menus": 6,
+          "reachable_queries": 5,
+          "unanswerable_controls": 2,
+          "control_successes": 0
+        }
+      ],
+      "uncached_states": 27,
+      "uncached_input_tokens": 15516,
+      "latency_seconds": {
+        "setup": 5.420843459083699,
+        "index": 0.0030482903821393847,
+        "inference": 2.161656127194874,
+        "total": 8.239379500038922
+      },
+      "peak_rss_bytes": 2673639424,
+      "repeat": {
+        "same_paths": true,
+        "new_inference": 0,
+        "cases": 8,
+        "seconds": 0.33640899998135865,
+        "meaning": "Exact-state warm lookup, not unseen-query latency"
+      },
+      "http_reads_inside_harness": 0
+    },
+    "same_paths": 29,
+    "paired_paths": 32,
+    "cloud_cache_initialization": "Copied local exact-state cache; only matching keys reused.",
+    "stopping": "Oracle source-ID stopping after a logical read; autonomous sufficiency not evaluated."
+  },
+  "costs": {
+    "paid_answer_or_judge_api_calls": 0,
+    "measured_paid_inference_usd": 0,
+    "codex_billable_cost": null,
+    "mac_energy_and_time_cost": null,
+    "net_savings_established": false,
+    "luna_max_used_in_this_expansion": false,
+    "worker_policy": "one fixed-role worker active at a time; direct scripts for bulk work",
+    "driver_snapshot": {
+      "status": "blocked",
+      "tokens_used": 902663,
+      "time_used_seconds": 5844,
+      "caveat": "Harness snapshot is not billable usage and excludes work after its blocked checkpoint."
+    }
+  }
+}

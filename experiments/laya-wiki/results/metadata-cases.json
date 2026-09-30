@@ -1,0 +1,78 @@
+[
+  {
+    "id": "metadata-1",
+    "kind": "question",
+    "query": "c-vpn의 현재 진행 체크리스트에서 AES-128-CBC와 HMAC-SHA256/PRF는 구현 완료로 표시되나요?",
+    "start_id": "virtual-menu-0",
+    "target_ids": [
+      "8764c67ef142faa41f2525c3906662fa4a8bbd4a37f0f578686a84da9c0308c4"
+    ],
+    "split": "test"
+  },
+  {
+    "id": "metadata-2",
+    "kind": "question",
+    "query": "c-vpn에서 X25519는 현재 실제로 구현되어 있나요, 다음 단계에서는 어떤 라이브러리 연동을 제안하나요?",
+    "start_id": "virtual-menu-1",
+    "target_ids": [
+      "8764c67ef142faa41f2525c3906662fa4a8bbd4a37f0f578686a84da9c0308c4"
+    ],
+    "split": "test"
+  },
+  {
+    "id": "metadata-3",
+    "kind": "question",
+    "query": "OpenScience를 계정 없이 자체 API 키로 이용할 때 키와 요청은 어디에 남거나 전송되나요?",
+    "start_id": "virtual-menu-2",
+    "target_ids": [
+      "11f18d7d169eb871f2bd2f74e6bdeff09bf8805857f49cc7ecca944f78d93717"
+    ],
+    "split": "test"
+  },
+  {
+    "id": "metadata-4",
+    "kind": "question",
+    "query": "OpenScience는 기본 연구 에이전트 외에 어떤 전문 에이전트와 비평·문헌 검토 역할을 제공하나요?",
+    "start_id": "virtual-menu-3",
+    "target_ids": [
+      "11f18d7d169eb871f2bd2f74e6bdeff09bf8805857f49cc7ecca944f78d93717"
+    ],
+    "split": "test"
+  },
+  {
+    "id": "metadata-5",
+    "kind": "question",
+    "query": "OpenScience에서 Atlas가 과금하는 범위와 bring-your-own-key 이용 정책은 어떻게 다른가요?",
+    "start_id": "virtual-menu-4",
+    "target_ids": [
+      "11f18d7d169eb871f2bd2f74e6bdeff09bf8805857f49cc7ecca944f78d93717"
+    ],
+    "split": "test"
+  },
+  {
+    "id": "metadata-6",
+    "kind": "question",
+    "query": "nuclei-templates 한국어 소개에서 상위 10개 지표보다 자세한 통계와 기계가 읽을 통계는 어떤 파일로 안내하나요?",
+    "start_id": "virtual-menu-5",
+    "target_ids": [
+      "2f64f3fd87212de8ac53df58d7b0aad576fd20d3a3034d591d160aaabcbd4d9e"
+    ],
+    "split": "test"
+  },
+  {
+    "id": "metadata-7",
+    "kind": "unanswerable",
+    "query": "ZXM_FRESH_LUNAR_FERRY_20260930 사업의 승인된 월면 여객선 출항 날짜와 계약 금액은 무엇인가요?",
+    "start_id": "virtual-menu-6",
+    "target_ids": [],
+    "split": "test"
+  },
+  {
+    "id": "metadata-8",
+    "kind": "unanswerable",
+    "query": "Which authority issued QVM_FRESH_UNICORN_PERMIT_20260930 and what is its approved permit number?",
+    "start_id": "virtual-menu-7",
+    "target_ids": [],
+    "split": "test"
+  }
+]

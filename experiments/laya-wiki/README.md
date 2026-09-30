@@ -2,6 +2,73 @@
 
 This is a bounded, local-first experiment. The findings and limits are in [report.ko.md](report.ko.md); the sanitized measurements and public-only cases are in [results/summary.json](results/summary.json) and [results/public-cases.json](results/public-cases.json).
 
+## Expanded text study
+
+The October 1 update collected 9,434 owned GitHub document files and verified publication/readback of all 2,238 public sources. See [expanded measurements](results/text-expansion-summary.json), [public questions](results/text-expansion-cases.public.json), and [fresh metadata-menu questions](results/metadata-cases.json). The expanded benchmark found no ranking or reading benefit over BM25. The older 27-document and link experiments below remain separate campaigns.
+
+The resumable collector fetches only eligible Git blobs, verifies Git object hashes and UTF-8, retains oversized text, and accounts for empty/binary/secret-looking/unavailable sources. It collects public and private sources; keep its output ignored:
+
+```sh
+node experiments/laya-wiki/text_corpus.mjs --owner TwoTwo-me \
+  --output artifacts/laya-wiki/text-expansion/github
+node experiments/laya-wiki/notion_text_export.mjs \
+  --input "$NOTION_TEXT_EXPORT" --output artifacts/laya-wiki/text-expansion/notion
+```
+
+The Notion command reads an extracted Markdown/CSV directory without network access or media reads. Native UUID filenames retain page/database identity. Export-file accounting and unresolved references are explicit; this does not establish workspace or block completeness. In the executed update, the native workspace download did not arrive, so a private, logged-in Aside reader also traversed native records and collection rows. Its raw properties and coverage receipts stay local.
+
+For an offline publication plan, provide a destination binding JSON with `tenant`, `apiUrl`, `v1Url`, `spaceId`, `spaceKey`, `rootId`, and `actorId`:
+
+```sh
+node experiments/laya-wiki/text_publish.mjs \
+  --corpus "$PUBLIC_TEXT_CORPUS" --binding "$WIKI_STUDY_BINDING" \
+  --output artifacts/laya-wiki/text-expansion/public-full
+```
+
+Add `--publish --env "$WIKI_STUDY_PROFILE"` only for an authorized live write. Private source text requires `--approval FILE` bound to this site/root/actor and explicit space-visibility consent; `--help` prints its schema. Current actor, destination and anonymous/unlicensed permissions are checked before writes. The human roster requires a fresh manual check. Missing consent and mismatched bindings refuse publication. Journals preserve accepted IDs, ambiguous mutations require reconciliation, and changed source/plan/bindings cannot silently resume. No automatic POST retry occurs. All body text is read back before a source is called verified.
+
+The publisher chunks and deduplicates content, redacts signed/userinfo URLs, and creates repository catalogs with original source links. Notion parent IDs are retained in metadata; the catalogs do not reproduce native Notion hierarchy. The actual Free site rejects protected creation, so private publication remains pending approval of space permissions. Public publication is independently complete.
+
+Use local frozen cases for the 9,434-document replay: the tracked public question file omits private identical-content alias IDs. Original corpus/cases SHA values and UTC freeze times are in the measurements. Do not replace the source snapshot or tune on these cases while comparing policies:
+
+```sh
+HF_HUB_OFFLINE=1 USE_TF=0 sandbox-exec -p '(version 1) (allow default) (deny network*)' \
+  artifacts/laya-wiki/venv/bin/python experiments/laya-wiki/benchmark.py \
+  --corpus artifacts/laya-wiki/text-expansion/github/corpus.json \
+  --cases artifacts/laya-wiki/text-expansion/evaluation/github-cases.json \
+  --output artifacts/laya-wiki/text-expansion/evaluation/github-benchmark.json \
+  --device mps --mode normalized --limit-candidates 40
+```
+
+The smaller diagnostic uses genuinely public sources, metadata+text BM25 top-40 menus, four options, and at most eight logical reads including the start. These are virtual search menus, rather than native wiki links. The builder checks exact source quotes and freezes cases before inference:
+
+```sh
+node experiments/laya-wiki/metadata_probe.mjs \
+  --output artifacts/laya-wiki/text-expansion/evaluation/metadata
+HF_HUB_OFFLINE=1 USE_TF=0 sandbox-exec -p '(version 1) (allow default) (deny network*)' \
+  artifacts/laya-wiki/venv/bin/python experiments/laya-wiki/graph_benchmark.py \
+  --graph artifacts/laya-wiki/text-expansion/evaluation/metadata/graph.json \
+  --cases artifacts/laya-wiki/text-expansion/evaluation/metadata/cases.json \
+  --output artifacts/laya-wiki/text-expansion/evaluation/metadata/navigation.json \
+  --device mps --max-reads 8 --max-options 4
+node experiments/laya-wiki/metadata_probe.mjs \
+  --output artifacts/laya-wiki/text-expansion/evaluation/metadata-paired \
+  --frozen artifacts/laya-wiki/text-expansion/evaluation/metadata \
+  --paired-corpus artifacts/laya-wiki/text-expansion/public-full/matched-corpus.json
+```
+
+Run the same navigation command against the paired graph/cases for comparison. The executed paired run copied the local exact-state cache, so its newly inferred state count is incremental. Both runs use oracle source-ID stopping and cached document reads; they do not prove autonomous answer sufficiency or live HTTP latency. The builder refuses an existing output directory, preserving the frozen snapshot.
+
+Relevant checks:
+
+```sh
+node --test experiments/laya-wiki/text_corpus.test.mjs \
+  experiments/laya-wiki/notion_text_export.test.mjs \
+  experiments/laya-wiki/text_publish.test.mjs \
+  experiments/laya-wiki/metadata_probe.test.mjs \
+  experiments/laya-wiki/collector.test.mjs
+```
+
 ## Requirements and setup
 
 Use Node.js 24+, Python 3.12, `uv`, and (for GitHub collection) an authenticated `gh` CLI. The first model run downloads the pinned model revision; later offline runs need that revision cached.

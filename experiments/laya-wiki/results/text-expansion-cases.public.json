@@ -1,0 +1,124 @@
+[
+  {
+    "id": "cal-port",
+    "split": "calibration",
+    "kind": "source-grounded-public",
+    "query": "32비트 Linux용 VPN C 포팅 초안은 ESP에 어떤 암호화와 무결성 검증 조합을 목표로 하나요?",
+    "relevant_ids": [
+      "07e6f964ee9dd57b249b9fd5da6aaeded3aaaf54956c42fa7ead1359fd637eda"
+    ]
+  },
+  {
+    "id": "cal-local",
+    "split": "calibration",
+    "kind": "source-grounded-public",
+    "query": "OpenScience 서버는 어떤 주소에 바인딩하고 원격 접근을 지원하나요?",
+    "relevant_ids": [
+      "79fbb383e145e80a51f6c07f5ffed221ff93a185082da8d6a9d157d00d41c9c8"
+    ]
+  },
+  {
+    "id": "test-stream",
+    "split": "test",
+    "kind": "source-grounded-public",
+    "query": "In CodexHub, how are live browser notifications transported, and how many app-server child processes are started?",
+    "relevant_ids": [
+      "d1554f28ea6c2ae959e62acda24e9c2db13eb3b73efa2aa1dc9e78329c192e67"
+    ]
+  },
+  {
+    "id": "test-state",
+    "split": "test",
+    "kind": "source-grounded-public",
+    "query": "Which state-management composable replaces Pinia and Vuex in CodexHub?",
+    "relevant_ids": [
+      "d1554f28ea6c2ae959e62acda24e9c2db13eb3b73efa2aa1dc9e78329c192e67"
+    ]
+  },
+  {
+    "id": "test-branch",
+    "split": "test",
+    "kind": "source-grounded-public",
+    "query": "Gajae-Code 기여 PR은 어느 브랜치로 보내고 main은 언제 사용하나요?",
+    "relevant_ids": [
+      "79725d3b722a12d2859d954d60e28d51623e549d9c21ec803c55a4265bf195eb"
+    ]
+  },
+  {
+    "id": "test-history",
+    "split": "test",
+    "kind": "source-grounded-public",
+    "query": "How should conflicting Unreleased changelog entries be merged without destroying previously released history?",
+    "relevant_ids": [
+      "79725d3b722a12d2859d954d60e28d51623e549d9c21ec803c55a4265bf195eb"
+    ]
+  },
+  {
+    "id": "test-generated",
+    "split": "test",
+    "kind": "source-grounded-public",
+    "query": "생성된 docs-index.generated.ts를 커밋해야 하나요? 설치 후 파일이 없으면 어떻게 다시 만들 수 있나요?",
+    "relevant_ids": [
+      "79725d3b722a12d2859d954d60e28d51623e549d9c21ec803c55a4265bf195eb"
+    ]
+  },
+  {
+    "id": "test-bulk",
+    "split": "test",
+    "kind": "source-grounded-public",
+    "query": "notify에서 결과를 한 줄씩 전송하는 대신 전체 내용을 묶어 알림으로 보내려면 어떤 옵션을 쓰나요?",
+    "relevant_ids": [
+      "7ecefb07a660d04d510af231ea61700e05b1a9a2c7f775b6058db15a78e11daf"
+    ]
+  },
+  {
+    "id": "test-provider",
+    "split": "test",
+    "kind": "source-grounded-public",
+    "query": "Where does notify read its default provider configuration, and how can a custom provider file be selected?",
+    "relevant_ids": [
+      "7ecefb07a660d04d510af231ea61700e05b1a9a2c7f775b6058db15a78e11daf"
+    ]
+  },
+  {
+    "id": "test-sdk",
+    "split": "test",
+    "kind": "source-grounded-public",
+    "query": "After changing the OpenScience server API, which command regenerates the TypeScript SDK from its contract?",
+    "relevant_ids": [
+      "79fbb383e145e80a51f6c07f5ffed221ff93a185082da8d6a9d157d00d41c9c8"
+    ]
+  },
+  {
+    "id": "test-optional",
+    "split": "test",
+    "kind": "source-grounded-public",
+    "query": "Can the base OpenScience installation and bring-your-own-key model flow run without Atlas?",
+    "relevant_ids": [
+      "79fbb383e145e80a51f6c07f5ffed221ff93a185082da8d6a9d157d00d41c9c8"
+    ]
+  },
+  {
+    "id": "test-ui",
+    "split": "test",
+    "kind": "source-grounded-public",
+    "query": "Which directories contain the SolidJS workspace and Astro documentation site, and how does the CLI deliver the workspace?",
+    "relevant_ids": [
+      "79fbb383e145e80a51f6c07f5ffed221ff93a185082da8d6a9d157d00d41c9c8"
+    ]
+  },
+  {
+    "id": "control-missing",
+    "split": "test",
+    "kind": "unanswerable-marker-control",
+    "query": "Find the approved ZXQ_NONEXISTENT_POLICY_20260930 document and its budget.",
+    "relevant_ids": []
+  },
+  {
+    "id": "control-missing-ko",
+    "split": "test",
+    "kind": "unanswerable-marker-control",
+    "query": "QZV_UNRECORDED_APPOINTMENT_20260930의 확정된 진료 예약 일시와 금액을 알려줘.",
+    "relevant_ids": []
+  }
+]
