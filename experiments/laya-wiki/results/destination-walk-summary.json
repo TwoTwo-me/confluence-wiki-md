@@ -1,0 +1,2883 @@
+{
+  "schema": 1,
+  "experiment": "Connected current-document wiki walk with explicit Back and visible/evidence stopping",
+  "frozen_at": "2026-09-30T22:07:52.962Z",
+  "input_hashes": {
+    "public-local-graph.json": "5a02d5b2ed3cb5fe6e7713669dc4d20c6bf31e42b0e5df8431702768fbaf390e",
+    "public-confluence-graph.json": "ad4ec28d44ee8901f03c0bb4833e77c0b38490adefe909c54f45c13a31edf605",
+    "notion-graph.json": "328288d1b02f3e035ef6f1e1e2b051d72fc77c6777d4817547d43adb18abf8d6",
+    "public-cases.json": "e190188482ac2c47aa67306fdc0ffc2c718bae1d2dc0b74d9b4c7604addfd70b",
+    "public-labels.json": "e7fa916a3fbbdac3934812013ab043aecb576982448e18eda17027aaae9c890e",
+    "native-cases.json": "88684dc4b0843727d1ce6d0028c510dbe5bdaff6c6a65156749b45e2fa9f732c",
+    "native-labels.json": "24139f010a7f2122aa8f31fe43767baca8f6a26decd817a4eddf1ed79b729ba9"
+  },
+  "model": "convaiinnovations/laya-multilingual",
+  "model_revision": "e4e9ddf21a7b1903b7acffd8814ad4307bf63a67",
+  "sdk": "0.3.22",
+  "device": "mps",
+  "pack": "destination-v1-current-paragraphs-700-head255",
+  "protocol": {
+    "policies": [
+      "fifo",
+      "bm25",
+      "laya",
+      "laya-greedy"
+    ],
+    "max_unique_body_reads": 12,
+    "max_actions": 24,
+    "max_next_options": 4,
+    "next_window": "First four distinct unvisited CURRENT outgoing destinations in recorded order; later local links retained; explicit history BACK charged as action.",
+    "named_stop": "Unambiguous visible title or display_name equals supplied goal_name; no gold-ID stopping.",
+    "question_stop": "Same Laya ARRIVED/CONTINUE decision on current body for all traversal policies; evaluation labels only used afterwards.",
+    "native_goal_selection": "Three unique technical titles selected before inference; reverse topology distances3-4, starts2-16 outgoing destinations, different starts, no full breadcrumb supplied as goal.",
+    "public_selection": "Five manually selected positives plus disconnected and absent controls; small dependent sample, not randomized.",
+    "model": "convaiinnovations/laya-multilingual",
+    "device": "mps",
+    "sdk": "0.3.22",
+    "network": "HF offline plus macOS deny network sandbox",
+    "paid_answer_or_judge_calls": 0,
+    "new_private_publications": 0,
+    "media_reads": 0
+  },
+  "source_graphs": {
+    "public": {
+      "nodes": 27,
+      "edge_records": 41,
+      "artificial_edges": 0,
+      "media_reads": 0
+    },
+    "native": {
+      "nodes": 4415,
+      "edge_records": 13178,
+      "distinct_destination_edges": 8800,
+      "provenance_kinds": [
+        "parent-breadcrumb",
+        "containment",
+        "body-hyperlink",
+        "collection-row",
+        "collection-template"
+      ],
+      "unmapped_references": 11,
+      "excluded_csv_documents": 153,
+      "parent_chain_cycles": 0,
+      "decoded_literal_newlines": 0,
+      "note": "Captured local Native Notion containment, breadcrumbs, collection rows/templates and body hyperlinks. Private titles/IDs/URLs/traces omitted; no private Confluence publication."
+    }
+  },
+  "case_groups": {
+    "public_named": 3,
+    "public_questions": 2,
+    "public_controls": 2,
+    "native_named": 3
+  },
+  "comparisons": {
+    "public-local": {
+      "fifo": {
+        "named_goals": {
+          "cases": 3,
+          "supported_arrivals": 2,
+          "unique_body_reads": 27,
+          "navigation_actions": 42,
+          "back_actions": 18,
+          "reasons": {
+            "visible_name_match": 2,
+            "read_budget": 1
+          }
+        },
+        "questions": {
+          "cases": 2,
+          "supported_arrivals": 0,
+          "unique_body_reads": 3,
+          "navigation_actions": 1,
+          "back_actions": 0,
+          "reasons": {
+            "arrived_decision": 2
+          }
+        },
+        "controls": {
+          "cases": 2,
+          "supported_arrivals": 0,
+          "unique_body_reads": 7,
+          "navigation_actions": 10,
+          "back_actions": 5,
+          "reasons": {
+            "exhausted": 1,
+            "arrived_decision": 1
+          }
+        }
+      },
+      "bm25": {
+        "named_goals": {
+          "cases": 3,
+          "supported_arrivals": 3,
+          "unique_body_reads": 21,
+          "navigation_actions": 29,
+          "back_actions": 11,
+          "reasons": {
+            "visible_name_match": 3
+          }
+        },
+        "questions": {
+          "cases": 2,
+          "supported_arrivals": 0,
+          "unique_body_reads": 3,
+          "navigation_actions": 1,
+          "back_actions": 0,
+          "reasons": {
+            "arrived_decision": 2
+          }
+        },
+        "controls": {
+          "cases": 2,
+          "supported_arrivals": 0,
+          "unique_body_reads": 7,
+          "navigation_actions": 10,
+          "back_actions": 5,
+          "reasons": {
+            "exhausted": 1,
+            "arrived_decision": 1
+          }
+        }
+      },
+      "laya": {
+        "named_goals": {
+          "cases": 3,
+          "supported_arrivals": 3,
+          "unique_body_reads": 23,
+          "navigation_actions": 33,
+          "back_actions": 13,
+          "reasons": {
+            "visible_name_match": 3
+          }
+        },
+        "questions": {
+          "cases": 2,
+          "supported_arrivals": 0,
+          "unique_body_reads": 3,
+          "navigation_actions": 1,
+          "back_actions": 0,
+          "reasons": {
+            "arrived_decision": 2
+          }
+        },
+        "controls": {
+          "cases": 2,
+          "supported_arrivals": 0,
+          "unique_body_reads": 7,
+          "navigation_actions": 10,
+          "back_actions": 5,
+          "reasons": {
+            "exhausted": 1,
+            "arrived_decision": 1
+          }
+        }
+      },
+      "laya-greedy": {
+        "named_goals": {
+          "cases": 3,
+          "supported_arrivals": 1,
+          "unique_body_reads": 8,
+          "navigation_actions": 5,
+          "back_actions": 0,
+          "reasons": {
+            "greedy_dead_end": 2,
+            "visible_name_match": 1
+          }
+        },
+        "questions": {
+          "cases": 2,
+          "supported_arrivals": 0,
+          "unique_body_reads": 3,
+          "navigation_actions": 1,
+          "back_actions": 0,
+          "reasons": {
+            "arrived_decision": 2
+          }
+        },
+        "controls": {
+          "cases": 2,
+          "supported_arrivals": 0,
+          "unique_body_reads": 3,
+          "navigation_actions": 1,
+          "back_actions": 0,
+          "reasons": {
+            "greedy_dead_end": 1,
+            "arrived_decision": 1
+          }
+        }
+      }
+    },
+    "public-confluence": {
+      "fifo": {
+        "named_goals": {
+          "cases": 3,
+          "supported_arrivals": 2,
+          "unique_body_reads": 27,
+          "navigation_actions": 42,
+          "back_actions": 18,
+          "reasons": {
+            "visible_name_match": 2,
+            "read_budget": 1
+          }
+        },
+        "questions": {
+          "cases": 2,
+          "supported_arrivals": 0,
+          "unique_body_reads": 3,
+          "navigation_actions": 1,
+          "back_actions": 0,
+          "reasons": {
+            "arrived_decision": 2
+          }
+        },
+        "controls": {
+          "cases": 2,
+          "supported_arrivals": 0,
+          "unique_body_reads": 7,
+          "navigation_actions": 10,
+          "back_actions": 5,
+          "reasons": {
+            "exhausted": 1,
+            "arrived_decision": 1
+          }
+        }
+      },
+      "bm25": {
+        "named_goals": {
+          "cases": 3,
+          "supported_arrivals": 3,
+          "unique_body_reads": 21,
+          "navigation_actions": 29,
+          "back_actions": 11,
+          "reasons": {
+            "visible_name_match": 3
+          }
+        },
+        "questions": {
+          "cases": 2,
+          "supported_arrivals": 0,
+          "unique_body_reads": 3,
+          "navigation_actions": 1,
+          "back_actions": 0,
+          "reasons": {
+            "arrived_decision": 2
+          }
+        },
+        "controls": {
+          "cases": 2,
+          "supported_arrivals": 0,
+          "unique_body_reads": 7,
+          "navigation_actions": 10,
+          "back_actions": 5,
+          "reasons": {
+            "exhausted": 1,
+            "arrived_decision": 1
+          }
+        }
+      },
+      "laya": {
+        "named_goals": {
+          "cases": 3,
+          "supported_arrivals": 3,
+          "unique_body_reads": 23,
+          "navigation_actions": 33,
+          "back_actions": 13,
+          "reasons": {
+            "visible_name_match": 3
+          }
+        },
+        "questions": {
+          "cases": 2,
+          "supported_arrivals": 0,
+          "unique_body_reads": 3,
+          "navigation_actions": 1,
+          "back_actions": 0,
+          "reasons": {
+            "arrived_decision": 2
+          }
+        },
+        "controls": {
+          "cases": 2,
+          "supported_arrivals": 0,
+          "unique_body_reads": 7,
+          "navigation_actions": 10,
+          "back_actions": 5,
+          "reasons": {
+            "exhausted": 1,
+            "arrived_decision": 1
+          }
+        }
+      },
+      "laya-greedy": {
+        "named_goals": {
+          "cases": 3,
+          "supported_arrivals": 1,
+          "unique_body_reads": 8,
+          "navigation_actions": 5,
+          "back_actions": 0,
+          "reasons": {
+            "greedy_dead_end": 2,
+            "visible_name_match": 1
+          }
+        },
+        "questions": {
+          "cases": 2,
+          "supported_arrivals": 0,
+          "unique_body_reads": 3,
+          "navigation_actions": 1,
+          "back_actions": 0,
+          "reasons": {
+            "arrived_decision": 2
+          }
+        },
+        "controls": {
+          "cases": 2,
+          "supported_arrivals": 0,
+          "unique_body_reads": 3,
+          "navigation_actions": 1,
+          "back_actions": 0,
+          "reasons": {
+            "greedy_dead_end": 1,
+            "arrived_decision": 1
+          }
+        }
+      }
+    },
+    "native-local": {
+      "fifo": {
+        "named_goals": {
+          "cases": 3,
+          "supported_arrivals": 1,
+          "unique_body_reads": 29,
+          "navigation_actions": 45,
+          "back_actions": 19,
+          "reasons": {
+            "read_budget": 2,
+            "visible_name_match": 1
+          }
+        },
+        "questions": {
+          "cases": 0,
+          "supported_arrivals": 0,
+          "unique_body_reads": 0,
+          "navigation_actions": 0,
+          "back_actions": 0,
+          "reasons": {}
+        },
+        "controls": {
+          "cases": 0,
+          "supported_arrivals": 0,
+          "unique_body_reads": 0,
+          "navigation_actions": 0,
+          "back_actions": 0,
+          "reasons": {}
+        }
+      },
+      "bm25": {
+        "named_goals": {
+          "cases": 3,
+          "supported_arrivals": 1,
+          "unique_body_reads": 28,
+          "navigation_actions": 43,
+          "back_actions": 18,
+          "reasons": {
+            "read_budget": 2,
+            "visible_name_match": 1
+          }
+        },
+        "questions": {
+          "cases": 0,
+          "supported_arrivals": 0,
+          "unique_body_reads": 0,
+          "navigation_actions": 0,
+          "back_actions": 0,
+          "reasons": {}
+        },
+        "controls": {
+          "cases": 0,
+          "supported_arrivals": 0,
+          "unique_body_reads": 0,
+          "navigation_actions": 0,
+          "back_actions": 0,
+          "reasons": {}
+        }
+      },
+      "laya": {
+        "named_goals": {
+          "cases": 3,
+          "supported_arrivals": 1,
+          "unique_body_reads": 31,
+          "navigation_actions": 50,
+          "back_actions": 22,
+          "reasons": {
+            "read_budget": 2,
+            "visible_name_match": 1
+          }
+        },
+        "questions": {
+          "cases": 0,
+          "supported_arrivals": 0,
+          "unique_body_reads": 0,
+          "navigation_actions": 0,
+          "back_actions": 0,
+          "reasons": {}
+        },
+        "controls": {
+          "cases": 0,
+          "supported_arrivals": 0,
+          "unique_body_reads": 0,
+          "navigation_actions": 0,
+          "back_actions": 0,
+          "reasons": {}
+        }
+      },
+      "laya-greedy": {
+        "named_goals": {
+          "cases": 3,
+          "supported_arrivals": 0,
+          "unique_body_reads": 11,
+          "navigation_actions": 8,
+          "back_actions": 0,
+          "reasons": {
+            "greedy_dead_end": 3
+          }
+        },
+        "questions": {
+          "cases": 0,
+          "supported_arrivals": 0,
+          "unique_body_reads": 0,
+          "navigation_actions": 0,
+          "back_actions": 0,
+          "reasons": {}
+        },
+        "controls": {
+          "cases": 0,
+          "supported_arrivals": 0,
+          "unique_body_reads": 0,
+          "navigation_actions": 0,
+          "back_actions": 0,
+          "reasons": {}
+        }
+      }
+    }
+  },
+  "costs": {
+    "public-local": {
+      "new_states": 23,
+      "new_input_tokens": 6826,
+      "cache_hits": 17,
+      "logical_states": 40,
+      "logical_input_tokens": 11462,
+      "inference_seconds": 2.5572529170894995,
+      "wall_seconds": 9.57857525,
+      "peak_rss_bytes": 2733309952,
+      "packed_body_tokens_dropped": 808,
+      "sdk_state_tokens_dropped": 0,
+      "exact_repeat_new_states": 0,
+      "exact_repeat_wall_seconds": 4.445976542
+    },
+    "public-confluence": {
+      "new_states": 9,
+      "new_input_tokens": 2831,
+      "cache_hits": 31,
+      "logical_states": 40,
+      "logical_input_tokens": 11385,
+      "inference_seconds": 0.8165512487757951,
+      "wall_seconds": 5.283394083,
+      "peak_rss_bytes": 2718121984,
+      "packed_body_tokens_dropped": 730,
+      "sdk_state_tokens_dropped": 0,
+      "exact_repeat_new_states": 0,
+      "exact_repeat_wall_seconds": 4.476586416999999,
+      "initial_cache": "Exact-state cache seeded from public-local; costs are incremental, not independent cold costs."
+    },
+    "native-local": {
+      "new_states": 23,
+      "new_input_tokens": 7330,
+      "cache_hits": 7,
+      "logical_states": 30,
+      "logical_input_tokens": 9351,
+      "inference_seconds": 1.9781841688090935,
+      "wall_seconds": 7.005084958,
+      "peak_rss_bytes": 2832957440,
+      "packed_body_tokens_dropped": 11396,
+      "sdk_state_tokens_dropped": 0,
+      "exact_repeat_new_states": 0,
+      "exact_repeat_wall_seconds": 4.77064225
+    }
+  },
+  "verification": {
+    "frozen_inputs_unchanged": true,
+    "current_link_or_history_back": true,
+    "audited_policy_rows": 68,
+    "audited_navigation_actions": 434,
+    "native_link_provenance_receipts_checked": 87,
+    "paired_public_routes_identical": 26,
+    "paired_public_routes_total": 28,
+    "all_limits_satisfied": true,
+    "labels_used_only_after_walking": true,
+    "exact_cache_repeats_identical": true,
+    "evaluation_label_mutation_paths_and_stops_identical": true,
+    "evaluation_label_mutation_policy_rows": 28,
+    "evaluation_label_mutation_new_states": 0,
+    "node_tests_passed": 81,
+    "python_tests_passed": 67,
+    "lsp": "TypeScript LSP not installed; user previously declined. Syntax checks and tests used."
+  },
+  "confluence_replay": {
+    "case_id": "P01",
+    "unique_pages_verified": 7,
+    "http_requests": 8,
+    "all_get_200": true,
+    "bytes": 34770,
+    "wall_seconds": 1.8584353749999998,
+    "cached_back_actions": 4,
+    "body_and_version_equal": true,
+    "surface": "Fresh HTTP GET replay of frozen successful public Laya route; original source hrefs resolve through registered Confluence copies. Inference was offline on verified snapshots, not online per-hop inference.",
+    "actions": [
+      {
+        "action": "LINK",
+        "source_title": "README.md",
+        "target_title": "DESIGN.md",
+        "target_page_id": "3604601"
+      },
+      {
+        "action": "BACK",
+        "source_title": "DESIGN.md",
+        "target_title": "README.md",
+        "target_page_id": "3506229"
+      },
+      {
+        "action": "LINK",
+        "source_title": "README.md",
+        "target_title": "wiki/product.md",
+        "target_page_id": "3637283"
+      },
+      {
+        "action": "BACK",
+        "source_title": "wiki/product.md",
+        "target_title": "README.md",
+        "target_page_id": "3506229"
+      },
+      {
+        "action": "LINK",
+        "source_title": "README.md",
+        "target_title": "wiki/decisions/003-origin-isolation.md",
+        "target_page_id": "3604667"
+      },
+      {
+        "action": "BACK",
+        "source_title": "wiki/decisions/003-origin-isolation.md",
+        "target_title": "README.md",
+        "target_page_id": "3506229"
+      },
+      {
+        "action": "LINK",
+        "source_title": "README.md",
+        "target_title": "wiki/decisions/001-local-data.md",
+        "target_page_id": "3604623"
+      },
+      {
+        "action": "BACK",
+        "source_title": "wiki/decisions/001-local-data.md",
+        "target_title": "README.md",
+        "target_page_id": "3506229"
+      },
+      {
+        "action": "LINK",
+        "source_title": "README.md",
+        "target_title": "wiki/README.md",
+        "target_page_id": "3506284"
+      },
+      {
+        "action": "LINK",
+        "source_title": "wiki/README.md",
+        "target_title": "wiki/decisions/002-commands.md",
+        "target_page_id": "3604645"
+      }
+    ]
+  },
+  "public_routes": {
+    "public-local": [
+      {
+        "case_id": "P01",
+        "policy": "fifo",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 11,
+        "start_title": "README.md",
+        "final_title": "wiki/decisions/002-commands.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/product.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/product.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/003-origin-isolation.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "wiki/releases/0.4.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.4.0.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/001-local-data.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/001-local-data.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/002-commands.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P01",
+        "policy": "bm25",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 7,
+        "start_title": "README.md",
+        "final_title": "wiki/decisions/002-commands.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/decisions/001-local-data.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/001-local-data.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/003-origin-isolation.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "wiki/releases/0.4.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.4.0.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/002-commands.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P01",
+        "policy": "laya",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 7,
+        "start_title": "README.md",
+        "final_title": "wiki/decisions/002-commands.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "DESIGN.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "DESIGN.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/product.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/product.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/003-origin-isolation.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/decisions/001-local-data.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/001-local-data.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/002-commands.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P01",
+        "policy": "laya-greedy",
+        "reason": "greedy_dead_end",
+        "stopped": false,
+        "supported_arrival": false,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 2,
+        "start_title": "README.md",
+        "final_title": "DESIGN.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "DESIGN.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P02",
+        "policy": "fifo",
+        "reason": "read_budget",
+        "stopped": false,
+        "supported_arrival": false,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 12,
+        "start_title": "wiki/README.md",
+        "final_title": "wiki/execution.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/product.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/product.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/003-origin-isolation.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "wiki/releases/0.4.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.4.0.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/001-local-data.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/001-local-data.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/002-commands.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/002-commands.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "DESIGN.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "DESIGN.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/execution.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P02",
+        "policy": "bm25",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 10,
+        "start_title": "wiki/README.md",
+        "final_title": "wiki/releases/0.1.0.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/003-origin-isolation.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "wiki/releases/0.4.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.4.0.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/product.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/product.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/execution.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/execution.md",
+            "target_title": "wiki/releases/0.1.0.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P02",
+        "policy": "laya",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 12,
+        "start_title": "wiki/README.md",
+        "final_title": "wiki/releases/0.1.0.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/001-local-data.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/001-local-data.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/product.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/product.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/002-commands.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/002-commands.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/execution.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/execution.md",
+            "target_title": "wiki/releases/0.2.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.2.0.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/003-origin-isolation.md",
+            "target_title": "wiki/releases/0.2.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.2.0.md",
+            "target_title": "wiki/execution.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/execution.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/execution.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/execution.md",
+            "target_title": "wiki/releases/0.4.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.4.0.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "wiki/releases/0.4.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.4.0.md",
+            "target_title": "wiki/execution.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/execution.md",
+            "target_title": "wiki/releases/0.1.0.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P02",
+        "policy": "laya-greedy",
+        "reason": "greedy_dead_end",
+        "stopped": false,
+        "supported_arrival": false,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 2,
+        "start_title": "wiki/README.md",
+        "final_title": "wiki/decisions/001-local-data.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/001-local-data.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P03",
+        "policy": "fifo",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 4,
+        "start_title": "wiki/architecture.md",
+        "final_title": "wiki/decisions/003-origin-isolation.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P03",
+        "policy": "bm25",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 4,
+        "start_title": "wiki/architecture.md",
+        "final_title": "wiki/decisions/003-origin-isolation.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P03",
+        "policy": "laya",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 4,
+        "start_title": "wiki/architecture.md",
+        "final_title": "wiki/decisions/003-origin-isolation.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P03",
+        "policy": "laya-greedy",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 4,
+        "start_title": "wiki/architecture.md",
+        "final_title": "wiki/decisions/003-origin-isolation.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P04",
+        "policy": "fifo",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 1,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": []
+      },
+      {
+        "case_id": "P04",
+        "policy": "bm25",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 1,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": []
+      },
+      {
+        "case_id": "P04",
+        "policy": "laya",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 1,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": []
+      },
+      {
+        "case_id": "P04",
+        "policy": "laya-greedy",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 1,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": []
+      },
+      {
+        "case_id": "P05",
+        "policy": "fifo",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 2,
+        "start_title": "README.md",
+        "final_title": "wiki/README.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/README.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P05",
+        "policy": "bm25",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 2,
+        "start_title": "README.md",
+        "final_title": "wiki/README.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/README.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P05",
+        "policy": "laya",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 2,
+        "start_title": "README.md",
+        "final_title": "wiki/README.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/README.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P05",
+        "policy": "laya-greedy",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 2,
+        "start_title": "README.md",
+        "final_title": "wiki/README.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/README.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P06",
+        "policy": "fifo",
+        "reason": "exhausted",
+        "stopped": false,
+        "supported_arrival": false,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 6,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "skills/confluence-wiki/SKILL.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "skills/confluence-wiki/SKILL.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "docs/RELEASING.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "docs/RELEASING.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/getting-started.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/getting-started.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/preservation-comparison.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/preservation-comparison.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/diagrams.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/diagrams.md",
+            "target_title": "README.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P06",
+        "policy": "bm25",
+        "reason": "exhausted",
+        "stopped": false,
+        "supported_arrival": false,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 6,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "skills/confluence-wiki/SKILL.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "skills/confluence-wiki/SKILL.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "docs/RELEASING.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "docs/RELEASING.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/diagrams.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/diagrams.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/getting-started.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/getting-started.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/preservation-comparison.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/preservation-comparison.md",
+            "target_title": "README.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P06",
+        "policy": "laya",
+        "reason": "exhausted",
+        "stopped": false,
+        "supported_arrival": false,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 6,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "docs/RELEASING.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "docs/RELEASING.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "skills/confluence-wiki/SKILL.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "skills/confluence-wiki/SKILL.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/getting-started.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/getting-started.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/preservation-comparison.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/preservation-comparison.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/diagrams.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/diagrams.md",
+            "target_title": "README.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P06",
+        "policy": "laya-greedy",
+        "reason": "greedy_dead_end",
+        "stopped": false,
+        "supported_arrival": false,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 2,
+        "start_title": "README.md",
+        "final_title": "docs/RELEASING.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "docs/RELEASING.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P07",
+        "policy": "fifo",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 1,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": []
+      },
+      {
+        "case_id": "P07",
+        "policy": "bm25",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 1,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": []
+      },
+      {
+        "case_id": "P07",
+        "policy": "laya",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 1,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": []
+      },
+      {
+        "case_id": "P07",
+        "policy": "laya-greedy",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 1,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": []
+      }
+    ],
+    "public-confluence": [
+      {
+        "case_id": "P01",
+        "policy": "fifo",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 11,
+        "start_title": "README.md",
+        "final_title": "wiki/decisions/002-commands.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/product.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/product.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/003-origin-isolation.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "wiki/releases/0.4.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.4.0.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/001-local-data.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/001-local-data.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/002-commands.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P01",
+        "policy": "bm25",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 7,
+        "start_title": "README.md",
+        "final_title": "wiki/decisions/002-commands.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/decisions/001-local-data.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/001-local-data.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/003-origin-isolation.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "wiki/releases/0.4.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.4.0.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/002-commands.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P01",
+        "policy": "laya",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 7,
+        "start_title": "README.md",
+        "final_title": "wiki/decisions/002-commands.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "DESIGN.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "DESIGN.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/product.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/product.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/003-origin-isolation.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/decisions/001-local-data.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/001-local-data.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/002-commands.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P01",
+        "policy": "laya-greedy",
+        "reason": "greedy_dead_end",
+        "stopped": false,
+        "supported_arrival": false,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 2,
+        "start_title": "README.md",
+        "final_title": "DESIGN.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "DESIGN.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P02",
+        "policy": "fifo",
+        "reason": "read_budget",
+        "stopped": false,
+        "supported_arrival": false,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 12,
+        "start_title": "wiki/README.md",
+        "final_title": "wiki/execution.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/product.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/product.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/003-origin-isolation.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "wiki/releases/0.4.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.4.0.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/001-local-data.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/001-local-data.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/002-commands.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/002-commands.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "DESIGN.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "DESIGN.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/execution.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P02",
+        "policy": "bm25",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 10,
+        "start_title": "wiki/README.md",
+        "final_title": "wiki/releases/0.1.0.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/003-origin-isolation.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "wiki/releases/0.4.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.4.0.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "wiki/architecture.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/product.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/product.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/execution.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/execution.md",
+            "target_title": "wiki/releases/0.1.0.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P02",
+        "policy": "laya",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 12,
+        "start_title": "wiki/README.md",
+        "final_title": "wiki/releases/0.1.0.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/product.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/product.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/001-local-data.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/001-local-data.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/decisions/002-commands.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/002-commands.md",
+            "target_title": "wiki/README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/execution.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/execution.md",
+            "target_title": "wiki/releases/0.2.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.2.0.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/003-origin-isolation.md",
+            "target_title": "wiki/releases/0.2.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.2.0.md",
+            "target_title": "wiki/execution.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/execution.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/execution.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/execution.md",
+            "target_title": "wiki/releases/0.4.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.4.0.md",
+            "target_title": "wiki/decisions/005-install-offline.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/decisions/005-install-offline.md",
+            "target_title": "wiki/releases/0.4.0.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "wiki/releases/0.4.0.md",
+            "target_title": "wiki/execution.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/execution.md",
+            "target_title": "wiki/releases/0.1.0.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P02",
+        "policy": "laya-greedy",
+        "reason": "greedy_dead_end",
+        "stopped": false,
+        "supported_arrival": false,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 2,
+        "start_title": "wiki/README.md",
+        "final_title": "wiki/product.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "wiki/README.md",
+            "target_title": "wiki/product.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P03",
+        "policy": "fifo",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 4,
+        "start_title": "wiki/architecture.md",
+        "final_title": "wiki/decisions/003-origin-isolation.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P03",
+        "policy": "bm25",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 4,
+        "start_title": "wiki/architecture.md",
+        "final_title": "wiki/decisions/003-origin-isolation.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P03",
+        "policy": "laya",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 4,
+        "start_title": "wiki/architecture.md",
+        "final_title": "wiki/decisions/003-origin-isolation.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P03",
+        "policy": "laya-greedy",
+        "reason": "visible_name_match",
+        "stopped": true,
+        "supported_arrival": true,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 4,
+        "start_title": "wiki/architecture.md",
+        "final_title": "wiki/decisions/003-origin-isolation.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "wiki/architecture.md",
+            "target_title": "wiki/decisions/004-split-panels.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/decisions/004-split-panels.md",
+            "target_title": "wiki/releases/0.3.0.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "wiki/releases/0.3.0.md",
+            "target_title": "wiki/decisions/003-origin-isolation.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P04",
+        "policy": "fifo",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 1,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": []
+      },
+      {
+        "case_id": "P04",
+        "policy": "bm25",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 1,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": []
+      },
+      {
+        "case_id": "P04",
+        "policy": "laya",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 1,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": []
+      },
+      {
+        "case_id": "P04",
+        "policy": "laya-greedy",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 1,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": []
+      },
+      {
+        "case_id": "P05",
+        "policy": "fifo",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 2,
+        "start_title": "README.md",
+        "final_title": "wiki/README.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/README.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P05",
+        "policy": "bm25",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 2,
+        "start_title": "README.md",
+        "final_title": "wiki/README.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/README.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P05",
+        "policy": "laya",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 2,
+        "start_title": "README.md",
+        "final_title": "wiki/README.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/README.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P05",
+        "policy": "laya-greedy",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 2,
+        "start_title": "README.md",
+        "final_title": "wiki/README.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "wiki/README.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P06",
+        "policy": "fifo",
+        "reason": "exhausted",
+        "stopped": false,
+        "supported_arrival": false,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 6,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "skills/confluence-wiki/SKILL.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "skills/confluence-wiki/SKILL.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "docs/RELEASING.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "docs/RELEASING.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/getting-started.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/getting-started.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/preservation-comparison.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/preservation-comparison.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/diagrams.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/diagrams.md",
+            "target_title": "README.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P06",
+        "policy": "bm25",
+        "reason": "exhausted",
+        "stopped": false,
+        "supported_arrival": false,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 6,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "skills/confluence-wiki/SKILL.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "skills/confluence-wiki/SKILL.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "docs/RELEASING.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "docs/RELEASING.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/diagrams.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/diagrams.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/getting-started.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/getting-started.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/preservation-comparison.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/preservation-comparison.md",
+            "target_title": "README.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P06",
+        "policy": "laya",
+        "reason": "exhausted",
+        "stopped": false,
+        "supported_arrival": false,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 6,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "docs/RELEASING.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "docs/RELEASING.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "skills/confluence-wiki/SKILL.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "skills/confluence-wiki/SKILL.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/getting-started.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/getting-started.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/preservation-comparison.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/preservation-comparison.md",
+            "target_title": "README.md"
+          },
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "examples/diagrams.md"
+          },
+          {
+            "action": "BACK",
+            "source_title": "examples/diagrams.md",
+            "target_title": "README.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P06",
+        "policy": "laya-greedy",
+        "reason": "greedy_dead_end",
+        "stopped": false,
+        "supported_arrival": false,
+        "stop_without_label_support": false,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 2,
+        "start_title": "README.md",
+        "final_title": "docs/RELEASING.md",
+        "actions": [
+          {
+            "action": "LINK",
+            "source_title": "README.md",
+            "target_title": "docs/RELEASING.md"
+          }
+        ]
+      },
+      {
+        "case_id": "P07",
+        "policy": "fifo",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 1,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": []
+      },
+      {
+        "case_id": "P07",
+        "policy": "bm25",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 1,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": []
+      },
+      {
+        "case_id": "P07",
+        "policy": "laya",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 1,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": []
+      },
+      {
+        "case_id": "P07",
+        "policy": "laya-greedy",
+        "reason": "arrived_decision",
+        "stopped": true,
+        "supported_arrival": false,
+        "stop_without_label_support": true,
+        "required_evidence_present": false,
+        "stopped_outside_known_with_evidence": false,
+        "unique_body_reads": 1,
+        "start_title": "README.md",
+        "final_title": "README.md",
+        "actions": []
+      }
+    ]
+  },
+  "paid_answer_or_judge_calls": 0,
+  "new_private_publications": 0,
+  "media_reads": 0,
+  "net_monetary_saving_proven": false,
+  "limitations": [
+    "Ten handpicked cases; dependent public project questions and three local Native goals; no general success-rate claim.",
+    "Named goals stop by visible names. Question goals share the same uncalibrated local Laya stop decision across all traversal policies.",
+    "Full graphs are loaded for indexing, but actor sees current body paragraphs and current outgoing metadata only; unique body reads are logical access, not HTTP.",
+    "Four-option recorded-order windows and twelve-read budget can hide promising later neighbors until Back.",
+    "Public Confluence inference uses verified snapshots; fresh read-only successful-route replay is separate from online per-hop inference.",
+    "Private content publication remains unresolved. No paid LLM answer/judge or end-to-end paid-token-saving test.",
+    "Cached CLI reruns still load the model; wall times include startup. Cold/incremental observations are not a controlled speed benchmark."
+  ]
+}

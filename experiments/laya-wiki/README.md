@@ -2,6 +2,51 @@
 
 This is a bounded, local-first experiment. The findings and limits are in [report.ko.md](report.ko.md); the sanitized measurements and public-only cases are in [results/summary.json](results/summary.json) and [results/public-cases.json](results/public-cases.json).
 
+## Connected destination walks
+
+The latest experiment follows only the current document's outgoing links, or explicit history `BACK` after that document's unvisited links are exhausted. It retains later local links, deduplicates destinations across provenance records, and charges Back as a navigation action. See [frozen public cases and labels](results/destination-cases.public.json) and [measurements with public traces](results/destination-walk-summary.json). Private Native names, IDs, URLs and routes remain in ignored local artifacts.
+
+The ten frozen cases comprise three public named goals, two public questions, disconnected/absent controls, and three Native Notion named goals. Limits are twelve unique body reads, twenty-four actions and four current outgoing choices. Named arrival matches an unambiguous visible title or breadcrumb; question arrival uses the same Laya stop selector for every traversal policy. Gold IDs and evidence strings are evaluated after walking. Unlike the earlier frontier experiment below, each link step starts at the current node and stopping uses visible information. Current-body BM25 picks up to three paragraphs, clips their excerpt to 280 tokens, and packs a state of at most 700 tokens and options of at most 36 tokens under the pinned 1,024-token SDK budget. It never reads unchosen candidate bodies for selection.
+
+The public graph contains 27 nodes and 41 body links. Native capture contributes 4,415 Markdown nodes with 13,178 provenance records and 8,800 distinct outgoing destinations from containment, breadcrumbs, collection rows/templates and body links. CSV is excluded as a page node. Native data was not uploaded to Confluence. A fresh GET replay verified seven pages on a successful public Laya route; model inference used verified snapshots. The source alias mapping does not rewrite original hrefs to internal Confluence links.
+
+For the measured snapshot on this Mac, use the already frozen local artifacts:
+
+```sh
+HF_HUB_OFFLINE=1 USE_TF=0 sandbox-exec -p '(version 1) (allow default) (deny network*)' \
+  artifacts/laya-wiki/venv/bin/python experiments/laya-wiki/destination_walk.py \
+  --graph artifacts/laya-wiki/destination-walk/public-local-graph.json \
+  --cases artifacts/laya-wiki/destination-walk/public-cases.json \
+  --labels artifacts/laya-wiki/destination-walk/public-labels.json \
+  --output artifacts/laya-wiki/destination-walk/reproduced-public.json \
+  --device mps --max-reads 12 --max-actions 24 --max-options 4
+```
+
+The CLI writes full local traces and an exact serialized-state cache at the output's `.cache.json` sibling. A second run against that same cache should infer zero new states; preserve the first measurements before overwriting output. The executed paired Confluence run copied the exact public-local cache first, so its costs are incremental. Logical unique body reads come from loaded snapshots; they are not HTTP calls or total disk bytes. Cached CLI runs still load the model. `--fake-selector first` is a fixture mode and is never a real-model measurement. `--policies fifo,bm25` skips the model only when every case is a named goal.
+
+To rebuild the Native graph from this Mac's captured source:
+
+```sh
+node experiments/laya-wiki/destination_graph.mjs \
+  --corpus artifacts/laya-wiki/text-expansion/notion-live-corpus/corpus.json \
+  --state artifacts/laya-wiki/text-expansion/notion-live/capture/state.json \
+  --output artifacts/laya-wiki/destination-walk/rebuilt-notion-graph.json
+```
+
+Use `notion-graph.json`, `native-cases.json` and `native-labels.json` for the measured Native walk, or `public-confluence-graph.json` with the public cases/labels for the verified-copy walk. An independently collected corpus is a new dataset: do not call it the frozen snapshot or tune on the recorded cases. The tracked public bundle has separate `cases` and `labels` fields; extract those to individual JSON files for the CLI. Existing `graph_export.mjs` converts a public corpus to a graph and checks registered source aliases.
+
+Relevant regression checks:
+
+```sh
+node --test experiments/laya-wiki/*.test.mjs
+artifacts/laya-wiki/venv/bin/python -m pytest -q \
+  experiments/laya-wiki/test_destination_walk.py \
+  experiments/laya-wiki/test_graph_benchmark.py \
+  experiments/laya-wiki/test_benchmark.py
+```
+
+Both local Laya and current-link BM25 reached 3/3 public named goals and 1/3 Native named goals. Laya read 23 versus 21 public bodies and 31 versus 28 Native bodies. The shared question stop selector halted without the required evidence on both questions and falsely arrived on the absent control. These observations do not establish cost savings or reliable autonomous answer sufficiency.
+
 ## Expanded text study
 
 The October 1 update collected 9,434 owned GitHub document files and 4,568 Notion text documents, and verified publication/readback of all 2,238 public GitHub sources. See [expanded measurements](results/text-expansion-summary.json), [public questions](results/text-expansion-cases.public.json), and [fresh metadata-menu questions](results/metadata-cases.json). The expanded benchmark found no ranking or reading benefit over BM25, including a frozen four-question Notion probe on 14,002 combined local documents. The older 27-document and link experiments below remain separate campaigns.

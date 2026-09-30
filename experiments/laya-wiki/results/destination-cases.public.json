@@ -1,0 +1,155 @@
+{
+  "schema": 1,
+  "frozen_at": "2026-09-30T22:07:52.962Z",
+  "cases": [
+    {
+      "id": "P01",
+      "kind": "named-goal",
+      "query": "wiki/decisions/002-commands.md",
+      "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+      "goal_name": "wiki/decisions/002-commands.md"
+    },
+    {
+      "id": "P02",
+      "kind": "named-goal",
+      "query": "wiki/releases/0.1.0.md",
+      "start_id": "8a0b2a1f07980f01003fc38d38cda333c48b62052c6c513b2d01ef3d092d0331",
+      "goal_name": "wiki/releases/0.1.0.md"
+    },
+    {
+      "id": "P03",
+      "kind": "named-goal",
+      "query": "wiki/decisions/003-origin-isolation.md",
+      "start_id": "408287ba517cec80d05fd4360d30ab31759621040b83c15775a5a269dff304fb",
+      "goal_name": "wiki/decisions/003-origin-isolation.md"
+    },
+    {
+      "id": "P04",
+      "kind": "question",
+      "query": "When the editor handles IME composition, which composition signal and key code prevent shortcut interception?",
+      "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+      "goal_name": ""
+    },
+    {
+      "id": "P05",
+      "kind": "question",
+      "query": "편집기에서 복구 데이터와 디렉터리 핸들이 다른 앱에 섞이지 않게 하려면 어떤 origin 경계를 써야 하나요?",
+      "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+      "goal_name": ""
+    },
+    {
+      "id": "P06",
+      "kind": "named-goal",
+      "query": "wiki/decisions/002-commands.md",
+      "start_id": "ffaaa9dd2a5384e0518c06f7a8b2489be690edad91407ceca19a666f2b8a655c",
+      "goal_name": "wiki/decisions/002-commands.md"
+    },
+    {
+      "id": "P07",
+      "kind": "question",
+      "query": "Where is the documented procedure for LAYA_WALK_ABSENT_20261001_C8E7?",
+      "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+      "goal_name": ""
+    }
+  ],
+  "labels": {
+    "P01": {
+      "target_ids": [
+        "5123ca99dfd05a84e88364c1fd39f72197c2e2c9940d31869286eb38f30124f7"
+      ],
+      "required_evidence": []
+    },
+    "P02": {
+      "target_ids": [
+        "8f8ab538c5277a53f82ece8b6715ff8a2523f760810ecca80287f6a68b020cf9"
+      ],
+      "required_evidence": []
+    },
+    "P03": {
+      "target_ids": [
+        "73d66bd91f0c08552c6fbba1649e40a9a7f42012e1dfbdd4dbf5b8f6721b6074"
+      ],
+      "required_evidence": []
+    },
+    "P04": {
+      "target_ids": [
+        "5123ca99dfd05a84e88364c1fd39f72197c2e2c9940d31869286eb38f30124f7"
+      ],
+      "required_evidence": [
+        "never intercept",
+        "isComposing",
+        "229"
+      ]
+    },
+    "P05": {
+      "target_ids": [
+        "73d66bd91f0c08552c6fbba1649e40a9a7f42012e1dfbdd4dbf5b8f6721b6074"
+      ],
+      "required_evidence": [
+        "A dedicated hostname used only for this editor",
+        "directory handles"
+      ]
+    },
+    "P06": {
+      "target_ids": [
+        "5123ca99dfd05a84e88364c1fd39f72197c2e2c9940d31869286eb38f30124f7"
+      ],
+      "required_evidence": []
+    },
+    "P07": {
+      "target_ids": [],
+      "required_evidence": []
+    }
+  },
+  "topology_and_controls": [
+    {
+      "id": "P01",
+      "cohort": "public",
+      "control": null,
+      "shortest_links": 2,
+      "known_target_reachable": true
+    },
+    {
+      "id": "P02",
+      "cohort": "public",
+      "control": null,
+      "shortest_links": 2,
+      "known_target_reachable": true
+    },
+    {
+      "id": "P03",
+      "cohort": "public",
+      "control": null,
+      "shortest_links": 3,
+      "known_target_reachable": true
+    },
+    {
+      "id": "P04",
+      "cohort": "public",
+      "control": null,
+      "shortest_links": 2,
+      "known_target_reachable": true
+    },
+    {
+      "id": "P05",
+      "cohort": "public",
+      "control": null,
+      "shortest_links": 1,
+      "known_target_reachable": true
+    },
+    {
+      "id": "P06",
+      "cohort": "public",
+      "control": "disconnected",
+      "shortest_links": null,
+      "known_target_reachable": false
+    },
+    {
+      "id": "P07",
+      "cohort": "public",
+      "control": "absent",
+      "shortest_links": null,
+      "known_target_reachable": false
+    }
+  ]
+}
