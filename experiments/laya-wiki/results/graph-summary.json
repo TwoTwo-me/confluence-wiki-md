@@ -1,0 +1,2451 @@
+{
+  "schema": 1,
+  "measured_on": "2026-09-30",
+  "model": "convaiinnovations/laya-multilingual",
+  "revision": "e4e9ddf21a7b1903b7acffd8814ad4307bf63a67",
+  "sdk_version": "0.3.22",
+  "device": "mps",
+  "protocol": {
+    "max_unique_reads": 8,
+    "max_menu_options": 5,
+    "max_len": 1024,
+    "head_max_len": 255,
+    "stopping": "Oracle source-ID stopping after a read; not autonomous answer sufficiency. Controls never succeed.",
+    "read_semantics": "Logical document reads from frozen cached snapshots; zero HTTP reads inside harness.",
+    "policies": "FIFO, BM25 and Laya preserve all unchosen frontier edges; strictLaya only sees current-node outgoing edges.",
+    "single_option_inference": false,
+    "network_denied_during_inference": true,
+    "paid_cloud_llm_api_calls": 0,
+    "initial_global_search": false
+  },
+  "graph": {
+    "local": {
+      "nodes": 27,
+      "edges": 41,
+      "nodes_with_links": 13,
+      "unmapped_links": 77,
+      "self_links": 24,
+      "external_links_fetched": 0,
+      "artificial_edges": 0
+    },
+    "confluence": {
+      "nodes": 27,
+      "edges": 41,
+      "nodes_with_links": 13,
+      "unmapped_links": 79,
+      "self_links": 24,
+      "external_links_fetched": 0,
+      "artificial_edges": 0
+    },
+    "same_ordered_edges": true
+  },
+  "paired": {
+    "same_successes": true,
+    "same_paths": 83,
+    "path_comparisons": 96
+  },
+  "local": {
+    "source_mode": "local",
+    "graph_sha256": "5a02d5b2ed3cb5fe6e7713669dc4d20c6bf31e42b0e5df8431702768fbaf390e",
+    "cases_sha256": "ecd1d3b5dc099dc1012980548396483ed2234cff03279513e6065c64b967c820",
+    "latency_seconds": {
+      "setup": 4.447392124973703,
+      "index": 0.0061296598869375885,
+      "inference": 8.513271872361656,
+      "total": 14.374346791009884
+    },
+    "peak_rss_bytes": 2718482432,
+    "uncached_states": 127,
+    "uncached_input_tokens": 69558,
+    "logical_input_tokens": 82554,
+    "cache_validation": {
+      "same_paths": true,
+      "new_inference": 0,
+      "cases": 24,
+      "seconds": 0.6504526659846306,
+      "meaning": "Exact-state warm lookup, not unseen-query latency"
+    },
+    "max_model_input_tokens": 664,
+    "max_head_tokens": 165,
+    "sdk_state_tokens_dropped": 0,
+    "max_excerpt_tokens_omitted": 20373,
+    "policies": {
+      "fifo": {
+        "all": {
+          "cases": 24,
+          "successes": 5,
+          "reads": 164,
+          "model_calls": 0,
+          "cache_hits": 0,
+          "logical_input_tokens": 0
+        },
+        "by_kind": {
+          "named-goal": {
+            "cases": 6,
+            "successes": 1,
+            "reads": 48,
+            "model_calls": 0,
+            "cache_hits": 0,
+            "logical_input_tokens": 0
+          },
+          "question": {
+            "cases": 14,
+            "successes": 4,
+            "reads": 88,
+            "model_calls": 0,
+            "cache_hits": 0,
+            "logical_input_tokens": 0
+          },
+          "unanswerable": {
+            "cases": 2,
+            "successes": 0,
+            "reads": 14,
+            "model_calls": 0,
+            "cache_hits": 0,
+            "logical_input_tokens": 0
+          },
+          "unreachable": {
+            "cases": 2,
+            "successes": 0,
+            "reads": 14,
+            "model_calls": 0,
+            "cache_hits": 0,
+            "logical_input_tokens": 0
+          }
+        },
+        "reachable_questions": {
+          "cases": 7,
+          "successes": 4,
+          "reads": 42,
+          "model_calls": 0,
+          "cache_hits": 0,
+          "logical_input_tokens": 0
+        }
+      },
+      "bm25": {
+        "all": {
+          "cases": 24,
+          "successes": 7,
+          "reads": 154,
+          "model_calls": 0,
+          "cache_hits": 0,
+          "logical_input_tokens": 0
+        },
+        "by_kind": {
+          "named-goal": {
+            "cases": 6,
+            "successes": 3,
+            "reads": 40,
+            "model_calls": 0,
+            "cache_hits": 0,
+            "logical_input_tokens": 0
+          },
+          "question": {
+            "cases": 14,
+            "successes": 4,
+            "reads": 86,
+            "model_calls": 0,
+            "cache_hits": 0,
+            "logical_input_tokens": 0
+          },
+          "unanswerable": {
+            "cases": 2,
+            "successes": 0,
+            "reads": 14,
+            "model_calls": 0,
+            "cache_hits": 0,
+            "logical_input_tokens": 0
+          },
+          "unreachable": {
+            "cases": 2,
+            "successes": 0,
+            "reads": 14,
+            "model_calls": 0,
+            "cache_hits": 0,
+            "logical_input_tokens": 0
+          }
+        },
+        "reachable_questions": {
+          "cases": 7,
+          "successes": 4,
+          "reads": 40,
+          "model_calls": 0,
+          "cache_hits": 0,
+          "logical_input_tokens": 0
+        }
+      },
+      "laya": {
+        "all": {
+          "cases": 24,
+          "successes": 8,
+          "reads": 154,
+          "model_calls": 119,
+          "cache_hits": 0,
+          "logical_input_tokens": 65487
+        },
+        "by_kind": {
+          "named-goal": {
+            "cases": 6,
+            "successes": 3,
+            "reads": 43,
+            "model_calls": 36,
+            "cache_hits": 0,
+            "logical_input_tokens": 20389
+          },
+          "question": {
+            "cases": 14,
+            "successes": 5,
+            "reads": 83,
+            "model_calls": 62,
+            "cache_hits": 0,
+            "logical_input_tokens": 33805
+          },
+          "unanswerable": {
+            "cases": 2,
+            "successes": 0,
+            "reads": 14,
+            "model_calls": 10,
+            "cache_hits": 0,
+            "logical_input_tokens": 5206
+          },
+          "unreachable": {
+            "cases": 2,
+            "successes": 0,
+            "reads": 14,
+            "model_calls": 11,
+            "cache_hits": 0,
+            "logical_input_tokens": 6087
+          }
+        },
+        "reachable_questions": {
+          "cases": 7,
+          "successes": 5,
+          "reads": 37,
+          "model_calls": 29,
+          "cache_hits": 0,
+          "logical_input_tokens": 16329
+        }
+      },
+      "strictLaya": {
+        "all": {
+          "cases": 24,
+          "successes": 2,
+          "reads": 57,
+          "model_calls": 8,
+          "cache_hits": 24,
+          "logical_input_tokens": 17067
+        },
+        "by_kind": {
+          "named-goal": {
+            "cases": 6,
+            "successes": 1,
+            "reads": 15,
+            "model_calls": 3,
+            "cache_hits": 6,
+            "logical_input_tokens": 4750
+          },
+          "question": {
+            "cases": 14,
+            "successes": 1,
+            "reads": 33,
+            "model_calls": 4,
+            "cache_hits": 14,
+            "logical_input_tokens": 9629
+          },
+          "unanswerable": {
+            "cases": 2,
+            "successes": 0,
+            "reads": 4,
+            "model_calls": 0,
+            "cache_hits": 2,
+            "logical_input_tokens": 1095
+          },
+          "unreachable": {
+            "cases": 2,
+            "successes": 0,
+            "reads": 5,
+            "model_calls": 1,
+            "cache_hits": 2,
+            "logical_input_tokens": 1593
+          }
+        },
+        "reachable_questions": {
+          "cases": 7,
+          "successes": 1,
+          "reads": 16,
+          "model_calls": 2,
+          "cache_hits": 7,
+          "logical_input_tokens": 4798
+        }
+      }
+    },
+    "case_outcomes": [
+      {
+        "case_id": "named-1",
+        "kind": "named-goal",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-1",
+        "kind": "named-goal",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 4
+      },
+      {
+        "case_id": "named-1",
+        "kind": "named-goal",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 5
+      },
+      {
+        "case_id": "named-1",
+        "kind": "named-goal",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 3
+      },
+      {
+        "case_id": "named-2",
+        "kind": "named-goal",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-2",
+        "kind": "named-goal",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 6
+      },
+      {
+        "case_id": "named-2",
+        "kind": "named-goal",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 7
+      },
+      {
+        "case_id": "named-2",
+        "kind": "named-goal",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "named-3",
+        "kind": "named-goal",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-3",
+        "kind": "named-goal",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-3",
+        "kind": "named-goal",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-3",
+        "kind": "named-goal",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 3
+      },
+      {
+        "case_id": "named-4",
+        "kind": "named-goal",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-4",
+        "kind": "named-goal",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 6
+      },
+      {
+        "case_id": "named-4",
+        "kind": "named-goal",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 7
+      },
+      {
+        "case_id": "named-4",
+        "kind": "named-goal",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 3
+      },
+      {
+        "case_id": "named-5",
+        "kind": "named-goal",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 3,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-5",
+        "kind": "named-goal",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 3,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-5",
+        "kind": "named-goal",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 3,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-5",
+        "kind": "named-goal",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 3,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "named-6",
+        "kind": "named-goal",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-6",
+        "kind": "named-goal",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-6",
+        "kind": "named-goal",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-6",
+        "kind": "named-goal",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q03-root-1",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q03-root-1",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q03-root-1",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q03-root-1",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q03-root-2",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q03-root-2",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q03-root-2",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 7
+      },
+      {
+        "case_id": "q03-root-2",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q04-root-1",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q04-root-1",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q04-root-1",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q04-root-1",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q04-root-2",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 6
+      },
+      {
+        "case_id": "q04-root-2",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 8
+      },
+      {
+        "case_id": "q04-root-2",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 3
+      },
+      {
+        "case_id": "q04-root-2",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q05-root-1",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q05-root-1",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q05-root-1",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q05-root-1",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q05-root-2",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q05-root-2",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q05-root-2",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q05-root-2",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 3
+      },
+      {
+        "case_id": "q06-root-1",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q06-root-1",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q06-root-1",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q06-root-1",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q06-root-2",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 7
+      },
+      {
+        "case_id": "q06-root-2",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 3
+      },
+      {
+        "case_id": "q06-root-2",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 3
+      },
+      {
+        "case_id": "q06-root-2",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 3
+      },
+      {
+        "case_id": "q07-root-1",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 2
+      },
+      {
+        "case_id": "q07-root-1",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 2
+      },
+      {
+        "case_id": "q07-root-1",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 6
+      },
+      {
+        "case_id": "q07-root-1",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q07-root-2",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q07-root-2",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q07-root-2",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q07-root-2",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 5
+      },
+      {
+        "case_id": "q08-root-1",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 3
+      },
+      {
+        "case_id": "q08-root-1",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 3
+      },
+      {
+        "case_id": "q08-root-1",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 2
+      },
+      {
+        "case_id": "q08-root-1",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 2
+      },
+      {
+        "case_id": "q08-root-2",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q08-root-2",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q08-root-2",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q08-root-2",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q09-root-1",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q09-root-1",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q09-root-1",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q09-root-1",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q09-root-2",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q09-root-2",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q09-root-2",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q09-root-2",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q14-root-1",
+        "kind": "unanswerable",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q14-root-1",
+        "kind": "unanswerable",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q14-root-1",
+        "kind": "unanswerable",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q14-root-1",
+        "kind": "unanswerable",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q14-root-2",
+        "kind": "unanswerable",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q14-root-2",
+        "kind": "unanswerable",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q14-root-2",
+        "kind": "unanswerable",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q14-root-2",
+        "kind": "unanswerable",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "cross-repo-1",
+        "kind": "unreachable",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "cross-repo-1",
+        "kind": "unreachable",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "cross-repo-1",
+        "kind": "unreachable",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "cross-repo-1",
+        "kind": "unreachable",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "cross-repo-2",
+        "kind": "unreachable",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "cross-repo-2",
+        "kind": "unreachable",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "cross-repo-2",
+        "kind": "unreachable",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "cross-repo-2",
+        "kind": "unreachable",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 3
+      }
+    ]
+  },
+  "confluence": {
+    "source_mode": "confluence-readback",
+    "graph_sha256": "ad4ec28d44ee8901f03c0bb4833e77c0b38490adefe909c54f45c13a31edf605",
+    "cases_sha256": "ecd1d3b5dc099dc1012980548396483ed2234cff03279513e6065c64b967c820",
+    "latency_seconds": {
+      "setup": 3.0758878749911673,
+      "index": 0.006656084791757166,
+      "inference": 8.233198248199187,
+      "total": 12.905773708014749
+    },
+    "peak_rss_bytes": 2717483008,
+    "uncached_states": 126,
+    "uncached_input_tokens": 69233,
+    "logical_input_tokens": 82229,
+    "cache_validation": {
+      "same_paths": true,
+      "new_inference": 0,
+      "cases": 24,
+      "seconds": 0.7273950829985552,
+      "meaning": "Exact-state warm lookup, not unseen-query latency"
+    },
+    "max_model_input_tokens": 661,
+    "max_head_tokens": 165,
+    "sdk_state_tokens_dropped": 0,
+    "max_excerpt_tokens_omitted": 20195,
+    "policies": {
+      "fifo": {
+        "all": {
+          "cases": 24,
+          "successes": 5,
+          "reads": 164,
+          "model_calls": 0,
+          "cache_hits": 0,
+          "logical_input_tokens": 0
+        },
+        "by_kind": {
+          "named-goal": {
+            "cases": 6,
+            "successes": 1,
+            "reads": 48,
+            "model_calls": 0,
+            "cache_hits": 0,
+            "logical_input_tokens": 0
+          },
+          "question": {
+            "cases": 14,
+            "successes": 4,
+            "reads": 88,
+            "model_calls": 0,
+            "cache_hits": 0,
+            "logical_input_tokens": 0
+          },
+          "unanswerable": {
+            "cases": 2,
+            "successes": 0,
+            "reads": 14,
+            "model_calls": 0,
+            "cache_hits": 0,
+            "logical_input_tokens": 0
+          },
+          "unreachable": {
+            "cases": 2,
+            "successes": 0,
+            "reads": 14,
+            "model_calls": 0,
+            "cache_hits": 0,
+            "logical_input_tokens": 0
+          }
+        },
+        "reachable_questions": {
+          "cases": 7,
+          "successes": 4,
+          "reads": 42,
+          "model_calls": 0,
+          "cache_hits": 0,
+          "logical_input_tokens": 0
+        }
+      },
+      "bm25": {
+        "all": {
+          "cases": 24,
+          "successes": 7,
+          "reads": 154,
+          "model_calls": 0,
+          "cache_hits": 0,
+          "logical_input_tokens": 0
+        },
+        "by_kind": {
+          "named-goal": {
+            "cases": 6,
+            "successes": 3,
+            "reads": 40,
+            "model_calls": 0,
+            "cache_hits": 0,
+            "logical_input_tokens": 0
+          },
+          "question": {
+            "cases": 14,
+            "successes": 4,
+            "reads": 86,
+            "model_calls": 0,
+            "cache_hits": 0,
+            "logical_input_tokens": 0
+          },
+          "unanswerable": {
+            "cases": 2,
+            "successes": 0,
+            "reads": 14,
+            "model_calls": 0,
+            "cache_hits": 0,
+            "logical_input_tokens": 0
+          },
+          "unreachable": {
+            "cases": 2,
+            "successes": 0,
+            "reads": 14,
+            "model_calls": 0,
+            "cache_hits": 0,
+            "logical_input_tokens": 0
+          }
+        },
+        "reachable_questions": {
+          "cases": 7,
+          "successes": 4,
+          "reads": 40,
+          "model_calls": 0,
+          "cache_hits": 0,
+          "logical_input_tokens": 0
+        }
+      },
+      "laya": {
+        "all": {
+          "cases": 24,
+          "successes": 8,
+          "reads": 154,
+          "model_calls": 118,
+          "cache_hits": 0,
+          "logical_input_tokens": 64980
+        },
+        "by_kind": {
+          "named-goal": {
+            "cases": 6,
+            "successes": 3,
+            "reads": 42,
+            "model_calls": 35,
+            "cache_hits": 0,
+            "logical_input_tokens": 19995
+          },
+          "question": {
+            "cases": 14,
+            "successes": 5,
+            "reads": 84,
+            "model_calls": 62,
+            "cache_hits": 0,
+            "logical_input_tokens": 33611
+          },
+          "unanswerable": {
+            "cases": 2,
+            "successes": 0,
+            "reads": 14,
+            "model_calls": 10,
+            "cache_hits": 0,
+            "logical_input_tokens": 5253
+          },
+          "unreachable": {
+            "cases": 2,
+            "successes": 0,
+            "reads": 14,
+            "model_calls": 11,
+            "cache_hits": 0,
+            "logical_input_tokens": 6121
+          }
+        },
+        "reachable_questions": {
+          "cases": 7,
+          "successes": 5,
+          "reads": 38,
+          "model_calls": 29,
+          "cache_hits": 0,
+          "logical_input_tokens": 16180
+        }
+      },
+      "strictLaya": {
+        "all": {
+          "cases": 24,
+          "successes": 2,
+          "reads": 57,
+          "model_calls": 8,
+          "cache_hits": 24,
+          "logical_input_tokens": 17249
+        },
+        "by_kind": {
+          "named-goal": {
+            "cases": 6,
+            "successes": 1,
+            "reads": 15,
+            "model_calls": 3,
+            "cache_hits": 6,
+            "logical_input_tokens": 4828
+          },
+          "question": {
+            "cases": 14,
+            "successes": 1,
+            "reads": 33,
+            "model_calls": 4,
+            "cache_hits": 14,
+            "logical_input_tokens": 9707
+          },
+          "unanswerable": {
+            "cases": 2,
+            "successes": 0,
+            "reads": 4,
+            "model_calls": 0,
+            "cache_hits": 2,
+            "logical_input_tokens": 1095
+          },
+          "unreachable": {
+            "cases": 2,
+            "successes": 0,
+            "reads": 5,
+            "model_calls": 1,
+            "cache_hits": 2,
+            "logical_input_tokens": 1619
+          }
+        },
+        "reachable_questions": {
+          "cases": 7,
+          "successes": 1,
+          "reads": 16,
+          "model_calls": 2,
+          "cache_hits": 7,
+          "logical_input_tokens": 4850
+        }
+      }
+    },
+    "case_outcomes": [
+      {
+        "case_id": "named-1",
+        "kind": "named-goal",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-1",
+        "kind": "named-goal",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 4
+      },
+      {
+        "case_id": "named-1",
+        "kind": "named-goal",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 5
+      },
+      {
+        "case_id": "named-1",
+        "kind": "named-goal",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 3
+      },
+      {
+        "case_id": "named-2",
+        "kind": "named-goal",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-2",
+        "kind": "named-goal",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 6
+      },
+      {
+        "case_id": "named-2",
+        "kind": "named-goal",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 6
+      },
+      {
+        "case_id": "named-2",
+        "kind": "named-goal",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "named-3",
+        "kind": "named-goal",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-3",
+        "kind": "named-goal",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-3",
+        "kind": "named-goal",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-3",
+        "kind": "named-goal",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 3
+      },
+      {
+        "case_id": "named-4",
+        "kind": "named-goal",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-4",
+        "kind": "named-goal",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 6
+      },
+      {
+        "case_id": "named-4",
+        "kind": "named-goal",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 7
+      },
+      {
+        "case_id": "named-4",
+        "kind": "named-goal",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 3
+      },
+      {
+        "case_id": "named-5",
+        "kind": "named-goal",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 3,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-5",
+        "kind": "named-goal",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 3,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-5",
+        "kind": "named-goal",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 3,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-5",
+        "kind": "named-goal",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 3,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "named-6",
+        "kind": "named-goal",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-6",
+        "kind": "named-goal",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-6",
+        "kind": "named-goal",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "named-6",
+        "kind": "named-goal",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q03-root-1",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q03-root-1",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q03-root-1",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q03-root-1",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q03-root-2",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q03-root-2",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q03-root-2",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 7
+      },
+      {
+        "case_id": "q03-root-2",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q04-root-1",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q04-root-1",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q04-root-1",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q04-root-1",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q04-root-2",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 6
+      },
+      {
+        "case_id": "q04-root-2",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 8
+      },
+      {
+        "case_id": "q04-root-2",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 3
+      },
+      {
+        "case_id": "q04-root-2",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q05-root-1",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q05-root-1",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q05-root-1",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q05-root-1",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q05-root-2",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q05-root-2",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q05-root-2",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q05-root-2",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 3
+      },
+      {
+        "case_id": "q06-root-1",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q06-root-1",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q06-root-1",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q06-root-1",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q06-root-2",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 7
+      },
+      {
+        "case_id": "q06-root-2",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 3
+      },
+      {
+        "case_id": "q06-root-2",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 4
+      },
+      {
+        "case_id": "q06-root-2",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 3
+      },
+      {
+        "case_id": "q07-root-1",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 2
+      },
+      {
+        "case_id": "q07-root-1",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 2
+      },
+      {
+        "case_id": "q07-root-1",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 6
+      },
+      {
+        "case_id": "q07-root-1",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q07-root-2",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q07-root-2",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q07-root-2",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q07-root-2",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 5
+      },
+      {
+        "case_id": "q08-root-1",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 3
+      },
+      {
+        "case_id": "q08-root-1",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 3
+      },
+      {
+        "case_id": "q08-root-1",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 2
+      },
+      {
+        "case_id": "q08-root-1",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 1,
+        "success": true,
+        "reason": "goal_reached",
+        "read_count": 2
+      },
+      {
+        "case_id": "q08-root-2",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q08-root-2",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q08-root-2",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q08-root-2",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q09-root-1",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q09-root-1",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q09-root-1",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q09-root-1",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q09-root-2",
+        "kind": "question",
+        "policy": "fifo",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q09-root-2",
+        "kind": "question",
+        "policy": "bm25",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q09-root-2",
+        "kind": "question",
+        "policy": "laya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q09-root-2",
+        "kind": "question",
+        "policy": "strictLaya",
+        "reachable": true,
+        "shortest_path": 2,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q14-root-1",
+        "kind": "unanswerable",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q14-root-1",
+        "kind": "unanswerable",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q14-root-1",
+        "kind": "unanswerable",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "q14-root-1",
+        "kind": "unanswerable",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "q14-root-2",
+        "kind": "unanswerable",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q14-root-2",
+        "kind": "unanswerable",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q14-root-2",
+        "kind": "unanswerable",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "q14-root-2",
+        "kind": "unanswerable",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "cross-repo-1",
+        "kind": "unreachable",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "cross-repo-1",
+        "kind": "unreachable",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "cross-repo-1",
+        "kind": "unreachable",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "frontier_exhausted",
+        "read_count": 6
+      },
+      {
+        "case_id": "cross-repo-1",
+        "kind": "unreachable",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 2
+      },
+      {
+        "case_id": "cross-repo-2",
+        "kind": "unreachable",
+        "policy": "fifo",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "cross-repo-2",
+        "kind": "unreachable",
+        "policy": "bm25",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "cross-repo-2",
+        "kind": "unreachable",
+        "policy": "laya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "read_budget",
+        "read_count": 8
+      },
+      {
+        "case_id": "cross-repo-2",
+        "kind": "unreachable",
+        "policy": "strictLaya",
+        "reachable": false,
+        "shortest_path": null,
+        "success": false,
+        "reason": "greedy_stalled",
+        "read_count": 3
+      }
+    ]
+  },
+  "limitations": [
+    "Twenty-four fixed public cases, not a random independent sample; named cases share one repository root.",
+    "Oracle target-ID stopping does not assess autonomous answer sufficiency or absence detection.",
+    "Strict policy shares the process cache with frontier policy; per-policy new calls are not independent cold costs.",
+    "Logical cached reads exclude Confluence network latency and synchronization overhead.",
+    "Peak process RSS excludes a separately measured MPS peak; 4GB hardware not tested.",
+    "No private Notion publication, new answer-generation calls, or proven net-dollar savings."
+  ]
+}

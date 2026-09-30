@@ -1,0 +1,262 @@
+[
+  {
+    "id": "named-1",
+    "kind": "named-goal",
+    "query": "Reach the linked document named TwoTwo-me/md-web-editor/wiki/architecture.md.",
+    "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+    "target_ids": [
+      "408287ba517cec80d05fd4360d30ab31759621040b83c15775a5a269dff304fb"
+    ],
+    "split": "test",
+    "selection": "first six sorted pairs with shortest path two or three; topology only, before model"
+  },
+  {
+    "id": "named-2",
+    "kind": "named-goal",
+    "query": "Reach the linked document named TwoTwo-me/md-web-editor/wiki/decisions/002-commands.md.",
+    "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+    "target_ids": [
+      "5123ca99dfd05a84e88364c1fd39f72197c2e2c9940d31869286eb38f30124f7"
+    ],
+    "split": "test",
+    "selection": "first six sorted pairs with shortest path two or three; topology only, before model"
+  },
+  {
+    "id": "named-3",
+    "kind": "named-goal",
+    "query": "Reach the linked document named TwoTwo-me/md-web-editor/wiki/decisions/004-split-panels.md.",
+    "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+    "target_ids": [
+      "8ac472563beeb6ba7315c9ef20cff008e434595b398e76d4f101b09bf8cd15f6"
+    ],
+    "split": "test",
+    "selection": "first six sorted pairs with shortest path two or three; topology only, before model"
+  },
+  {
+    "id": "named-4",
+    "kind": "named-goal",
+    "query": "Reach the linked document named TwoTwo-me/md-web-editor/wiki/execution.md.",
+    "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+    "target_ids": [
+      "0fe935f62a81687a517330990b5705d4f7b019a62a4ad5ddf11f31454995dccd"
+    ],
+    "split": "test",
+    "selection": "first six sorted pairs with shortest path two or three; topology only, before model"
+  },
+  {
+    "id": "named-5",
+    "kind": "named-goal",
+    "query": "Reach the linked document named TwoTwo-me/md-web-editor/wiki/releases/0.1.0.md.",
+    "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+    "target_ids": [
+      "8f8ab538c5277a53f82ece8b6715ff8a2523f760810ecca80287f6a68b020cf9"
+    ],
+    "split": "test",
+    "selection": "first six sorted pairs with shortest path two or three; topology only, before model"
+  },
+  {
+    "id": "named-6",
+    "kind": "named-goal",
+    "query": "Reach the linked document named TwoTwo-me/md-web-editor/wiki/releases/0.2.0.md.",
+    "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+    "target_ids": [
+      "5f6bfca37bbc1fc96ec1d4c053e2f57982fdac59aad659815344785caff2d14e"
+    ],
+    "split": "test",
+    "selection": "first six sorted pairs with shortest path two or three; topology only, before model"
+  },
+  {
+    "id": "q03-root-1",
+    "kind": "question",
+    "query": "한글 IME 입력 중 isComposing이나 키코드 229가 발생하면 명령 트리거를 어떻게 처리하나요?",
+    "start_id": "ffaaa9dd2a5384e0518c06f7a8b2489be690edad91407ceca19a666f2b8a655c",
+    "target_ids": [
+      "5123ca99dfd05a84e88364c1fd39f72197c2e2c9940d31869286eb38f30124f7"
+    ],
+    "split": "test",
+    "selection": "each fixed repository root; no answer-label-based start selection"
+  },
+  {
+    "id": "q03-root-2",
+    "kind": "question",
+    "query": "한글 IME 입력 중 isComposing이나 키코드 229가 발생하면 명령 트리거를 어떻게 처리하나요?",
+    "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+    "target_ids": [
+      "5123ca99dfd05a84e88364c1fd39f72197c2e2c9940d31869286eb38f30124f7"
+    ],
+    "split": "test",
+    "selection": "each fixed repository root; no answer-label-based start selection"
+  },
+  {
+    "id": "q04-root-1",
+    "kind": "question",
+    "query": "Why do GitHub Pages project paths fail to isolate recovery drafts and directory handles from sibling apps?",
+    "start_id": "ffaaa9dd2a5384e0518c06f7a8b2489be690edad91407ceca19a666f2b8a655c",
+    "target_ids": [
+      "73d66bd91f0c08552c6fbba1649e40a9a7f42012e1dfbdd4dbf5b8f6721b6074"
+    ],
+    "split": "test",
+    "selection": "each fixed repository root; no answer-label-based start selection"
+  },
+  {
+    "id": "q04-root-2",
+    "kind": "question",
+    "query": "Why do GitHub Pages project paths fail to isolate recovery drafts and directory handles from sibling apps?",
+    "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+    "target_ids": [
+      "73d66bd91f0c08552c6fbba1649e40a9a7f42012e1dfbdd4dbf5b8f6721b6074"
+    ],
+    "split": "test",
+    "selection": "each fixed repository root; no answer-label-based start selection"
+  },
+  {
+    "id": "q05-root-1",
+    "kind": "question",
+    "query": "두 편집 패널에서 같은 문서를 열었을 때 문서 상태와 저장은 어떻게 공유되나요?",
+    "start_id": "ffaaa9dd2a5384e0518c06f7a8b2489be690edad91407ceca19a666f2b8a655c",
+    "target_ids": [
+      "8ac472563beeb6ba7315c9ef20cff008e434595b398e76d4f101b09bf8cd15f6"
+    ],
+    "split": "test",
+    "selection": "each fixed repository root; no answer-label-based start selection"
+  },
+  {
+    "id": "q05-root-2",
+    "kind": "question",
+    "query": "두 편집 패널에서 같은 문서를 열었을 때 문서 상태와 저장은 어떻게 공유되나요?",
+    "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+    "target_ids": [
+      "8ac472563beeb6ba7315c9ef20cff008e434595b398e76d4f101b09bf8cd15f6"
+    ],
+    "split": "test",
+    "selection": "each fixed repository root; no answer-label-based start selection"
+  },
+  {
+    "id": "q06-root-1",
+    "kind": "question",
+    "query": "How does offline installation of the editor work after a first online visit?",
+    "start_id": "ffaaa9dd2a5384e0518c06f7a8b2489be690edad91407ceca19a666f2b8a655c",
+    "target_ids": [
+      "1a61cbeaa328e982cba434c64fea2e66a03fc59ca8a9db2ee943d8789f9f70a2"
+    ],
+    "split": "test",
+    "selection": "each fixed repository root; no answer-label-based start selection"
+  },
+  {
+    "id": "q06-root-2",
+    "kind": "question",
+    "query": "How does offline installation of the editor work after a first online visit?",
+    "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+    "target_ids": [
+      "1a61cbeaa328e982cba434c64fea2e66a03fc59ca8a9db2ee943d8789f9f70a2"
+    ],
+    "split": "test",
+    "selection": "each fixed repository root; no answer-label-based start selection"
+  },
+  {
+    "id": "q07-root-1",
+    "kind": "question",
+    "query": "cfwiki는 별도 env 옵션이 없을 때 Confluence 토큰 프로필을 어느 폴더에서 읽나요?",
+    "start_id": "ffaaa9dd2a5384e0518c06f7a8b2489be690edad91407ceca19a666f2b8a655c",
+    "target_ids": [
+      "35610703a20b1cb971e75efcd53b1fef981697ba71e38c849b757f7b4cd0a138"
+    ],
+    "split": "test",
+    "selection": "each fixed repository root; no answer-label-based start selection"
+  },
+  {
+    "id": "q07-root-2",
+    "kind": "question",
+    "query": "cfwiki는 별도 env 옵션이 없을 때 Confluence 토큰 프로필을 어느 폴더에서 읽나요?",
+    "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+    "target_ids": [
+      "35610703a20b1cb971e75efcd53b1fef981697ba71e38c849b757f7b4cd0a138"
+    ],
+    "split": "test",
+    "selection": "each fixed repository root; no answer-label-based start selection"
+  },
+  {
+    "id": "q08-root-1",
+    "kind": "question",
+    "query": "릴리스 전에 어떤 검증을 하고 GitHub Packages와 태그 배포를 어떻게 처리하나요?",
+    "start_id": "ffaaa9dd2a5384e0518c06f7a8b2489be690edad91407ceca19a666f2b8a655c",
+    "target_ids": [
+      "04139f422f31397fa7b323f4265b3138c331e5efb42e4f07e7f71c0dafa820a5"
+    ],
+    "split": "test",
+    "selection": "each fixed repository root; no answer-label-based start selection"
+  },
+  {
+    "id": "q08-root-2",
+    "kind": "question",
+    "query": "릴리스 전에 어떤 검증을 하고 GitHub Packages와 태그 배포를 어떻게 처리하나요?",
+    "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+    "target_ids": [
+      "04139f422f31397fa7b323f4265b3138c331e5efb42e4f07e7f71c0dafa820a5"
+    ],
+    "split": "test",
+    "selection": "each fixed repository root; no answer-label-based start selection"
+  },
+  {
+    "id": "q09-root-1",
+    "kind": "question",
+    "query": "노트 데이터 형식 버전과 앱 릴리스 버전은 어떻게 구분하나요?",
+    "start_id": "ffaaa9dd2a5384e0518c06f7a8b2489be690edad91407ceca19a666f2b8a655c",
+    "target_ids": [
+      "f55a9c67a081184d6dd29a6f3e190a7c681ffbfbd2925d306a9382c80c02040d"
+    ],
+    "split": "test",
+    "selection": "each fixed repository root; no answer-label-based start selection"
+  },
+  {
+    "id": "q09-root-2",
+    "kind": "question",
+    "query": "노트 데이터 형식 버전과 앱 릴리스 버전은 어떻게 구분하나요?",
+    "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+    "target_ids": [
+      "f55a9c67a081184d6dd29a6f3e190a7c681ffbfbd2925d306a9382c80c02040d"
+    ],
+    "split": "test",
+    "selection": "each fixed repository root; no answer-label-based start selection"
+  },
+  {
+    "id": "q14-root-1",
+    "kind": "unanswerable",
+    "query": "2031년 유로파 우주 정거장의 예약 취소 위약금은 얼마인가요?",
+    "start_id": "ffaaa9dd2a5384e0518c06f7a8b2489be690edad91407ceca19a666f2b8a655c",
+    "target_ids": [],
+    "split": "test",
+    "selection": "each fixed repository root; no answer-label-based start selection"
+  },
+  {
+    "id": "q14-root-2",
+    "kind": "unanswerable",
+    "query": "2031년 유로파 우주 정거장의 예약 취소 위약금은 얼마인가요?",
+    "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+    "target_ids": [],
+    "split": "test",
+    "selection": "each fixed repository root; no answer-label-based start selection"
+  },
+  {
+    "id": "cross-repo-1",
+    "kind": "unreachable",
+    "query": "Reach the linked document named TwoTwo-me/md-web-editor/README.md.",
+    "start_id": "ffaaa9dd2a5384e0518c06f7a8b2489be690edad91407ceca19a666f2b8a655c",
+    "target_ids": [
+      "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009"
+    ],
+    "split": "test",
+    "selection": "disconnected real repository roots; no artificial bridge"
+  },
+  {
+    "id": "cross-repo-2",
+    "kind": "unreachable",
+    "query": "Reach the linked document named TwoTwo-me/confluence-wiki-md/README.md.",
+    "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+    "target_ids": [
+      "ffaaa9dd2a5384e0518c06f7a8b2489be690edad91407ceca19a666f2b8a655c"
+    ],
+    "split": "test",
+    "selection": "disconnected real repository roots; no artificial bridge"
+  }
+]

@@ -87,6 +87,35 @@ node experiments/laya-wiki/confluence.mjs readback \
 node experiments/laya-wiki/confluence.mjs query "Markdown" --limit 20 --output artifacts/laya-wiki/confluence-public
 ```
 
+## Follow real document links
+
+The graph experiment freezes hyperlinks between public documents already collected. It compares FIFO, metadata BM25, Laya over all pending links discovered in visited pages, and strict Laya over only the current page's links. Each case permits 8 unique reads including the start and a 5-option menu. Single-option steps bypass inference. There is no global search or live HTTP inside navigation. Known target IDs stop evaluation; the model does not decide answer sufficiency.
+
+The executed 24 public cases and paired measurements are in [graph-cases.json](results/graph-cases.json) and [graph-summary.json](results/graph-summary.json). Six named cases are the first sorted natural 2–3-hop pairs; question cases use both fixed repository roots. Recollection from a newer repository revision can change IDs/links; retain the captured corpus when replaying these cases.
+
+```sh
+node experiments/laya-wiki/graph_export.mjs \
+  --corpus artifacts/laya-wiki/public-scope/corpus.json \
+  --output artifacts/laya-wiki/graph/local-graph.json \
+  --cases-output artifacts/laya-wiki/graph/cases.json
+node experiments/laya-wiki/graph_export.mjs \
+  --corpus artifacts/laya-wiki/confluence-public/confluence-corpus.json \
+  --mode confluence-readback --output artifacts/laya-wiki/graph/confluence-graph.json
+HF_HUB_OFFLINE=1 USE_TF=0 sandbox-exec -p '(version 1) (allow default) (deny network*)' \
+  artifacts/laya-wiki/venv/bin/python experiments/laya-wiki/graph_benchmark.py \
+  --graph artifacts/laya-wiki/graph/local-graph.json \
+  --cases artifacts/laya-wiki/graph/cases.json \
+  --output artifacts/laya-wiki/graph/local.json --device mps
+HF_HUB_OFFLINE=1 USE_TF=0 sandbox-exec -p '(version 1) (allow default) (deny network*)' \
+  artifacts/laya-wiki/venv/bin/python experiments/laya-wiki/graph_benchmark.py \
+  --graph artifacts/laya-wiki/graph/confluence-graph.json \
+  --cases artifacts/laya-wiki/graph/cases.json \
+  --output artifacts/laya-wiki/graph/confluence.json --device mps
+node --test experiments/laya-wiki/graph_export.test.mjs
+```
+
+Each output gets a content-addressed sibling `.cache.json`; use a fresh output path for cold-state measurements. Both policies share that process cache, and the built-in repeat verifies identical paths with no new inference. Keep raw graphs, traces, documents and decision caches ignored. The executed study reused `pilot/shared-local-corpus.json` and a fresh `pilot/confluence-corpus.json`, with no new collection or publication.
+
 ## Route and unit checks
 
 The routing script compares a manually curated collection taxonomy with unrestricted BM25. It accepts `--device cpu|mps` and needs a corpus/cases path. The study command was run against local-only pilot artifacts; those private files are deliberately not included here.
