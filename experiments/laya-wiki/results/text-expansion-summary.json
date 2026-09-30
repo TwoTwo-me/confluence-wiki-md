@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated_at": "2026-09-30T15:44:01.689Z",
+  "updated_at": "2026-09-30T16:52:15.640Z",
   "observation_timezone": "Asia/Seoul",
   "source_coverage": {
     "owned_repositories": 66,
@@ -13,7 +13,45 @@
     "github_coverage_accounted": true,
     "unavailable_candidates": 129,
     "media_blob_downloads": 0,
-    "notion_workspace_capture": "pending; native export and resumable live reader are in progress",
+    "notion_workspace_capture": {
+      "schema": 1,
+      "verified_at": "2026-09-30T16:39:36.374Z",
+      "observed_graph_queue_exhausted": true,
+      "account_complete": false,
+      "captured_records_verified": 85541,
+      "documents_and_export_bytes_verified": 4568,
+      "utf8_bytes": 19189073,
+      "corpus_sha256": "1ad83ddcafe072e0ce64ac35c87ae63e07c47af92921ca9708f1ce70d7ba0a9d",
+      "native_pages_and_views": 4415,
+      "database_csv_documents": 153,
+      "block_statuses": {
+        "captured": 85541,
+        "foreign_workspace": 5,
+        "unavailable": 4,
+        "unknown_workspace": 35,
+        "deleted": 19
+      },
+      "collection_statuses": {
+        "count_matched": 128,
+        "rows_and_templates_count_matched": 25,
+        "foreign_or_unknown_workspace": 1
+      },
+      "raw_fallback_block_occurrences": 11705,
+      "missing_edges": 19,
+      "cycles": 1,
+      "unresolved_references": 9,
+      "duplicate_content_documents": 327,
+      "resume_cache_hits": 4568,
+      "media_fetches": 0,
+      "limits": [
+        "Seed global search stopped at its1000-result cap; only observed roots, known pages and recursively declared content/references/collection rows are traversed.",
+        "Collection count mismatches and unavailable collections remain explicit.",
+        "API record text and properties were captured without media bytes; unsupported block properties were retained as raw JSON.",
+        "No claim of native-export or workspace-wide block completeness."
+      ]
+    },
+    "combined_local_text_documents": 14002,
+    "combined_private_text_documents": 11764,
     "corpus_sha256": "83b3f467fc10fff5e67dcfae24ab8827a7593539b5bf02b8af3e8c36b93dea36"
   },
   "publication": {
@@ -37,7 +75,30 @@
     "private_sources_published": 0,
     "policy": "public source text only; private space-visibility consent pending",
     "media_uploads": 0,
-    "original_study_sources_freshly_verified": 27
+    "original_study_sources_freshly_verified": 27,
+    "pending_private_offline_plan": {
+      "collected": 11764,
+      "publishable": 11763,
+      "excluded": 1,
+      "sources": 11763,
+      "private": 11764,
+      "redactedUrlCredentials": 18,
+      "redactedSignedUrls": 14,
+      "textUnits": 8437,
+      "units": 8816,
+      "groups": 38,
+      "preparedBytes": 51135665,
+      "plan_sha256": "d4609515de85cbba67db658d5406274d57d2e169aaf3b3a4376bdbad54ec21cf",
+      "remote_writes": 0,
+      "approval_created": false,
+      "already_published_public_sources_excluded": true,
+      "excluded_reasons": [
+        {
+          "source_type": "github",
+          "reason": "preparation_failed"
+        }
+      ]
+    }
   },
   "primary": {
     "cases": 14,
@@ -264,6 +325,173 @@
     "paired_paths": 32,
     "cloud_cache_initialization": "Copied local exact-state cache; only matching keys reused.",
     "stopping": "Oracle source-ID stopping after a logical read; autonomous sufficiency not evaluated."
+  },
+  "notion_probe": {
+    "frozen_at": "2026-09-30T16:39:37.781Z",
+    "cases_sha256": "86bfea9d2c21900b9e68228380c94189ed58441782f681976a835767ea40d929",
+    "corpus_documents": 14002,
+    "notion_documents": 4568,
+    "positive_queries": 4,
+    "unanswerable_marker_controls": 2,
+    "raw_corpus_sha256": "155d86e7039ffce47cd4f8c70499e813d4a1f0bb76d37063ab9e8ca09f94b291",
+    "clean_corpus_sha256": "d07b06646b292409e55d2a82a9aabca28df60036b3cdd75238a1b72964009312",
+    "scope": "Four hand-picked source-grounded questions from four related private project documents; exact-content aliases only, no exhaustive relevance labels.",
+    "exclusions": "Retrieval-only alternative drops native page properties/format and repeated property appendix when body text remains. Property-only pages retain their original text. Database-property questions are outside this probe; original capture remains intact.",
+    "raw_native_utf8_bytes": 19189073,
+    "clean_native_utf8_bytes": 14223851,
+    "metadata_only_pages_retained": 174,
+    "raw": {
+      "scores": [
+        {
+          "budget": 10,
+          "positive_queries": 4,
+          "global_bm25_hit3": 3,
+          "laya_hit3": 2,
+          "queries_with_known_target_in_candidates": 3,
+          "mean_mrr": 0.2708333333333333,
+          "raw_first10_tokens_sum": 189660,
+          "final3_passage_tokens_sum": 5471,
+          "sdk_truncated_states": 0
+        },
+        {
+          "budget": 20,
+          "positive_queries": 4,
+          "global_bm25_hit3": 3,
+          "laya_hit3": 1,
+          "queries_with_known_target_in_candidates": 3,
+          "mean_mrr": 0.22916666666666666,
+          "raw_first10_tokens_sum": 189660,
+          "final3_passage_tokens_sum": 5902,
+          "sdk_truncated_states": 0
+        }
+      ],
+      "controls": [
+        {
+          "language": "ko",
+          "budget": 10,
+          "top_score": 0.5334
+        },
+        {
+          "language": "ko",
+          "budget": 20,
+          "top_score": 0.7721
+        },
+        {
+          "language": "en",
+          "budget": 10,
+          "top_score": 0.817
+        },
+        {
+          "language": "en",
+          "budget": 20,
+          "top_score": 0.817
+        }
+      ],
+      "actual_new_sdk_states": 239,
+      "cache": {
+        "hits": 419,
+        "misses": 239,
+        "repeat": {
+          "seconds": 0.4873450000304729,
+          "new_inference_states": 0,
+          "same_ranking": true
+        },
+        "invalidation_probe": {
+          "same_content_same_key": true,
+          "changed_content_new_key": true,
+          "caller_sha256_retained": true
+        },
+        "invalidation": "actual document/title content, query, chunk, model revision, SDK, device, schema, max_len/head_max_len, batch size, policy version"
+      },
+      "latency_seconds": {
+        "startup": 5.451612625038251,
+        "index": 7.565399083076045,
+        "inference": 32.31665816681925,
+        "total": 61.706683874945156
+      },
+      "peak_rss_bytes": 3047800832
+    },
+    "clean": {
+      "scores": [
+        {
+          "budget": 10,
+          "positive_queries": 4,
+          "global_bm25_hit3": 3,
+          "laya_hit3": 2,
+          "queries_with_known_target_in_candidates": 3,
+          "mean_mrr": 0.19166666666666665,
+          "raw_first10_tokens_sum": 155705,
+          "final3_passage_tokens_sum": 5854,
+          "sdk_truncated_states": 0
+        },
+        {
+          "budget": 20,
+          "positive_queries": 4,
+          "global_bm25_hit3": 3,
+          "laya_hit3": 1,
+          "queries_with_known_target_in_candidates": 3,
+          "mean_mrr": 0.14583333333333331,
+          "raw_first10_tokens_sum": 155705,
+          "final3_passage_tokens_sum": 6617,
+          "sdk_truncated_states": 0
+        }
+      ],
+      "controls": [
+        {
+          "language": "ko",
+          "budget": 10,
+          "top_score": 0.5334
+        },
+        {
+          "language": "ko",
+          "budget": 20,
+          "top_score": 0.7721
+        },
+        {
+          "language": "en",
+          "budget": 10,
+          "top_score": 0.817
+        },
+        {
+          "language": "en",
+          "budget": 20,
+          "top_score": 0.817
+        }
+      ],
+      "actual_new_sdk_states": 134,
+      "cache": {
+        "hits": 484,
+        "misses": 134,
+        "repeat": {
+          "seconds": 0.5030629580141976,
+          "new_inference_states": 0,
+          "same_ranking": true
+        },
+        "invalidation_probe": {
+          "same_content_same_key": true,
+          "changed_content_new_key": true,
+          "caller_sha256_retained": true
+        },
+        "invalidation": "actual document/title content, query, chunk, model revision, SDK, device, schema, max_len/head_max_len, batch size, policy version"
+      },
+      "latency_seconds": {
+        "startup": 4.358611749950796,
+        "index": 8.037370124948211,
+        "inference": 18.888676541973837,
+        "total": 44.068173874984495
+      },
+      "peak_rss_bytes": 3043950592
+    },
+    "unique_raw_cache_keys": 239,
+    "unique_incremental_clean_cache_keys": 130,
+    "clean_cache_initialization": "Copied raw exact-state cache; only matching actual-content and query keys reused.",
+    "caveats": [
+      "Each representation builds its own BM25 candidates; effects of retrieval and model-state cleanup are not isolated.",
+      "Original source capture remains intact; removed database property fields may answer other queries.",
+      "Only four hand-picked questions from related project documents, with exact-content aliases and non-exhaustive labels.",
+      "Token counts use Laya tokenizer, not API billing; shorter text did not improve Hit@3.",
+      "Raw-run indexing overlapped an offline publication-plan process; latencies are observed rather than controlled comparisons."
+    ]
   },
   "costs": {
     "paid_answer_or_judge_api_calls": 0,

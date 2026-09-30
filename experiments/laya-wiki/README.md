@@ -4,7 +4,7 @@ This is a bounded, local-first experiment. The findings and limits are in [repor
 
 ## Expanded text study
 
-The October 1 update collected 9,434 owned GitHub document files and verified publication/readback of all 2,238 public sources. See [expanded measurements](results/text-expansion-summary.json), [public questions](results/text-expansion-cases.public.json), and [fresh metadata-menu questions](results/metadata-cases.json). The expanded benchmark found no ranking or reading benefit over BM25. The older 27-document and link experiments below remain separate campaigns.
+The October 1 update collected 9,434 owned GitHub document files and 4,568 Notion text documents, and verified publication/readback of all 2,238 public GitHub sources. See [expanded measurements](results/text-expansion-summary.json), [public questions](results/text-expansion-cases.public.json), and [fresh metadata-menu questions](results/metadata-cases.json). The expanded benchmark found no ranking or reading benefit over BM25, including a frozen four-question Notion probe on 14,002 combined local documents. The older 27-document and link experiments below remain separate campaigns.
 
 The resumable collector fetches only eligible Git blobs, verifies Git object hashes and UTF-8, retains oversized text, and accounts for empty/binary/secret-looking/unavailable sources. It collects public and private sources; keep its output ignored:
 
@@ -15,7 +15,20 @@ node experiments/laya-wiki/notion_text_export.mjs \
   --input "$NOTION_TEXT_EXPORT" --output artifacts/laya-wiki/text-expansion/notion
 ```
 
-The Notion command reads an extracted Markdown/CSV directory without network access or media reads. Native UUID filenames retain page/database identity. Export-file accounting and unresolved references are explicit; this does not establish workspace or block completeness. In the executed update, the native workspace download did not arrive, so a private, logged-in Aside reader also traversed native records and collection rows. Its raw properties and coverage receipts stay local.
+The Notion command reads an extracted Markdown/CSV directory without network access or media reads. Native UUID filenames retain page/database identity. Export-file accounting and unresolved references are explicit; this does not establish workspace or block completeness. In the executed update, the native workspace download did not arrive, so a private, logged-in Aside reader traversed native records, collection rows and templates. The observed queue is exhausted: 85,541 captured records, 4,415 page/view Markdown documents and 153 database CSV documents. Foreign/unknown/unavailable/deleted records and unsupported block properties are accounted for locally. The capped search inventory cannot prove that orphan pages outside observed roots were found.
+
+The Notion probe compares original native-property text with a retrieval-only representation that removes native page-property JSON and its repeated appendix when body text remains. Property-only pages retain their original text; raw source capture is untouched. Questions about omitted property fields are outside this small probe. Both representations use their own global BM25 candidates with budgets 10 and 20. Clean-run scores reuse only exact matching raw-run cache keys, so its inference cost is incremental rather than a cold-run comparison. Private cases and grounding excerpts remain ignored; sanitized totals are included in the expanded measurements. Reproduce only with the frozen local artifacts:
+
+```sh
+HF_HUB_OFFLINE=1 USE_TF=0 sandbox-exec -p '(version 1) (allow default) (deny network*)' \
+  artifacts/laya-wiki/venv/bin/python experiments/laya-wiki/benchmark.py \
+  --corpus artifacts/laya-wiki/text-expansion/evaluation/notion-probe/raw-corpus.json \
+  --cases artifacts/laya-wiki/text-expansion/evaluation/notion-probe/cases.json \
+  --output artifacts/laya-wiki/text-expansion/evaluation/notion-probe/raw-benchmark.json \
+  --device mps --mode normalized --limit-candidates 20 --batch-size 4
+```
+
+For the other representation use `clean-corpus.json` and `clean-benchmark.json`. An exact rerun uses the already populated corresponding cache; do not overwrite frozen cases or compare that cached runtime with a cold inference measurement. The remaining private-only offline publication plan accounts for 11,764 sources, including one explicit converter failure, without uploading private text or duplicating the already published public sources.
 
 For an offline publication plan, provide a destination binding JSON with `tenant`, `apiUrl`, `v1Url`, `spaceId`, `spaceKey`, `rootId`, and `actorId`:
 
