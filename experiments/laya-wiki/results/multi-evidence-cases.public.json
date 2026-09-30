@@ -1,0 +1,525 @@
+{
+  "schema": 1,
+  "frozen_at": "2026-09-30T22:59:26.777Z",
+  "source_graph_sha256": "ad4ec28d44ee8901f03c0bb4833e77c0b38490adefe909c54f45c13a31edf605",
+  "hashes": {
+    "graph.json": "ad4ec28d44ee8901f03c0bb4833e77c0b38490adefe909c54f45c13a31edf605",
+    "cases/Q1.json": "1f0e095da367bac693ab9e844cbd014d1e8c9d2020d5101380ec95a40afe2221",
+    "cases/Q2.json": "112f525e6c5e626704d2fa5f197e9049a3d42714995f06182be96437ac7243d2",
+    "cases/Q3.json": "927a474ee45d3a2dc160a586f0f94fe6efa74f41ae844054121d3ae93e1f0ca9",
+    "cases/Q4.json": "aee19cd13fdfd0e82f746bce4b20d0fb6d0e1f0c3b6d9c301c66caf05fb7ddda",
+    "rubrics/Q1.json": "28fc28beea4fae155248873fbc11d6fdf932a7352886950bab164775fb5539f9",
+    "rubrics/Q2.json": "7f11ab66175ddff15aa333a26d6ecfc25ae3b49a2dfaab01c51ed28538411089",
+    "rubrics/Q3.json": "0d6e4dbf87bab03550d974f88222ad0026c74af28d5dfaaa426149db9fbf5cc2",
+    "rubrics/Q4.json": "e0a03f999cab68152622291d79d4a5467f3d10796098d6fcc632fb648bcc14f9"
+  },
+  "cases": [
+    {
+      "id": "Q1",
+      "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+      "query": "A reviewer claims that IME-safe commands, split editor panels, and local storage together isolate private notes from a compromised sibling app on the same browser origin. Combine the documents to assess this claim: (1) Which composition flag and legacy key code must prevent command interception? (2) What owns the per-note save/revision/recovery state, what state remains per view, and what must happen when the final view closes? (3) What actually scopes IndexedDB and directory permissions, and what optional hostname boundary mitigates the sibling-app risk? End with a conclusion connecting the editing controls to the privacy boundary."
+    },
+    {
+      "id": "Q2",
+      "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+      "query": "Explain how to recover and identify a build after browser app data is cleared: (1) Describe the autosave delay, checked write sequence, and failure/recovery behavior. (2) Distinguish cached app assets from selected-folder files: are folder files HTTP/cache entries, and which originals remain independent of browser storage? (3) How many build-commit characters does the UI show and what commit identity must the release record retain? Combine these into a safe recovery-and-verification procedure without assuming cached drafts or permissions survive."
+    },
+    {
+      "id": "Q3",
+      "start_id": "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+      "query": "Prepare an interaction-and-installation release checklist from multiple documents: (1) What is the prefix-command timeout and how is an unrelated character handled? (2) How is a theme bundled, which names are reserved, and is a runtime theme request needed? (3) How are the two PNG application icons included in the manifest, what img-src policy permits them, and must same-origin image permissions be widened? Explain how build-time theme/icon changes and command behavior fit the privacy and installation checks."
+    },
+    {
+      "id": "Q4",
+      "start_id": "ffaaa9dd2a5384e0518c06f7a8b2489be690edad91407ceca19a666f2b8a655c",
+      "query": "Create a release-recovery and protected-wiki QA checklist from the package docs and syntax-preservation comparison fixture: (1) If publication succeeded but registry installation verification failed, how should the existing release be retried and what successful operation must not repeat? (2) If protected page creation fails or its response is lost, what identifiers/pending state must be retained, what fallback is forbidden, and what must be inspected before retry? (3) What literal does the nested JavaScript fence log in the preservation-comparison fixture, and what does its Mermaid CLI ask the Wiki to check before saving? Connect the recovery, privacy, and source-preservation checks."
+    }
+  ],
+  "rubrics": [
+    {
+      "case_id": "Q1",
+      "facts": [
+        {
+          "id": "F1",
+          "component": 1,
+          "expected_answer_any": [
+            "isComposing"
+          ],
+          "source_quotes": [
+            "never intercept `isComposing`"
+          ]
+        },
+        {
+          "id": "F2",
+          "component": 1,
+          "expected_answer_any": [
+            "229"
+          ],
+          "source_quotes": [
+            "keyCode 229"
+          ]
+        },
+        {
+          "id": "F3",
+          "component": 2,
+          "expected_answer_any": [
+            "canonical",
+            "document session"
+          ],
+          "source_quotes": [
+            "One canonical document session owns the autosave queue"
+          ]
+        },
+        {
+          "id": "F4",
+          "component": 2,
+          "expected_answer_any": [
+            "selection"
+          ],
+          "source_quotes": [
+            "each view retains mode and selection"
+          ]
+        },
+        {
+          "id": "F5",
+          "component": 2,
+          "expected_answer_any": [
+            "final",
+            "last"
+          ],
+          "source_quotes": [
+            "Closing the final view must drain saving successfully before removing it"
+          ]
+        },
+        {
+          "id": "F6",
+          "component": 3,
+          "expected_answer_any": [
+            "origin"
+          ],
+          "source_quotes": [
+            "IndexedDB and directory permissions are scoped to that origin"
+          ]
+        },
+        {
+          "id": "F7",
+          "component": 3,
+          "expected_answer_any": [
+            "dedicated hostname",
+            "hostname"
+          ],
+          "source_quotes": [
+            "A dedicated hostname used only for this editor is the preferred boundary"
+          ]
+        },
+        {
+          "id": "F8",
+          "component": 3,
+          "expected_answer_any": [
+            "optional",
+            "additional protection"
+          ],
+          "source_quotes": [
+            "A dedicated hostname is optional additional protection"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "Q2",
+      "facts": [
+        {
+          "id": "F1",
+          "component": 1,
+          "expected_answer_any": [
+            "500",
+            "500ms",
+            "500 ms"
+          ],
+          "source_quotes": [
+            "debounce 500ms"
+          ]
+        },
+        {
+          "id": "F2",
+          "component": 1,
+          "expected_answer_any": [
+            "unsaved",
+            "retry",
+            "export"
+          ],
+          "source_quotes": [
+            "Failure remains unsaved with retry/export"
+          ]
+        },
+        {
+          "id": "F3",
+          "component": 2,
+          "expected_answer_any": [
+            "allowlisted",
+            "allowlist"
+          ],
+          "source_quotes": [
+            "It serves only allowlisted application assets from cache"
+          ]
+        },
+        {
+          "id": "F4",
+          "component": 2,
+          "expected_answer_any": [
+            "HTTP",
+            "cache"
+          ],
+          "source_quotes": [
+            "they are never HTTP requests or application-cache entries"
+          ]
+        },
+        {
+          "id": "F5",
+          "component": 2,
+          "expected_answer_any": [
+            "original",
+            "independent"
+          ],
+          "source_quotes": [
+            "original selected-folder files are independent of that storage",
+            "original files in your folder remain"
+          ]
+        },
+        {
+          "id": "F6",
+          "component": 3,
+          "expected_answer_any": [
+            "12"
+          ],
+          "source_quotes": [
+            "first 12 characters of the build commit"
+          ]
+        },
+        {
+          "id": "F7",
+          "component": 3,
+          "expected_answer_any": [
+            "full SHA",
+            "full commit",
+            "full hash"
+          ],
+          "source_quotes": [
+            "release records retain the full SHA"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "Q3",
+      "facts": [
+        {
+          "id": "F1",
+          "component": 1,
+          "expected_answer_any": [
+            "2 second",
+            "2 seconds",
+            "two second",
+            "two seconds",
+            "two-second",
+            "2-second",
+            "2s"
+          ],
+          "source_quotes": [
+            "2 second timeout"
+          ]
+        },
+        {
+          "id": "F2",
+          "component": 1,
+          "expected_answer_any": [
+            "propagates",
+            "propagate",
+            "passes through",
+            "pass through",
+            "cancels"
+          ],
+          "source_quotes": [
+            "unrelated character cancels and propagates"
+          ]
+        },
+        {
+          "id": "F3",
+          "component": 2,
+          "expected_answer_any": [
+            "public/themes/"
+          ],
+          "source_quotes": [
+            "schema-compatible JSON file to `public/themes/` and rebuild"
+          ]
+        },
+        {
+          "id": "F4",
+          "component": 2,
+          "expected_answer_any": [
+            "builtin"
+          ],
+          "source_quotes": [
+            "`builtin` and `custom` are reserved names"
+          ]
+        },
+        {
+          "id": "F5",
+          "component": 2,
+          "expected_answer_any": [
+            "runtime",
+            "request"
+          ],
+          "source_quotes": [
+            "Each file appears in Settings without a runtime request"
+          ]
+        },
+        {
+          "id": "F6",
+          "component": 3,
+          "expected_answer_any": [
+            "PNG data",
+            "data URL",
+            "data-url"
+          ],
+          "source_quotes": [
+            "The build embeds their bytes as PNG data URLs in the manifest"
+          ]
+        },
+        {
+          "id": "F7",
+          "component": 3,
+          "expected_answer_any": [
+            "blob:",
+            "data:",
+            "img-src"
+          ],
+          "source_quotes": [
+            "the existing `img-src blob: data:` policy"
+          ]
+        },
+        {
+          "id": "F8",
+          "component": 3,
+          "expected_answer_any": [
+            "no need",
+            "not need",
+            "does not require",
+            "no widening",
+            "not required"
+          ],
+          "source_quotes": [
+            "there is no need to widen image permissions to every same-origin path"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "Q4",
+      "facts": [
+        {
+          "id": "F1",
+          "component": 1,
+          "expected_answer_any": [
+            "registry-install"
+          ],
+          "source_quotes": [
+            "retry a failed `registry-install` job without repeating an already successful publication"
+          ]
+        },
+        {
+          "id": "F2",
+          "component": 2,
+          "expected_answer_any": [
+            "public"
+          ],
+          "source_quotes": [
+            "Never fall back to public creation after protection fails"
+          ]
+        },
+        {
+          "id": "F3",
+          "component": 2,
+          "expected_answer_any": [
+            "pending",
+            "ID",
+            "version"
+          ],
+          "source_quotes": [
+            "Preserve returned ID/version and pending-create state on partial failure"
+          ]
+        },
+        {
+          "id": "F4",
+          "component": 2,
+          "expected_answer_any": [
+            "inspect",
+            "remote state",
+            "check"
+          ],
+          "source_quotes": [
+            "If no create response arrived, inspect remote state before any retry"
+          ]
+        },
+        {
+          "id": "F5",
+          "component": 3,
+          "expected_answer_any": [
+            "nested fence text"
+          ],
+          "source_quotes": [
+            "nested fence text"
+          ]
+        },
+        {
+          "id": "F6",
+          "component": 3,
+          "expected_answer_any": [
+            "version",
+            "버전"
+          ],
+          "source_quotes": [
+            "CLI->>Wiki: 버전 확인"
+          ]
+        }
+      ]
+    }
+  ],
+  "verification": [
+    {
+      "case_id": "Q1",
+      "required_facts": 8,
+      "global_minimum_documents": 3,
+      "supporting_documents": {
+        "F1": [
+          "5123ca99dfd05a84e88364c1fd39f72197c2e2c9940d31869286eb38f30124f7"
+        ],
+        "F2": [
+          "5123ca99dfd05a84e88364c1fd39f72197c2e2c9940d31869286eb38f30124f7"
+        ],
+        "F3": [
+          "8ac472563beeb6ba7315c9ef20cff008e434595b398e76d4f101b09bf8cd15f6"
+        ],
+        "F4": [
+          "8ac472563beeb6ba7315c9ef20cff008e434595b398e76d4f101b09bf8cd15f6"
+        ],
+        "F5": [
+          "8ac472563beeb6ba7315c9ef20cff008e434595b398e76d4f101b09bf8cd15f6"
+        ],
+        "F6": [
+          "73d66bd91f0c08552c6fbba1649e40a9a7f42012e1dfbdd4dbf5b8f6721b6074"
+        ],
+        "F7": [
+          "73d66bd91f0c08552c6fbba1649e40a9a7f42012e1dfbdd4dbf5b8f6721b6074"
+        ],
+        "F8": [
+          "73d66bd91f0c08552c6fbba1649e40a9a7f42012e1dfbdd4dbf5b8f6721b6074"
+        ]
+      }
+    },
+    {
+      "case_id": "Q2",
+      "required_facts": 7,
+      "global_minimum_documents": 3,
+      "supporting_documents": {
+        "F1": [
+          "7763beac152021f7105ec0dfe9964fe261d73af0ba702c8cfe17f4988d4a69eb"
+        ],
+        "F2": [
+          "7763beac152021f7105ec0dfe9964fe261d73af0ba702c8cfe17f4988d4a69eb"
+        ],
+        "F3": [
+          "1a61cbeaa328e982cba434c64fea2e66a03fc59ca8a9db2ee943d8789f9f70a2"
+        ],
+        "F4": [
+          "1a61cbeaa328e982cba434c64fea2e66a03fc59ca8a9db2ee943d8789f9f70a2"
+        ],
+        "F5": [
+          "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009",
+          "1a61cbeaa328e982cba434c64fea2e66a03fc59ca8a9db2ee943d8789f9f70a2"
+        ],
+        "F6": [
+          "f55a9c67a081184d6dd29a6f3e190a7c681ffbfbd2925d306a9382c80c02040d"
+        ],
+        "F7": [
+          "f55a9c67a081184d6dd29a6f3e190a7c681ffbfbd2925d306a9382c80c02040d"
+        ]
+      }
+    },
+    {
+      "case_id": "Q3",
+      "required_facts": 8,
+      "global_minimum_documents": 3,
+      "supporting_documents": {
+        "F1": [
+          "5123ca99dfd05a84e88364c1fd39f72197c2e2c9940d31869286eb38f30124f7"
+        ],
+        "F2": [
+          "5123ca99dfd05a84e88364c1fd39f72197c2e2c9940d31869286eb38f30124f7"
+        ],
+        "F3": [
+          "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009"
+        ],
+        "F4": [
+          "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009"
+        ],
+        "F5": [
+          "3e40bbf026d95fb263ad4fccf073c450e4c4c088b1b43b2def05554b6cdb3009"
+        ],
+        "F6": [
+          "1a61cbeaa328e982cba434c64fea2e66a03fc59ca8a9db2ee943d8789f9f70a2"
+        ],
+        "F7": [
+          "1a61cbeaa328e982cba434c64fea2e66a03fc59ca8a9db2ee943d8789f9f70a2"
+        ],
+        "F8": [
+          "1a61cbeaa328e982cba434c64fea2e66a03fc59ca8a9db2ee943d8789f9f70a2"
+        ]
+      }
+    },
+    {
+      "case_id": "Q4",
+      "required_facts": 6,
+      "global_minimum_documents": 3,
+      "supporting_documents": {
+        "F1": [
+          "04139f422f31397fa7b323f4265b3138c331e5efb42e4f07e7f71c0dafa820a5"
+        ],
+        "F2": [
+          "35610703a20b1cb971e75efcd53b1fef981697ba71e38c849b757f7b4cd0a138"
+        ],
+        "F3": [
+          "35610703a20b1cb971e75efcd53b1fef981697ba71e38c849b757f7b4cd0a138"
+        ],
+        "F4": [
+          "35610703a20b1cb971e75efcd53b1fef981697ba71e38c849b757f7b4cd0a138"
+        ],
+        "F5": [
+          "9dcc72dcc9d086d72e77bc78027c784b3cf748707b604be9bb3fa61f0053fbb4"
+        ],
+        "F6": [
+          "9dcc72dcc9d086d72e77bc78027c784b3cf748707b604be9bb3fa61f0053fbb4"
+        ]
+      }
+    }
+  ],
+  "protocol": {
+    "cases": 4,
+    "max_unique_reads": 12,
+    "max_actions": 24,
+    "max_current_outgoing_options": 4,
+    "source": "Fresh verified public Confluence snapshots; source aliases and actual body links",
+    "navigation": "Only currently offered distinct outgoing targets or explicit history BACK when exhausted; unchosen local links retained.",
+    "laya_bm25_stop": "Gather to fixed cap or component exhaustion; no single-document arrival or oracle stop.",
+    "agent_stop": "Fresh isolated direct-reading agent may declare sufficient evidence early; evaluate actual correctness and prefix curves separately.",
+    "answer_model": "gpt-6-luna",
+    "reasoning_effort": "max",
+    "account": "Existing Codex account; real usage measured. No new API key or paid judge.",
+    "answer_sources": "Full actually read body documents. Same fresh model/schema for BM25/Laya synthesis; direct agent writes the same structured answer schema.",
+    "root_judgment": "Deterministic quote/value checks plus manual semantic review of all12answers; no paid judging model.",
+    "labels": "Only evaluator/root sees rubric; actors have question/start/source broker only.",
+    "scope": "Four handpicked, dependent public questions; not a generalized success-rate or native/private-data trial.",
+    "new_private_publications": 0,
+    "media_reads": 0
+  }
+}

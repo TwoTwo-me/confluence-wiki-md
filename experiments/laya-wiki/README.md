@@ -2,9 +2,43 @@
 
 This is a bounded, local-first experiment. The findings and limits are in [report.ko.md](report.ko.md); the sanitized measurements and public-only cases are in [results/summary.json](results/summary.json) and [results/public-cases.json](results/public-cases.json).
 
+## Multi-document evidence and actual answers
+
+The latest study asks four composite questions that each require at least three distinct sources. It compares accumulated-evidence Laya link gathering, current-link BM25, and a fresh GPT-6 Luna max agent that reads and follows links itself. The [frozen questions/rubrics](results/multi-evidence-cases.public.json) and [answers, paths, source/citation checks and usage](results/multi-evidence-summary.json) retain raw failures as well as separate source resolution and manual content review.
+
+All methods start at the same page and use twelve unique body reads, twenty-four LINK/BACK actions and four currently offered outgoing targets. Laya represents every read document with a balanced, question-relevant paragraph under its 1,024-token SDK limit. BM25 ranks only current outgoing labels. Both gather to the cap or component exhaustion and then pass actually read full bodies to the same fresh Luna max answer model. The direct-reading agent can stop early. Read counts are logical body exposure, not total graph disk reads or HTTP calls; the study is not a selector-only causal comparison.
+
+The evaluator separates documents containing any required fact, incremental/redundant sources, raw answer/citation contributions, minimum source cover, and earliest complete read prefix. Exact spans and answer anchors are a deterministic check; all twelve synthesized answers and additional claims were also reviewed against source text. Wrong IDs remain errors even when a unique title or exact quote identifies their intended, actually read source. Unknown components and partial release-instance observations are retained. Labels never enter the navigation or answer prompts.
+
+To reproduce local gathering on this Mac's frozen public Confluence graph without replacing the measured output:
+
+```sh
+HF_HUB_OFFLINE=1 USE_TF=0 sandbox-exec -p '(version 1) (allow default) (deny network*)' \
+  artifacts/laya-wiki/venv/bin/python experiments/laya-wiki/multi_evidence_walk.py gather \
+  --graph artifacts/laya-wiki/multi-evidence/graph.json \
+  --case-file artifacts/laya-wiki/multi-evidence/cases/Q3.json \
+  --output artifacts/laya-wiki/multi-evidence/reproduced-laya-Q3.json \
+  --policy laya --device mps
+```
+
+Use `--policy bm25` for the current-link lexical baseline. An exact cache is the output's `.cache.json` sibling, with a new accumulated-evidence namespace. Keep cold and cached outputs separate; a cache replay still loads the model. Broker commands are `init-reader`, `reader-state`, `reader-act`, and `reader-finish`. The saved session pins the graph hash and replays its history before each command, so only currently offered links or explicit Back are accepted.
+
+The complete study harness uses `multi_evidence_prepare.mjs`, `multi_evidence_run.mjs`, and `multi_evidence_audit.mjs`. The optional `LAYA_MULTI_DIR` environment variable selects a fresh campaign directory; the default is `artifacts/laya-wiki/multi-evidence`. Provide its `graph.json` from `graph_export.mjs --mode confluence-readback` before preparation. Preparation verifies all four source covers, writes actor cases separately from hidden rubrics, hashes inputs and refuses an existing registration. The run driver refuses completed jobs. `gather laya|bm25` performs local gathering, `write laya|bm25` synthesizes answers, `agent` runs fresh direct readers, and `replay` validates exact Laya cache reuse. The answer/agent modes use the existing Codex account and consume its allowance. Source prompts contain public bodies only; the same answer schema is used throughout.
+
+The audit requires completed results and `manual-review.json` in that campaign directory. The executed review is preserved in the public summary. Raw source snapshots, CLI transcripts and actor scratch directories remain ignored. The public question bundle is an evaluation deliverable, not input to an actor. Actor cases accept only `id`, `query`, and `start_id`.
+
+In this measured run Laya/BM25 each read42 bodies and the direct agent read27. The source-fact document counts are11/11/12, while raw answer-contribution counts are11/10/9; uniquely resolved agent citations make the last count12 without changing its raw errors. Content completeness on the general questions was2/4,2/4,3/4 after manual review. Agent cached and uncached input usage are both reported; fewer body reads did not establish lower total account cost. No private source was sent to the new comparison.
+
+```sh
+artifacts/laya-wiki/venv/bin/python -m pytest -q experiments/laya-wiki/test_multi_evidence.py \
+  experiments/laya-wiki/test_destination_walk.py experiments/laya-wiki/test_graph_benchmark.py \
+  experiments/laya-wiki/test_benchmark.py
+node --test experiments/laya-wiki/*.test.mjs
+```
+
 ## Connected destination walks
 
-The latest experiment follows only the current document's outgoing links, or explicit history `BACK` after that document's unvisited links are exhausted. It retains later local links, deduplicates destinations across provenance records, and charges Back as a navigation action. See [frozen public cases and labels](results/destination-cases.public.json) and [measurements with public traces](results/destination-walk-summary.json). Private Native names, IDs, URLs and routes remain in ignored local artifacts.
+The preceding destination experiment follows only the current document's outgoing links, or explicit history `BACK` after that document's unvisited links are exhausted. It retains later local links, deduplicates destinations across provenance records, and charges Back as a navigation action. See [frozen public cases and labels](results/destination-cases.public.json) and [measurements with public traces](results/destination-walk-summary.json). Private Native names, IDs, URLs and routes remain in ignored local artifacts.
 
 The ten frozen cases comprise three public named goals, two public questions, disconnected/absent controls, and three Native Notion named goals. Limits are twelve unique body reads, twenty-four actions and four current outgoing choices. Named arrival matches an unambiguous visible title or breadcrumb; question arrival uses the same Laya stop selector for every traversal policy. Gold IDs and evidence strings are evaluated after walking. Unlike the earlier frontier experiment below, each link step starts at the current node and stopping uses visible information. Current-body BM25 picks up to three paragraphs, clips their excerpt to 280 tokens, and packs a state of at most 700 tokens and options of at most 36 tokens under the pinned 1,024-token SDK budget. It never reads unchosen candidate bodies for selection.
 
