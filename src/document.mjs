@@ -9,6 +9,7 @@ import sanitizeHtml from 'sanitize-html';
 import { createHash, randomUUID } from 'node:crypto';
 import { diagramKey } from './diagrams.mjs';
 import { freshForgeIds, readForgeDiagrams, finalizeForgeViewers } from './forge.mjs';
+import { richMacros, richMacroName, richMacroBody } from './markdown-macros.mjs';
 
 export function validateStorageXml(storage) {
   const invalid = () => { throw new Error('Confluence storage is malformed XML.'); };
@@ -145,6 +146,7 @@ export function bodyStatus({ metadata, body }) {
 }
 
 const escapeXml = (value) => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+const mapped = (mapping, key) => Object.hasOwn(mapping, key) ? mapping[key] : undefined;
 const cdata = (value) => '<![CDATA[' + value.replaceAll(']]>', ']]]]><![CDATA[>') + ']]>';
 export function preservationMode(value = 'minimal') {
   if (!['minimal', 'all', 'none'].includes(value)) throw new Error('Preservation must be minimal, all, or none.');
@@ -203,12 +205,30 @@ export function parseDocument(source) {
   return { metadata, body };
 }
 
-export function formatDocument({ metadata, body }) {
-  return '---\n' + stringify(metadata, { lineWidth: 0, aliasDuplicateObjects: false }) + '---\n' + body;
+export function compactMetadata(metadata) {
+  const result = { ...metadata };
+  // parseDocument restores the implicit type. Keep tags and confluence.labels:
+  // they have separate local-index and remote-label write semantics.
+  if (result.type === 'Reference') delete result.type;
+  if (result.confluence) {
+    const meta = { ...result.confluence };
+    if (meta.status === 'current') delete meta.status;
+    if (meta.url === result.resource) delete meta.url;
+    if (Array.isArray(meta.preserved)) {
+      if (!meta.preserved.length) delete meta.preserved;
+    }
+    result.confluence = meta;
+  }
+  return result;
+}
+
+export function formatDocument({ metadata, body }, { compact = false } = {}) {
+  return '---\n' + stringify(compact ? compactMetadata(metadata) : metadata, { lineWidth: 0, aliasDuplicateObjects: false }) + '---\n' + body;
 }
 
 export function markdownToStorage(source, { preserved = [], links = {}, images = {}, diagrams = {}, flattenNestedQuotes = false } = {}) {
   const replacements = new Map();
+  const warnings = [];
   const stash = (xml, inline = false) => {
     const id = 'cfwiki-' + randomUUID();
     replacements.set(id, xml);
@@ -223,6 +243,13 @@ export function markdownToStorage(source, { preserved = [], links = {}, images =
     const token = tokens[index];
     const language = token.info.trim().split(/\s+/)[0];
     if (language === 'confluence-toc') return stash(tocStorage(token.content));
+    const macro = richMacroName(token.info);
+    if (macro) {
+      const { parameters, body } = richMacroBody(token.content);
+      const nested = markdownToStorage(body, { links, images, diagrams, flattenNestedQuotes });
+      warnings.push(...nested.warnings);
+      return stash('<ac:structured-macro ac:name="' + macro + '" ac:schema-version="1">' + Object.entries(parameters).map(([key, value]) => '<ac:parameter ac:name="' + escapeXml(key) + '">' + escapeXml(value) + '</ac:parameter>').join('') + '<ac:rich-text-body>' + nested.storage + '</ac:rich-text-body></ac:structured-macro>');
+    }
     return stash(freshForgeIds(diagrams[diagramKey(language, token.content)] ?? codeMacro(token.content, language)));
   };
   md.renderer.rules.code_block = (tokens, index) => stash(codeMacro(tokens[index].content, ''));
@@ -235,7 +262,6 @@ export function markdownToStorage(source, { preserved = [], links = {}, images =
     allowedStyles: { '*': { 'text-align': [/^(left|center|right)$/] } },
   });
   const $ = load(sanitized, { xmlMode: true });
-  const warnings = [];
   if (flattenNestedQuotes) {
     const nested = $('blockquote blockquote').toArray();
     for (const node of nested) {
@@ -249,13 +275,13 @@ export function markdownToStorage(source, { preserved = [], links = {}, images =
   }
   $('a[href]').each((_i, node) => {
     const href = $(node).attr('href');
-    if (links[href]) $(node).attr('href', links[href]);
+    if (mapped(links, href)) $(node).attr('href', mapped(links, href));
   });
   $('img').each((_i, node) => {
     const src = $(node).attr('src');
     if (!src) return;
-    const image = images[src];
-    const attributes = ' ac:alt="' + escapeXml($(node).attr('alt') ?? '') + '"';
+    const image = mapped(images, src);
+    const attributes = ' ac:alt="' + escapeXml($(node).attr('alt') ?? '') + '"' + ['title', 'width', 'height'].filter((name) => $(node).attr(name) !== undefined).map((name) => ' ac:' + name + '="' + escapeXml($(node).attr(name)) + '"').join('');
     $(node).replaceWith(stash('<ac:image' + attributes + '>' + (image ? '<ri:attachment ri:filename="' + escapeXml(image) + '"/>' : '<ri:url ri:value="' + escapeXml(src) + '"/>') + '</ac:image>', true));
   });
   $('sup.footnote-ref[id], sup.footnote-ref [id], li.footnote-item[id]').each((_i, node) => {
@@ -336,14 +362,16 @@ export function fenced(code, language = '') {
 
 export function references(markdown) {
   const result = [];
+  const md = new MarkdownIt().use(footnote);
   const visit = (tokens) => {
     for (const token of tokens) {
       if (token.type === 'image') result.push({ kind: 'image', url: token.attrGet('src') });
       if (token.type === 'link_open') result.push({ kind: 'link', url: token.attrGet('href') });
+      if (token.type === 'fence' && richMacroName(token.info)) visit(md.parse(richMacroBody(token.content).body, {}));
       if (token.children) visit(token.children);
     }
   };
-  visit(new MarkdownIt().use(footnote).parse(markdown, {}));
+  visit(md.parse(markdown, {}));
   return result;
 }
 
@@ -354,7 +382,13 @@ export function storageToMarkdown(storage, { pageUrl, siteUrl, pageId, pageLinks
   const preserved = [];
   const warnings = [];
   const origin = pageUrl ?? siteUrl ?? 'https://example.invalid';
+  const expandSnippets = (source) => {
+    for (let i = 0; i <= snippets.length && /CFWIKISNIPPET\d+END/.test(source); i++) source = source.replace(/CFWIKISNIPPET(\d+)END/g, (_match, index) => snippets[Number(index)] ?? '');
+    return source;
+  };
   const td = new Turndown({ headingStyle: 'atx', codeBlockStyle: 'fenced', bulletListMarker: '-', emDelimiter: '*', strongDelimiter: '**' });
+  const escapeMarkdown = td.escape;
+  td.escape = (text) => escapeMarkdown(text).replace(/</g, '\\<').replace(/&(?=(?:#(?:[xX][0-9a-fA-F]+|[0-9]+)|[A-Za-z][A-Za-z0-9]+);)/g, '\\&');
   td.use(gfm.gfm);
   td.keep(['sub', 'sup']);
   td.addRule('cfwiki-table-cell', { filter: ['th', 'td'], replacement: (content, node) => {
@@ -373,7 +407,7 @@ export function storageToMarkdown(storage, { pageUrl, siteUrl, pageId, pageLinks
     const index = snippets.push(markdown) - 1;
     $(node).replaceWith('<span data-cfwiki-md="' + index + '" data-cfwiki-block="' + block + '">cfwiki</span>');
   };
-  const reference = (label, url = origin) => '[' + label.replace(/[\[\]]/g, '') + '](' + String(url).replaceAll(' ', '%20').replaceAll('(', '%28').replaceAll(')', '%29') + ')';
+  const reference = (label, url = origin, title) => '[' + td.escape(label) + '](' + String(url).replaceAll(' ', '%20').replaceAll('(', '%28').replaceAll(')', '%29') + (title === undefined ? '' : ' "' + title.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"') + ')';
   const param = (node, name) => $(node).children('ac\\:parameter').filter((_i, item) => $(item).attr('ac:name') === name).text();
   for (const diagram of readForgeDiagrams($, diagramProfile)) {
     if (diagram.code) $(diagram.code).remove();
@@ -384,6 +418,10 @@ export function storageToMarkdown(storage, { pageUrl, siteUrl, pageId, pageLinks
     if (node.parent && $(node).find('[colspan], [rowspan], table').length) {
       replace(node, reference('Confluence table'), true);
       warnings.push('Referenced table with merged or nested cells.');
+    } else if (node.parent && !$(node).find('th').length) {
+      // GFM needs a header. Promoting the first row keeps every cell readable and
+      // editable instead of exporting a verbose raw HTML table.
+      $(node).find('tr').first().children('td').each((_j, cell) => { cell.name = 'th'; });
     }
   });
   $('ac\\:structured-macro, ac\\:macro').toArray().filter((node) => !$(node).parents('ac\\:structured-macro, ac\\:macro').length).forEach((node) => {
@@ -406,10 +444,17 @@ export function storageToMarkdown(storage, { pageUrl, siteUrl, pageId, pageLinks
       replace(node, fenced(plain.text(), (language === 'none' && title) || (languageMap[title] === language && title) || (language === 'none' ? '' : language)), preserve === 'all' || Boolean(customTitle) || customParameters);
     } else if (plain.length) {
       replace(node, fenced(plain.text(), name), true);
-    } else if (['info', 'note', 'tip', 'warning', 'panel', 'expand', 'quote'].includes(name)) {
+    } else if (richMacros.has(name)) {
       const rich = $(node).children('ac\\:rich-text-body').html() ?? '';
       const nested = storageToMarkdown(rich, { pageUrl, siteUrl, pageId, pageLinks, attachments, diagramProfile, preserve });
-      replace(node, fenced(nested.markdown, 'confluence-' + name), true);
+      const parameterNodes = $(node).children('ac\\:parameter').toArray();
+      const parameters = Object.fromEntries(parameterNodes.map((item) => [$(item).attr('ac:name') ?? '', $(item).text()]));
+      const simple = $(node).children('ac\\:rich-text-body').length === 1 && !$(node).children().not('ac\\:parameter, ac\\:rich-text-body').length &&
+        parameterNodes.every((item) => $(item).attr('ac:name') && !$(item).children().length && Object.keys(item.attribs).every((key) => key === 'ac:name')) &&
+        Object.keys(parameters).length === parameterNodes.length && Object.keys(node.attribs).every((key) => ['ac:name', 'ac:schema-version', 'ac:macro-id', 'ac:local-id'].includes(key));
+      const header = parameterNodes.length ? '---\n' + stringify(parameters, { lineWidth: 0 }) + '---\n\n' : '';
+      replace(node, fenced(header + nested.markdown, 'confluence-' + name), preserve === 'all' || !simple || nested.preserved.length > 0);
+      warnings.push(...nested.warnings);
     } else {
       const macroId = $(node).attr('ac:macro-id');
       const url = param(node, 'url') || (macroId ? origin + '#macro-' + encodeURIComponent(macroId) : origin);
@@ -417,19 +462,12 @@ export function storageToMarkdown(storage, { pageUrl, siteUrl, pageId, pageLinks
       warnings.push('Referenced unsupported macro: ' + name);
     }
   });
-  $('ac\\:task').each((_i, node) => {
-    const checked = $(node).children('ac\\:task-status').text() === 'complete';
-    const content = td.turndown($(node).children('ac\\:task-body').html() ?? '').trim();
-    replace(node, '- [' + (checked ? 'x' : ' ') + '] ' + content);
-  });
-  // Move existing children when unwrapping; reparsing resets raw-source offsets.
-  $('ac\\:task-list').each((_i, node) => $(node).replaceWith($(node).contents()));
   $('ac\\:image').each((_i, node) => {
     const attachment = $(node).find('ri\\:attachment').attr('ri:filename');
     const remote = $(node).find('ri\\:url').attr('ri:value');
-    const url = attachment ? (attachments[attachment] ?? siteUrl + '/download/attachments/' + pageId + '/' + encodeURIComponent(attachment)) : remote;
-    const customImage = ['ac:width', 'ac:height', 'ac:thumbnail', 'ac:style', 'ac:border', 'ac:hspace', 'ac:vspace'].some((name) => $(node).attr(name) !== undefined) || $(node).find('ri\\:page').length > 0;
-    if (url) replace(node, '!' + reference($(node).attr('ac:alt') ?? attachment ?? 'image', url), preserve === 'all' || customImage, false);
+    const url = attachment ? (mapped(attachments, attachment) ?? siteUrl + '/download/attachments/' + pageId + '/' + encodeURIComponent(attachment)) : remote;
+    const customImage = ['ac:width', 'ac:height', 'ac:thumbnail', 'ac:style', 'ac:border', 'ac:hspace', 'ac:vspace'].some((name) => $(node).attr(name) !== undefined) || $(node).find('ri\\:page').length > 0 || $(node).children().not('ri\\:attachment, ri\\:url').length > 0;
+    if (url) replace(node, '!' + reference($(node).attr('ac:alt') ?? attachment ?? 'image', url, $(node).attr('ac:title')), preserve === 'all' || customImage, false);
     else replace(node, reference('Confluence image'), true, false);
   });
   $('ac\\:link').each((_i, node) => {
@@ -440,18 +478,20 @@ export function storageToMarkdown(storage, { pageUrl, siteUrl, pageId, pageLinks
     const filename = $(node).find('ri\\:attachment').attr('ri:filename');
     const label = $(node).find('ac\\:plain-text-link-body, ac\\:link-body').text() || title || filename || 'Confluence reference';
     let target = origin;
-    if (id) target = pageLinks[id] ?? siteUrl + '/pages/viewpage.action?pageId=' + encodeURIComponent(id);
-    else if (title) target = pageLinks[title] ?? siteUrl + '/pages/viewpage.action?' + new URLSearchParams({ ...(space ? { spaceKey: space } : {}), title }).toString();
-    else if (filename) target = attachments[filename] ?? siteUrl + '/download/attachments/' + pageId + '/' + encodeURIComponent(filename);
+    if (id) target = mapped(pageLinks, id) ?? siteUrl + '/pages/viewpage.action?pageId=' + encodeURIComponent(id);
+    // A title is unique only within its space. Without a verified space key for
+    // the bundle, an explicitly scoped title must keep its remote destination.
+    else if (title) target = (!space ? mapped(pageLinks, title) : undefined) ?? siteUrl + '/pages/viewpage.action?' + new URLSearchParams({ ...(space ? { spaceKey: space } : {}), title }).toString();
+    else if (filename) target = mapped(attachments, filename) ?? siteUrl + '/download/attachments/' + pageId + '/' + encodeURIComponent(filename);
     const anchor = $(node).attr('ac:anchor');
     if (anchor) target += '#' + encodeURIComponent(anchor);
-    replace(node, reference(label, target), preserve === 'all' || !(id || title || filename), false);
+    replace(node, reference(label, target), preserve === 'all' || !(id || title || filename) || $(node).find('ac\\:link-body *').length > 0, false);
   });
   $('a[href]').each((_i, node) => {
     const href = $(node).attr('href');
     const id = href?.match(/(?:pageId=|\/pages\/)(\d+)/)?.[1];
     const sameSite = href && siteUrl && new URL(href, origin).origin === new URL(siteUrl).origin;
-    if (id && sameSite && pageLinks[id]) $(node).attr('href', pageLinks[id]);
+    if (id && sameSite && mapped(pageLinks, id)) $(node).attr('href', mapped(pageLinks, id) + (new URL(href, origin).hash || ''));
     else if (href && !/^(?:[a-z][a-z0-9+.-]*:|#)/i.test(href)) $(node).attr('href', new URL(href, origin).href);
   });
   $('th, td').each((_i, node) => {
@@ -471,14 +511,35 @@ export function storageToMarkdown(storage, { pageUrl, siteUrl, pageId, pageLinks
   $('hr.footnotes-sep').remove();
   $('section.footnotes, ol.footnotes-list').each((_i, node) => $(node).replaceWith($(node).contents()));
   $('ac\\:layout, ac\\:layout-section, ac\\:layout-cell, ac\\:rich-text-body').each((_i, node) => $(node).replaceWith($(node).contents()));
+  // Convert descendants before their task parents so native images, links, code
+  // and nested checked states cannot disappear during Turndown.
+  if (preserve === 'all') {
+    $('ac\\:task-list').toArray().filter((node) => !$(node).parents('ac\\:task-list').length && $(node).find('ac\\:task').length).forEach((node) => {
+      const original = storage.slice(node.startIndex, node.endIndex + 1);
+      const nested = storageToMarkdown(original, { pageUrl, siteUrl, pageId, pageLinks, attachments, diagramProfile, preserve: 'minimal' });
+      for (const item of preserved.filter((item) => original.includes(item.storage))) preserved.splice(preserved.indexOf(item), 1);
+      replace(node, nested.markdown.trimEnd(), true);
+    });
+  }
+  $('ac\\:task-list').each((_i, node) => $(node).replaceWith($(node).contents()));
+  $('*').toArray().reverse().forEach((node) => {
+    if (node.parent && /^(ac:|ri:)/.test(node.name) && !['ac:task', 'ac:task-body', 'ac:task-id', 'ac:task-status'].includes(node.name)) replace(node, reference('Confluence: ' + node.name), true, false);
+  });
+  $('ac\\:task').toArray().reverse().forEach((node) => {
+    const checked = $(node).children('ac\\:task-status').text() === 'complete';
+    const content = expandSnippets(td.turndown($(node).children('ac\\:task-body').html() ?? '')).trim();
+    const markdown = '- [' + (checked ? 'x' : ' ') + '] ' + content.replaceAll('\n', '\n  ');
+    const original = storage.slice(node.startIndex, node.endIndex + 1);
+    const nativeItems = preserved.filter((item) => original.includes(item.storage));
+    for (const item of nativeItems) preserved.splice(preserved.indexOf(item), 1);
+    replace(node, markdown, nativeItems.length > 0);
+  });
   $('*').toArray().reverse().forEach((node) => {
     if (node.parent && /^(ac:|ri:)/.test(node.name)) replace(node, reference('Confluence: ' + node.name), true, false);
   });
   let markdown = td.turndown($.xml()).replace(/\n{3,}/g, '\n\n');
   // Expand protected snippets after Turndown so code whitespace stays exact.
-  for (let i = 0; i <= snippets.length && /CFWIKISNIPPET\d+END/.test(markdown); i++) {
-    markdown = markdown.replace(/CFWIKISNIPPET(\d+)END/g, (_match, index) => snippets[Number(index)] ?? '');
-  }
+  markdown = expandSnippets(markdown);
   markdown = markdown.trim() + '\n';
   if (preserve === 'none' && preserved.length) warnings.push('Dropped preservation for ' + preserved.length + ' unsupported or customized element(s); their Markdown references or code remain, but native behavior may be lost.');
   return { markdown, preserved: preserve === 'none' ? [] : preserved, warnings };
@@ -496,7 +557,9 @@ export function reducePreservation(doc, { preserve = 'minimal', ...context } = {
     if (engine && context.diagramProfile?.[engine === 'uml' ? 'plantuml' : engine]) continue;
     const converted = storageToMarkdown(item.storage, { ...context, preserve: 'minimal' });
     if (!converted.preserved.length) {
-      if (/^```confluence-toc\n/.test(converted.markdown)) body = body.replace(item.markdown, () => converted.markdown.trimEnd());
+      // Upgrade legacy fallbacks before dropping XML: an older fallback may
+      // omit a panel title, image title, or other now-supported native content.
+      body = body.replace(item.markdown, () => converted.markdown.trimEnd());
     } else if (preserve === 'minimal') kept.push(item);
     else warnings.push('Dropped a preserved Confluence element; its Markdown reference or code remains, but native behavior may be lost.');
   }

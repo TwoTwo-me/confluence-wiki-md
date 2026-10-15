@@ -3,7 +3,7 @@ import { readFile, access, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { ConfluenceApi, readWikiConfig } from './api.mjs';
 import { parseDocument, formatDocument, markdownToStorage, storageToMarkdown, reducePreservation, preservationMode, bodyStatus } from './document.mjs';
-import { download, upload, saveFile, exportBundle, pushBundle, searchLocal } from './wiki.mjs';
+import { download, downloadTree, upload, saveFile, exportBundle, pushBundle, searchLocal } from './wiki.mjs';
 import { prepareDiagrams, diagramProfile, withoutDiagramPreservation } from './diagrams.mjs';
 import { defaultEnvPath, loadProfile } from './env.mjs';
 import { loadTemplate, templateDiagrams, applyTemplate } from './templates.mjs';
@@ -40,7 +40,9 @@ export const help = `Usage: cfwiki <command> [arguments] [options]
   read ID                         Return an OKF Markdown document on stdout
   read ID --wiki-root ID --space KEY
                                   Read a verified root child
-  download ID [-o FILE.md]         Same as read; --output saves a Markdown file
+  download ID [-o DIRECTORY]       Save DIRECTORY/ID/Page title.md (default: .)
+  download ID --recursive [-o DIRECTORY]  Include all descendants in ID folders
+  download ID -o FILE.md           Save one page at an explicit file path
   status FILE.md|-                Check local body edits against its saved hash; no API call
   apply DRAFT.md --base BASE.md --space KEY  Safely apply an edit to an existing page
   apply DRAFT.md --base BASE.md --wiki-root ID
@@ -52,8 +54,10 @@ export const help = `Usage: cfwiki <command> [arguments] [options]
   read ID --space KEY --json       Read verified live storage evidence for one page
   search QUERY --local DIRECTORY  Search downloaded Markdown without an API call
   list [--space KEY]              List pages as a Markdown index
-  export DIRECTORY               Download a space as an OKF bundle with index.md
+  export DIRECTORY               Download a space into ID folders/Page title.md
+  export DIRECTORY --parent ID    Download a complete subtree, including its root
   push DIRECTORY                 Publish a bundle and resolve local .md links
+  skill install|paths             Install or locate the skill for an agent
   templates list [--space KEY]    List native Confluence template IDs (--blueprints optional)
   templates read ID               Read a native template as Markdown; --to storage for XML
   delete ID|FILE.md --yes --version N
@@ -81,7 +85,8 @@ Options:
   --id ID          Target page for upload (must match front matter if present)
   --title TITLE    Page title for upload
   --space KEY      Target space; defaults to front matter or environment
-  --parent ID      Parent for upload/push, or direct children for list/export
+  --parent ID      Parent for upload/push; direct children for list; subtree for export
+  --recursive, -r Download the selected page and every descendant
   --root DIRECTORY Resolve local Markdown links within this bundle root
   --wiki-root ID   Verified topical root for term reads/writes and exploration seed
   --existing-root ID  Verify and reuse an existing topical root
@@ -89,7 +94,7 @@ Options:
   --content FILE   Markdown body for create
   --related ID     Verify and link a current same-space page on create; repeatable
   --source-url URL Add an unfetched HTTP(S) source on create; repeatable
-  --assets         Download attachments alongside --output Markdown
+  --assets         Download attachments alongside downloaded/exported Markdown
   --dry-run        Validate and preview a single upload without writing
   --template ID|NAME|FILE  Confluence template ID, default, none, or YAML file
                          Prefix non-numeric IDs with confluence:
@@ -146,13 +151,19 @@ async function readInput(filename) {
 }
 
 export async function runCli(args) {
+  if (args[0] === 'skill') {
+    const { runSkillCli } = await import('./skill-install.mjs');
+    await runSkillCli(args.slice(1));
+    return;
+  }
   const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: {
     kind: { type: 'string' }, resolved: { type: 'string' }, selection: { type: 'string' }, 'selection-count': { type: 'string' }, 'selection-index': { type: 'string' }, restrictions: { type: 'string' }, 'read-user': { type: 'string', multiple: true }, 'read-group': { type: 'string', multiple: true }, 'edit-user': { type: 'string', multiple: true }, 'edit-group': { type: 'string', multiple: true },
-    help: { type: 'boolean', short: 'h' }, output: { type: 'string', short: 'o' }, env: { type: 'string' }, json: { type: 'boolean' }, overwrite: { type: 'boolean' }, 'body-only': { type: 'boolean' }, assets: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, yes: { type: 'boolean' }, version: { type: 'string' }, id: { type: 'string' }, title: { type: 'string' }, space: { type: 'string' }, parent: { type: 'string' }, base: { type: 'string' }, root: { type: 'string' }, 'wiki-root': { type: 'string' }, 'existing-root': { type: 'string' }, topic: { type: 'string' }, content: { type: 'string' }, related: { type: 'string', multiple: true }, 'source-url': { type: 'string', multiple: true }, cql: { type: 'string' }, local: { type: 'string' }, limit: { type: 'string' }, to: { type: 'string' }, diagrams: { type: 'string' }, server: { type: 'boolean' }, template: { type: 'string' }, blueprints: { type: 'boolean' }, preserve: { type: 'string' },
+    help: { type: 'boolean', short: 'h' }, output: { type: 'string', short: 'o' }, env: { type: 'string' }, json: { type: 'boolean' }, overwrite: { type: 'boolean' }, 'body-only': { type: 'boolean' }, assets: { type: 'boolean' }, recursive: { type: 'boolean', short: 'r' }, 'dry-run': { type: 'boolean' }, yes: { type: 'boolean' }, version: { type: 'string' }, id: { type: 'string' }, title: { type: 'string' }, space: { type: 'string' }, parent: { type: 'string' }, base: { type: 'string' }, root: { type: 'string' }, 'wiki-root': { type: 'string' }, 'existing-root': { type: 'string' }, topic: { type: 'string' }, content: { type: 'string' }, related: { type: 'string', multiple: true }, 'source-url': { type: 'string', multiple: true }, cql: { type: 'string' }, local: { type: 'string' }, limit: { type: 'string' }, to: { type: 'string' }, diagrams: { type: 'string' }, server: { type: 'boolean' }, template: { type: 'string' }, blueprints: { type: 'boolean' }, preserve: { type: 'string' },
   } });
   const [command, target, extra] = positionals;
   if (!command || values.help) { process.stdout.write(help); return; }
   if (!['comments', 'restrictions', 'doctor', 'init', 'create', 'explore', 'read', 'download', 'status', 'upload', 'search', 'lookup', 'apply', 'list', 'export', 'push', 'delete', 'attachments', 'templates', 'convert', 'validate'].includes(command)) throw new Error('Unknown command. Use --help.');
+  if (values.recursive && command !== 'download') throw new Error('--recursive is supported by download only.');
   const templateCommands = ['read', 'download', 'upload', 'export', 'push', 'convert', 'validate'];
   if (values.template !== undefined && !templateCommands.includes(command)) throw new Error('--template is supported by read, download, upload, export, push, convert and validate.');
   if (values.preserve !== undefined && ![...templateCommands, 'templates'].includes(command)) throw new Error('--preserve is supported by document and template commands only.');
@@ -534,6 +545,13 @@ export async function runCli(args) {
     case 'read':
     case 'download': {
       if (!/^\d+$/.test(target)) throw new Error('Page ID must be numeric.');
+      if (command === 'download' && (!values.output || !/\.md$/i.test(values.output))) {
+        const result = await downloadTree(api, target, values.output ?? '.', { recursive: values.recursive, limit, version, overwrite: values.overwrite, assets: values.assets, bodyOnly: values['body-only'] });
+        process.stdout.write(values.json ? JSON.stringify(result, null, 2) + '\n' : '# Downloaded pages\n\n- Pages: ' + result.pages + '\n- Directory: ' + result.directory + '\n- Manifest: ' + result.manifest + '\n');
+        for (const warning of result.warnings) process.stderr.write('Note: ' + warning + '\n');
+        break;
+      }
+      if (values.recursive) throw new Error('--recursive requires an output directory, not -o FILE.md.');
       if (command === 'read' && values['wiki-root']) {
         if (!values.space?.trim()) throw new Error('Root-verified read requires an explicit --space KEY.');
         if (values.cql !== undefined || values.local !== undefined || values.root !== undefined) throw new Error('Root-verified read received an incompatible scope option.');
@@ -565,21 +583,21 @@ export async function runCli(args) {
       }
       const folder = values.output ? path.basename(values.output, path.extname(values.output)) + '-assets' : null;
       const doc = await download(api, target, { version, overwrite: values.overwrite, ...(values.assets ? { assetsDir: path.join(path.dirname(values.output), folder), assetPrefix: './' + folder } : {}) });
-      await emit(values['body-only'] ? doc.body : formatDocument(doc), doc);
+      await emit(values['body-only'] ? doc.body : formatDocument(doc, { compact: command === 'download' }), doc);
       for (const warning of doc.warnings) process.stderr.write('Note: ' + warning + '\n');
       break;
     }
     case 'upload': {
       if (target !== '-' && !/\.md$/i.test(target)) throw new Error('upload expects a .md file or - for stdin.');
       const filename = target === '-' ? undefined : path.resolve(target);
-      const doc = await upload(api, await readInput(target), { restrictions, defaultRestrictions: env.CONFLUENCE_RESTRICTIONS ?? 'view-edit', filename, title: values.title, id: values.id, version, space: values.space, parent: values.parent, root: values.root ? path.resolve(values.root) : undefined, dryRun: values['dry-run'], template, diagrams: selected.mode, diagramEnv: selected.env, onWrite: filename ? (saved) => saveFile(filename, formatDocument(saved), { overwrite: true }) : undefined });
+      const doc = await upload(api, await readInput(target), { restrictions, defaultRestrictions: env.CONFLUENCE_RESTRICTIONS ?? 'view-edit', filename, title: values.title, id: values.id, version, space: values.space, parent: values.parent, root: values.root ? path.resolve(values.root) : undefined, dryRun: values['dry-run'], template, diagrams: selected.mode, diagramEnv: selected.env, onWrite: filename ? (saved) => saveFile(filename, formatDocument(saved, { compact: true }), { overwrite: true }) : undefined });
       await emit(values['dry-run'] ? '# Upload preview\n\n' + '```json\n' + JSON.stringify(doc, null, 2) + '\n```\n' : formatDocument(doc), doc);
       for (const warning of doc.warnings ?? []) process.stderr.write('Note: ' + warning + '\n');
       break;
     }
     case 'search': { const rows = await api.search(target, { space: values.space, cql: values.cql, limit }); await emit(indexMarkdown('Confluence search', rows), rows); break; }
     case 'list': { const rows = (await api.listPages({ space: values.space, parent: values.parent, limit })).map((page) => ({ ...page, url: api.pageUrl(page.id) })); await emit(indexMarkdown('Confluence pages', rows), rows); break; }
-    case 'export': { const result = await exportBundle(api, target, { space: values.space, parent: values.parent, limit, overwrite: values.overwrite }); await emit('# Exported OKF bundle\n\n- Pages: ' + result.pages + '\n- Index: ' + result.index + '\n', result); break; }
+    case 'export': { const result = await exportBundle(api, target, { space: values.space, parent: values.parent, limit, overwrite: values.overwrite, assets: values.assets }); await emit('# Exported Markdown tree\n\n- Pages: ' + result.pages + '\n- Manifest: ' + result.manifest + '\n', result); for (const warning of result.warnings) process.stderr.write('Note: ' + warning + '\n'); break; }
     case 'push': { const result = await pushBundle(api, path.resolve(target), { restrictions, defaultRestrictions: env.CONFLUENCE_RESTRICTIONS ?? 'view-edit', space: values.space, parent: values.parent, template, diagrams: selected.mode, diagramEnv: selected.env }); await emit(indexMarkdown('Published bundle', result.map((item) => ({ ...item, title: item.file, url: api.pageUrl(item.id) }))), result); break; }
     case 'delete': {
       if (values['wiki-root']) {

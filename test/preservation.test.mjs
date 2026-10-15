@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { load } from 'cheerio';
-import { markdownToStorage, storageToMarkdown, reducePreservation, preservationMode, validateAgentPreservation } from '../src/document.mjs';
+import { markdownToStorage, storageToMarkdown, reducePreservation, preservationMode, validateAgentPreservation, references } from '../src/document.mjs';
 import { forgeStorage } from '../src/forge.mjs';
 
 const context = { pageUrl: 'https://wiki.test/wiki/pages/viewpage.action?pageId=42', siteUrl: 'https://wiki.test/wiki', pageId: '42' };
@@ -154,4 +154,121 @@ test('agent edits reject injected and ambiguous XML', () => {
   }, trusted);
   assert.equal(ambiguous.preserved, undefined);
   assert.ok(ambiguous.conflicts.some(({ code }) => code === 'ambiguous_preserved_fallback'));
+});
+
+for (const name of ['info', 'note', 'tip', 'warning', 'panel', 'expand', 'quote']) {
+  test('ordinary ' + name + ' panels are editable Markdown without duplicate XML', () => {
+    const storage = '<ac:structured-macro ac:name="' + name + '" ac:macro-id="native"><ac:parameter ac:name="title">주의 [A] &amp; B</ac:parameter><ac:parameter ac:name="icon">false</ac:parameter><ac:rich-text-body><h3>Panel heading</h3><p>Keep <strong>important</strong> content.</p><ul><li>first</li><li>second</li></ul></ac:rich-text-body></ac:structured-macro>';
+    const converted = storageToMarkdown(storage, { ...context, preserve: 'minimal' });
+    assert.deepEqual(converted.preserved, []);
+    assert.match(converted.markdown, new RegExp('```confluence-' + name));
+    const edited = converted.markdown.replace('important', 'updated');
+    const $ = load(markdownToStorage(edited).storage, { xmlMode: true });
+    assert.equal($('ac\\:structured-macro').attr('ac:name'), name);
+    assert.equal($('ac\\:parameter[ac\\:name="title"]').text(), '주의 [A] & B');
+    assert.equal($('ac\\:parameter[ac\\:name="icon"]').text(), 'false');
+    assert.equal($('ac\\:rich-text-body strong').text(), 'updated');
+    assert.deepEqual($('ac\\:rich-text-body li').toArray().map((node) => $(node).text()), ['first', 'second']);
+  });
+}
+
+test('nested supported panels and local references work without XML preservation', () => {
+  const body = '`````confluence-panel\n---\ntitle: Outer\n---\n\n````confluence-note\nRead [child](./99/Child.md).\n\n![chart](./assets/chart.png)\n\n```js\nconst important = true;\n```\n````\n`````\n';
+  assert.deepEqual(references(body), [{ kind: 'link', url: './99/Child.md' }, { kind: 'image', url: './assets/chart.png' }]);
+  const storage = markdownToStorage(body, { links: { './99/Child.md': 'https://wiki.test/99' }, images: { './assets/chart.png': 'chart.png' } }).storage;
+  assert.match(storage, /href="https:\/\/wiki.test\/99"/);
+  assert.match(storage, /ri:attachment ri:filename="chart.png"/);
+  const converted = storageToMarkdown(storage, { ...context, preserve: 'minimal' });
+  assert.deepEqual(converted.preserved, []);
+  const $ = load(markdownToStorage(converted.markdown).storage, { xmlMode: true });
+  assert.equal($('ac\\:structured-macro[ac\\:name="panel"] ac\\:structured-macro[ac\\:name="note"]').length, 1);
+  assert.equal($('ac\\:plain-text-body').text(), 'const important = true;\n');
+});
+
+test('panels with unknown native features keep exact XML and explicit none mode warns', () => {
+  for (const storage of [
+    '<ac:structured-macro ac:name="info"><ac:rich-text-body><p>Important</p><ac:structured-macro ac:name="jira"><ac:parameter ac:name="key">PROJ-1</ac:parameter></ac:structured-macro></ac:rich-text-body></ac:structured-macro>',
+    '<ac:structured-macro ac:name="panel" custom="retain"><ac:rich-text-body><p>Keep</p></ac:rich-text-body></ac:structured-macro>',
+    '<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">First</ac:parameter><ac:parameter ac:name="title">Second</ac:parameter><ac:rich-text-body><p>Keep</p></ac:rich-text-body></ac:structured-macro>',
+  ]) {
+    const converted = storageToMarkdown(storage, { ...context, preserve: 'minimal' });
+    assert.equal(converted.preserved.length, 1);
+    assert.equal(markdownToStorage(converted.markdown, { preserved: converted.preserved }).storage, storage);
+    const none = storageToMarkdown(storage, { ...context, preserve: 'none' });
+    assert.deepEqual(none.preserved, []);
+    assert.ok(none.warnings.length > 0);
+  }
+});
+
+test('headerless native tables become compact Markdown with every original cell retained', () => {
+  const storage = '<table><tr><td>first</td><td>second</td></tr><tr><td>third</td><td>fourth</td></tr></table>';
+  const converted = storageToMarkdown(storage, { ...context, preserve: 'minimal' });
+  assert.deepEqual(converted.preserved, []);
+  assert.doesNotMatch(converted.markdown, /<table/);
+  const $ = load(markdownToStorage(converted.markdown).storage, { xmlMode: true });
+  assert.deepEqual($('th,td').toArray().map((node) => $(node).text()), ['first', 'second', 'third', 'fourth']);
+});
+
+test('invalid panel parameter headers fail before producing native storage', () => {
+  for (const header of ['[nested]', 'title: [nested]', 'title: First\ntitle: Second', 'value: .inf']) assert.throws(() => markdownToStorage('```confluence-info\n---\n' + header + '\n---\n\nBody\n```'), /Confluence macro parameters/);
+});
+
+test('reducing old panel and image fallbacks upgrades their content before removing XML', () => {
+  const panel = '<ac:structured-macro ac:name="info"><ac:parameter ac:name="title">Keep this title</ac:parameter><ac:rich-text-body><p>Keep body</p></ac:rich-text-body></ac:structured-macro>';
+  const image = '<ac:image ac:alt="Old [label]" ac:title="Keep image title"><ri:url ri:value="https://example.com/image.png"/></ac:image>';
+  const oldPanel = '```confluence-info\nKeep body\n```';
+  const oldImage = '![Old label](https://example.com/image.png)';
+  const reduced = reducePreservation({ metadata: { confluence: { preserved: [{ markdown: oldPanel, storage: panel }, { markdown: oldImage, storage: image }] } }, body: oldPanel + '\n\n' + oldImage + '\n' }, context);
+  assert.equal(reduced.metadata.confluence.preserved, undefined);
+  const $ = load(markdownToStorage(reduced.body).storage, { xmlMode: true });
+  assert.equal($('ac\\:parameter[ac\\:name="title"]').text(), 'Keep this title');
+  assert.equal($('ac\\:image').attr('ac:alt'), 'Old [label]');
+  assert.equal($('ac\\:image').attr('ac:title'), 'Keep image title');
+});
+
+test('image captions and rich page link bodies keep native content in minimal mode', () => {
+  for (const storage of [
+    '<ac:image ac:alt="Chart"><ri:url ri:value="https://example.com/image.png"/><ac:caption><p>Important caption</p></ac:caption></ac:image>',
+    '<ac:link><ri:page ri:content-id="99"/><ac:link-body><ac:image><ri:url ri:value="https://example.com/linked.png"/></ac:image></ac:link-body></ac:link>',
+  ]) {
+    const converted = storageToMarkdown(storage, { ...context, preserve: 'minimal' });
+    assert.equal(converted.preserved.length, 1);
+    assert.ok(markdownToStorage(converted.markdown, { preserved: converted.preserved }).storage.includes(storage));
+  }
+});
+
+test('escaped angle text and entity-looking literals survive editable Markdown round trips', () => {
+  const storage = '<h2>&lt;Heading&gt;</h2><p>기호 &amp; &lt;example&gt;를 그대로 보존합니다. &lt;script&gt;alert(1)&lt;/script&gt; &lt;kbd&gt;Ctrl&lt;/kbd&gt; &lt;https://example.com&gt; &amp;lt;literal&amp;gt; &amp;#60;literal&amp;#62;</p><blockquote><p>&lt;quote&gt;</p></blockquote><table><tr><th>Syntax</th></tr><tr><td>&lt;table-cell&gt;</td></tr></table><p><code>&lt;inline-code&gt;</code> H<sub>2</sub>O x<sup>2</sup> <a href="https://example.com/?q=a%3Cb&amp;mode=1">&lt;link label&gt;</a></p>';
+  const inspect = (xml) => {
+    const $ = load(xml, { xmlMode: true });
+    return { text: $.root().text().replace(/\s+/g, ''), href: $('a').last().attr('href'), inline: $('code').text(), sub: $('sub').text(), sup: $('sup').text() };
+  };
+  let current = storage;
+  for (let i = 0; i < 3; i++) {
+    const converted = storageToMarkdown(current, { ...context, preserve: 'minimal' });
+    assert.match(converted.markdown, /\\<example>/);
+    assert.deepEqual(converted.preserved, []);
+    current = markdownToStorage(converted.markdown).storage;
+    assert.deepEqual(inspect(current), inspect(storage));
+    assert.doesNotMatch(current, /<script|<example|<kbd/);
+  }
+});
+
+test('native reference labels escape literal HTML without changing destinations or code', () => {
+  const original = '<p><ac:link><ri:page ri:content-id="99"/><ac:plain-text-link-body><![CDATA[<example> &lt;title&gt; *literal*]]></ac:plain-text-link-body></ac:link></p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language">html</ac:parameter><ac:plain-text-body><![CDATA[<kbd>Ctrl</kbd> &amp;\n]]></ac:plain-text-body></ac:structured-macro>';
+  const converted = storageToMarkdown(original, { ...context, preserve: 'minimal' });
+  const $ = load(markdownToStorage(converted.markdown).storage, { xmlMode: true });
+  assert.equal($('a').text(), '<example> &lt;title&gt; *literal*');
+  assert.equal($('a').attr('href'), 'https://wiki.test/wiki/pages/viewpage.action?pageId=99');
+  assert.equal($('ac\\:plain-text-body').text(), '<kbd>Ctrl</kbd> &amp;\n');
+});
+
+test('all mode retains complete native task-list identity while minimal stays editable', () => {
+  const storage = '<ac:task-list><ac:task><ac:task-id>1</ac:task-id><ac:task-status>complete</ac:task-status><ac:task-body>Backup</ac:task-body></ac:task><ac:task><ac:task-id>2</ac:task-id><ac:task-status>incomplete</ac:task-status><ac:task-body>Approve</ac:task-body></ac:task></ac:task-list>';
+  const all = storageToMarkdown(storage, { ...context, preserve: 'all' });
+  assert.deepEqual(all.preserved, [{ markdown: all.markdown.trimEnd(), storage, block: true }]);
+  assert.equal(markdownToStorage(all.markdown, { preserved: all.preserved }).storage, storage);
+  const minimal = storageToMarkdown(storage, { ...context, preserve: 'minimal' });
+  assert.deepEqual(minimal.preserved, []);
+  assert.equal(minimal.markdown, all.markdown);
 });

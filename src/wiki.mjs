@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, rename, access, readdir, realpath } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rename, readdir, realpath, lstat, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { randomUUID } from 'node:crypto';
@@ -7,6 +7,7 @@ import { prepareDiagrams, withoutDiagramPreservation } from './diagrams.mjs';
 import { applyTemplate, templateDiagrams } from './templates.mjs';
 import { prepareNativeTemplate } from './native-templates.mjs';
 import { restrictionPolicy, currentUser, getRestrictions, setRestrictions, expectedRestrictions, verifyRestrictions } from './restrictions.mjs';
+import { TREE_MANIFEST, attachmentFilename, collectPageTree, treeFiles, localPageLinks } from './page-tree.mjs';
 
 export async function saveFile(filename, content, { overwrite = false } = {}) {
   await mkdir(path.dirname(path.resolve(filename)), { recursive: true });
@@ -30,19 +31,21 @@ function preservationContext(api, id) {
   return { preserve: api.config.preserve ?? 'minimal', pageUrl: id ? api.pageUrl(id) : api.config.webBase, siteUrl: api.config.webBase, pageId: id, diagramProfile: api.config.diagramProfile };
 }
 
-export async function download(api, id, { version, pageLinks, assetsDir, assetPrefix, overwrite = false } = {}) {
-  const page = await api.getPage(id, version);
+export async function download(api, id, { version, pageLinks, assetsDir, assetPrefix, overwrite = false, page: suppliedPage, attachmentFiles, attachmentNames = {}, saveAttachment = saveFile } = {}) {
+  const page = suppliedPage ?? await api.getPage(id, version);
   const property = await api.getProperty(id);
   const stored = !version || property?.value?.pageVersion === page.version ? property?.value : null;
   const labels = version ? [] : (await api.labels(id)).map((item) => item.name);
-  const attachmentLinks = {};
+  const attachmentLinks = Object.create(null);
+  const attachmentReferences = Object.create(null);
   if (assetsDir) {
-    for (const attachment of await api.attachments(id)) {
+    for (const attachment of attachmentFiles ?? await api.attachments(id)) {
       const title = attachment.title;
       if (!title || path.basename(title) !== title || title.startsWith('.') || title.includes('\\')) throw new Error('Unsafe attachment filename returned by Confluence.');
-      const filename = title;
-      await saveFile(path.join(assetsDir, filename), await api.downloadAttachment(id, attachment), { overwrite });
+      const filename = Object.hasOwn(attachmentNames, title) ? attachmentNames[title] : title;
+      await saveAttachment(path.join(assetsDir, filename), await api.downloadAttachment(id, attachment), { overwrite });
       attachmentLinks[title] = (assetPrefix ?? './assets') + '/' + encodeURIComponent(filename);
+      if (filename !== title || !mimeTypes[path.extname(filename).toLowerCase()]) attachmentReferences[attachmentLinks[title]] = title;
     }
   }
   const converted = storageToMarkdown(page.storage, { ...preservationContext(api, page.id), pageLinks, attachments: attachmentLinks });
@@ -54,7 +57,7 @@ export async function download(api, id, { version, pageLinks, assetsDir, assetPr
     body = source.body;
     preserved = source.preserved;
   }
-  const metadata = boundMetadata(api, page, stored?.metadata ?? { type: 'Reference', tags: labels }, { ...(stored?.templateId ? { template_id: stored.templateId } : {}), labels, preserved, storage_hash: hash(page.storage), base_body_hash: bodyHash(body) });
+  const metadata = boundMetadata(api, page, stored?.metadata ?? { type: 'Reference', tags: labels }, { ...(stored?.templateId ? { template_id: stored.templateId } : {}), ...(Object.keys(attachmentReferences).length ? { attachment_files: attachmentReferences } : {}), labels, preserved, storage_hash: hash(page.storage), base_body_hash: bodyHash(body) });
   const doc = reducePreservation({ metadata, body, warnings: converted.warnings }, preservationContext(api, page.id));
   doc.metadata.confluence.base_body_hash = bodyHash(doc.body);
   return doc;
@@ -146,7 +149,15 @@ export async function upload(api, input, { filename, title, id, version, space, 
   const links = {};
   const images = {};
   const assets = new Map();
+  if (meta.attachment_files !== undefined && (!meta.attachment_files || typeof meta.attachment_files !== 'object' || Array.isArray(meta.attachment_files))) throw new Error('confluence.attachment_files must map local references to native attachment filenames.');
   for (const ref of references(doc.body)) {
+    const mappedKey = ref.url?.split('#')[0];
+    const mappedAttachment = meta.attachment_files && Object.hasOwn(meta.attachment_files, mappedKey) ? meta.attachment_files[mappedKey] : undefined;
+    if (mappedAttachment !== undefined && (typeof mappedAttachment !== 'string' || !mappedAttachment || path.basename(mappedAttachment) !== mappedAttachment || mappedAttachment.startsWith('.') || mappedAttachment.includes('\\'))) throw new Error('Invalid native attachment filename in confluence.attachment_files.');
+    if (ref.kind === 'link' && mappedAttachment !== undefined && pageId) {
+      links[ref.url] = api.config.webBase + '/download/attachments/' + pageId + '/' + encodeURIComponent(mappedAttachment) + (ref.url.includes('#') ? '#' + ref.url.split('#').slice(1).join('#') : '');
+      continue;
+    }
     if (ref.kind === 'image' && pageId && /^https?:/i.test(ref.url ?? '')) {
       const url = new URL(ref.url);
       const prefix = new URL(api.config.webBase).pathname.replace(/\/$/, '') + '/download/attachments/' + pageId + '/';
@@ -167,7 +178,7 @@ export async function upload(api, input, { filename, title, id, version, space, 
     } else {
       const mime = mimeTypes[path.extname(local).toLowerCase()];
       if (!mime) throw new Error('Embedded local images must use a supported image extension. Use attachments upload for other files.');
-      const name = path.basename(local);
+      const name = mappedAttachment ?? path.basename(local);
       if (assets.has(name) && assets.get(name).path !== local) throw new Error('Two image files share the same attachment name: ' + name);
       assets.set(name, { path: local, bytes: await readFile(local), mime });
       images[ref.url] = name;
@@ -239,6 +250,10 @@ export async function upload(api, input, { filename, title, id, version, space, 
     syncing = undefined;
     result = { ...result, metadata: { ...result.metadata, confluence: { ...result.metadata.confluence, storage_hash: hash(actual.storage), base_body_hash: bodyHash(result.body) } } };
     if (onWrite) await onWrite(result);
+    if (filename && onWrite) {
+      try { await refreshTreeManifest(api, filename, result, root); }
+      catch { result.warnings.push('The page and local Markdown were saved, but its tree manifest could not be refreshed. Keep the file and export to another directory before a title or parent move.'); }
+    }
     return result;
   } catch (error) {
     if (syncing) resources[syncing] = { status: syncing === 'page' ? 'unresolved' : 'failed', outcome: 'unresolved' };
@@ -254,7 +269,15 @@ export async function markdownFiles(directory) {
     if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
     const filename = path.join(directory, entry.name);
     if (entry.isDirectory()) files.push(...await markdownFiles(filename));
-    else if (entry.isFile() && /\.md$/i.test(entry.name) && !['index.md', 'log.md'].includes(entry.name)) files.push(filename);
+    else if (entry.isFile() && /\.md$/i.test(entry.name)) {
+      // Older exports generated a navigation-only index. A real page may be
+      // named index.md or log.md, so identify legacy navigation by metadata.
+      if (/^(?:index|log)\.md$/i.test(entry.name)) {
+        const doc = parseDocument(await readFile(filename, 'utf8'));
+        if (doc.metadata.okf_version && !doc.metadata.title && doc.metadata.type === 'Reference' && !doc.metadata.confluence?.id) continue;
+      }
+      files.push(filename);
+    }
   }
   return files.sort();
 }
@@ -270,23 +293,146 @@ export async function searchLocal(directory, query) {
   return results;
 }
 
-export async function exportBundle(api, directory, { space, parent, limit = 1000, overwrite = false } = {}) {
-  const pages = await api.listPages({ space, parent, limit });
-  const ids = pages.map((page) => String(page.id));
-  const links = Object.fromEntries(ids.map((id) => [id, './' + id + '.md']));
-  const files = ids.map((id) => path.join(directory, 'pages', id + '.md'));
-  if (!overwrite) for (const filename of [...files, path.join(directory, 'index.md')]) {
-    try { await access(filename); } catch (error) { if (error.code === 'ENOENT') continue; throw error; }
-    throw new Error('Output already exists: ' + filename + '. Use --overwrite explicitly.');
+async function fileInfo(filename) {
+  try { return await lstat(filename); } catch (error) { if (error.code === 'ENOENT') return null; throw error; }
+}
+
+async function refreshTreeManifest(api, filename, doc, root) {
+  const absolute = path.resolve(filename);
+  let directory = root ? path.resolve(root) : path.dirname(absolute);
+  while (true) {
+    const manifestFile = path.join(directory, TREE_MANIFEST);
+    const info = await fileInfo(manifestFile);
+    if (info) {
+      if (!info.isFile() || info.isSymbolicLink()) throw new Error('Unsafe tree manifest.');
+      const manifest = JSON.parse(await readFile(manifestFile, 'utf8'));
+      if (manifest.schema !== 1 || manifest.format !== 'id-title-tree' || manifest.api_url !== api.config.apiUrl || manifest.site_url !== api.config.siteUrl || !Array.isArray(manifest.pages)) return;
+      const entry = manifest.pages.find((page) => String(page.id) === doc.metadata.confluence.id && manifestPath(directory, page.file) === absolute);
+      if (!entry) return;
+      const content = await readFile(absolute, 'utf8');
+      const saved = parseDocument(content);
+      if (saved.metadata.confluence?.id !== doc.metadata.confluence.id || saved.metadata.confluence?.version !== doc.metadata.confluence.version || saved.metadata.confluence?.storage_hash !== doc.metadata.confluence.storage_hash || bodyHash(saved.body) !== doc.metadata.confluence.base_body_hash) return;
+      Object.assign(entry, { title: doc.metadata.title, version: doc.metadata.confluence.version, parent_id: doc.metadata.confluence.parent_id, sha256: hash(content) });
+      await saveFile(manifestFile, JSON.stringify(manifest, null, 2) + '\n', { overwrite: true });
+      return;
+    }
+    if (root || !/^\d+$/.test(path.basename(directory))) return;
+    directory = path.dirname(directory);
   }
-  const index = ['---', 'okf_version: "0.2"', '---', '# Confluence wiki', ''];
-  for (let i = 0; i < ids.length; i++) {
-    const doc = await download(api, ids[i], { pageLinks: links });
-    await saveFile(files[i], formatDocument(doc), { overwrite });
-    index.push('- [' + doc.metadata.title.replace(/[\[\]\n]/g, ' ') + '](pages/' + ids[i] + '.md)' + (doc.metadata.description ? ' - ' + String(doc.metadata.description).replace(/\s+/g, ' ') : ''));
+}
+
+async function checkTreeDirectory(root, directory) {
+  const relative = path.relative(root, directory);
+  if (relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative)) throw new Error('Page output escapes the selected directory.');
+  let current = root;
+  for (const segment of ['', ...relative.split(path.sep).filter(Boolean)]) {
+    if (segment) current = path.join(current, segment);
+    const info = await fileInfo(current);
+    if (info && (!info.isDirectory() || info.isSymbolicLink())) throw new Error('Page output directory must be a real directory: ' + current);
   }
-  await saveFile(path.join(directory, 'index.md'), index.join('\n') + '\n', { overwrite });
-  return { directory, pages: ids.length, index: path.join(directory, 'index.md') };
+}
+
+function manifestPath(root, relative) {
+  if (typeof relative !== 'string' || path.isAbsolute(relative) || relative.includes('\\')) throw new Error('Invalid file path in the cfwiki manifest.');
+  const resolved = path.resolve(root, relative);
+  if (!resolved.startsWith(root + path.sep) || !/\.md$/i.test(resolved)) throw new Error('Invalid file path in the cfwiki manifest.');
+  return resolved;
+}
+
+async function writePageTree(api, directory, pages, { rootId, version, overwrite = false, assets = false, bodyOnly = false } = {}) {
+  const root = path.resolve(directory);
+  const files = treeFiles(pages, root, { rootId });
+  const manifestFile = path.join(root, TREE_MANIFEST);
+  await checkTreeDirectory(root, root);
+  const previousInfo = await fileInfo(manifestFile);
+  if (previousInfo?.isSymbolicLink() || previousInfo && !previousInfo.isFile()) throw new Error('The cfwiki manifest must be a regular file.');
+  const previous = previousInfo ? JSON.parse(await readFile(manifestFile, 'utf8')) : null;
+  if (previous && (previous.schema !== 1 || previous.format !== 'id-title-tree' || !Array.isArray(previous.pages) || previous.api_url !== api.config.apiUrl || previous.site_url !== api.config.siteUrl)) throw new Error('The output manifest belongs to another Confluence profile or format. Choose another output directory.');
+  const manifestIds = new Set();
+  for (const entry of previous?.pages ?? []) {
+    if (!entry || !/^\d+$/.test(String(entry.id)) || manifestIds.has(String(entry.id)) || typeof entry.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(entry.sha256)) throw new Error('Invalid page entry in the cfwiki manifest.');
+    manifestIds.add(String(entry.id));
+    manifestPath(root, entry.file);
+  }
+  const entries = new Map((previous?.pages ?? []).map((entry) => [String(entry.id), entry]));
+  const stale = new Map();
+  const aliases = new Map();
+  const attachmentLists = new Map();
+  const attachmentNames = new Map();
+  for (const [id, filename] of files) {
+    const folder = path.dirname(filename);
+    await checkTreeDirectory(root, folder);
+    const old = entries.get(id);
+    const oldFile = old ? manifestPath(root, old.file) : null;
+    const oldInfo = oldFile && oldFile !== filename ? await fileInfo(oldFile) : null;
+    if (oldInfo) {
+      await checkTreeDirectory(root, path.dirname(oldFile));
+      if (!overwrite || oldInfo.isSymbolicLink() || hash(await readFile(oldFile)) !== old.sha256) throw new Error('Page ' + id + ' moved or changed title, but its old Markdown has local edits or requires --overwrite: ' + oldFile + '. Keep or move that file before retrying.');
+      const targetInfo = await fileInfo(filename);
+      // On case-insensitive filesystems, A.md and a.md can name the same file.
+      // Never unlink the old spelling after replacing its contents.
+      if (targetInfo && oldInfo.nlink === 1 && targetInfo.dev === oldInfo.dev && targetInfo.ino === oldInfo.ino) aliases.set(oldFile, filename);
+      else stale.set(oldFile, old.sha256);
+    }
+    for (const entry of await readdir(folder, { withFileTypes: true }).catch((error) => { if (error.code === 'ENOENT') return []; throw error; })) {
+      if (!/\.md$/i.test(entry.name)) continue;
+      const found = path.join(folder, entry.name);
+      if (entry.isSymbolicLink() || !entry.isFile()) throw new Error('Markdown output must be a regular file: ' + found);
+      if (found !== filename && !stale.has(found) && !aliases.has(found)) throw new Error('Page folder already contains another Markdown file: ' + found + '. Keep or move it before retrying.');
+      if (!overwrite) throw new Error('Output already exists: ' + found + '. Use --overwrite explicitly.');
+    }
+    if (assets) {
+      const attachments = await api.attachments(id);
+      const names = Object.create(null);
+      const used = new Set();
+      for (const attachment of attachments) {
+        const name = attachmentFilename(attachment);
+        if (Object.hasOwn(names, attachment.title) || used.has(name.toLocaleLowerCase())) throw new Error('Duplicate attachment filename returned by Confluence.');
+        used.add(name.toLocaleLowerCase());
+        names[attachment.title] = name;
+        const info = await fileInfo(path.join(folder, name));
+        if (info && (!overwrite || info.isSymbolicLink() || !info.isFile())) throw new Error('Attachment output already exists or is unsafe: ' + path.join(folder, name) + '. Use --overwrite for existing files.');
+      }
+      attachmentLists.set(id, attachments);
+      attachmentNames.set(id, names);
+    }
+  }
+  // Finish remote reads and conversion before creating local page files.
+  const writes = [];
+  const warnings = [];
+  for (const [id, page] of pages) {
+    const filename = files.get(id);
+    const doc = await download(api, id, { page, version, pageLinks: localPageLinks(pages, files, id), overwrite, ...(assets ? { assetsDir: path.dirname(filename), assetPrefix: '.', attachmentFiles: attachmentLists.get(id), attachmentNames: attachmentNames.get(id), saveAttachment: async (file, bytes) => { writes.push({ filename: file, content: bytes }); } } : {}) });
+    const content = bodyOnly ? doc.body : formatDocument(doc, { compact: true });
+    writes.push({ filename, content });
+    warnings.push(...doc.warnings.map((warning) => page.id + ': ' + warning));
+    entries.set(id, { id, title: page.title, parent_id: page.parentId, version: page.version, file: path.relative(root, filename).split(path.sep).join('/'), sha256: hash(content) });
+  }
+  for (const write of writes) await saveFile(write.filename, write.content, { overwrite });
+  for (const filename of aliases.values()) {
+    const temporary = filename + '.' + randomUUID() + '.case.tmp';
+    await rename(filename, temporary);
+    try { await rename(temporary, filename); }
+    catch (error) { await rename(temporary, filename).catch(() => {}); throw error; }
+  }
+  for (const [filename, expected] of stale) {
+    if (hash(await readFile(filename)) !== expected) throw new Error('Old Markdown changed during download and was kept: ' + filename);
+    await unlink(filename);
+  }
+  const manifest = { schema: 1, format: 'id-title-tree', api_url: api.config.apiUrl, site_url: api.config.siteUrl, pages: [...entries.values()].sort((a, b) => a.file.localeCompare(b.file)) };
+  await saveFile(manifestFile, JSON.stringify(manifest, null, 2) + '\n', { overwrite: Boolean(previous) });
+  return { directory: root, pages: pages.size, files: [...files.values()], manifest: manifestFile, warnings };
+}
+
+export async function downloadTree(api, id, directory = '.', { recursive = false, limit = 1000, version, ...options } = {}) {
+  if (recursive && version) throw new Error('Historical --version cannot be combined with --recursive.');
+  const pages = await collectPageTree(api, { id, recursive, limit, version });
+  return writePageTree(api, directory, pages, { ...options, rootId: id, version });
+}
+
+export async function exportBundle(api, directory, { space, parent, limit = 1000, ...options } = {}) {
+  const pages = await collectPageTree(api, parent ? { id: parent, recursive: true, limit } : { space, limit });
+  return writePageTree(api, directory, pages, { ...options, rootId: parent });
 }
 
 export async function pushBundle(api, directory, options = {}) {
@@ -335,14 +481,14 @@ export async function pushBundle(api, directory, options = {}) {
       metadata.title = title;
       if (pending) metadata.confluence.pending_create = pending;
       else delete metadata.confluence.pending_create;
-      await saveFile(item.filename, formatDocument({ ...item.doc, metadata }), { overwrite: true });
+      await saveFile(item.filename, formatDocument({ ...item.doc, metadata }, { compact: true }), { overwrite: true });
     });
     item.doc.metadata = boundMetadata(api, page, item.doc.metadata, { space: space.key });
-    await saveFile(item.filename, formatDocument(item.doc), { overwrite: true });
+    await saveFile(item.filename, formatDocument(item.doc, { compact: true }), { overwrite: true });
   }
   const result = [];
   for (const { filename, prepared } of documents) {
-    const doc = await upload(api, await readFile(filename, 'utf8'), { ...options, restrictions: undefined, preparedDiagrams: prepared, filename, root: directory, onWrite: (saved) => saveFile(filename, formatDocument(saved), { overwrite: true }) });
+    const doc = await upload(api, await readFile(filename, 'utf8'), { ...options, restrictions: undefined, preparedDiagrams: prepared, filename, root: directory, onWrite: (saved) => saveFile(filename, formatDocument(saved, { compact: true }), { overwrite: true }) });
     result.push({ file: filename, id: doc.metadata.confluence.id, version: doc.metadata.confluence.version });
   }
   return result;

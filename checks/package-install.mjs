@@ -20,19 +20,24 @@ const env = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
 env.PUPPETEER_SKIP_DOWNLOAD = 'true';
 env.XDG_CONFIG_HOME = path.join(temporary, 'config');
 env.NPM_CONFIG_USERCONFIG = path.join(temporary, 'npmrc');
+env.NPM_CONFIG_GLOBALCONFIG = path.join(temporary, 'global-npmrc');
+env.NPM_CONFIG_CACHE = path.join(temporary, 'npm-cache');
 env.NPM_CONFIG_REGISTRY = 'https://registry.npmjs.org/';
 const run = (command, args, cwd = temporary, overrides = {}) => exec(command, args, { cwd, env: { ...env, ...overrides }, timeout: 180000, maxBuffer: 2 * 1024 * 1024 });
 const npm = (args, cwd) => run(process.execPath, [npmCli, ...args], cwd);
 
 try {
   await writeFile(env.NPM_CONFIG_USERCONFIG, '');
+  await writeFile(env.NPM_CONFIG_GLOBALCONFIG, '');
   const manifest = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
   assert.equal(manifest.private, undefined, 'The package must be publishable.');
+  assert.equal(manifest.publishConfig.registry, 'https://registry.npmjs.org/');
+  assert.equal(manifest.publishConfig.access, 'public');
   assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
   const packed = JSON.parse((await npm(['pack', '--json', '--pack-destination', temporary], root)).stdout)[0];
-  const allowed = /^(?:package\.json|README\.md|\.env(?:\.cloud|\.company)?\.example|scripts\/confluence\.mjs|src\/[a-z-]+\.mjs|examples\/[a-z-]+\.md|examples\/wiki-template\.yaml|examples\/sample\.svg|skills\/confluence-wiki\/(?:SKILL\.md|agents\/openai\.yaml))$/;
+  const allowed = /^(?:package\.json|README\.md|\.env(?:\.cloud|\.company)?\.example|scripts\/(?:confluence|skill)\.mjs|src\/[a-z-]+\.mjs|docs\/(?:installation|token-benchmark)\.md|docs\/benchmarks\/[a-z0-9.-]+\.json|examples\/[a-z-]+\.md|examples\/wiki-template\.yaml|examples\/sample\.svg|skills\/confluence-wiki\/(?:SKILL\.md|references\/[a-z0-9-]+\.md|agents\/openai\.yaml))$/;
   for (const file of packed.files) assert.match(file.path, allowed, 'Unexpected published file: ' + file.path);
-  for (const required of ['src/agent-edit.mjs', 'src/comments.mjs', 'src/evidence.mjs', 'src/explore.mjs', 'src/merge.mjs', 'src/restrictions.mjs', 'src/storage-links.mjs', 'src/wiki-init.mjs', 'src/wiki-term.mjs', 'src/diagram-worker.mjs', 'src/env.mjs', 'src/templates.mjs', 'src/native-templates.mjs', '.env.cloud.example', '.env.company.example', 'skills/confluence-wiki/SKILL.md', 'examples/getting-started.md', 'examples/wiki-template.yaml']) {
+  for (const required of ['scripts/skill.mjs', 'src/skill-install.mjs', 'docs/installation.md', 'docs/token-benchmark.md', 'src/agent-edit.mjs', 'src/comments.mjs', 'src/evidence.mjs', 'src/explore.mjs', 'src/merge.mjs', 'src/restrictions.mjs', 'src/storage-links.mjs', 'src/wiki-init.mjs', 'src/wiki-term.mjs', 'src/diagram-worker.mjs', 'src/env.mjs', 'src/templates.mjs', 'src/native-templates.mjs', '.env.cloud.example', '.env.company.example', 'skills/confluence-wiki/SKILL.md', 'examples/getting-started.md', 'examples/wiki-template.yaml']) {
     assert.ok(packed.files.some((file) => file.path === required), 'Missing published file: ' + required);
   }
   const tarball = path.join(temporary, packed.filename);
@@ -53,6 +58,21 @@ try {
   for (const file of ['README.md', 'skills/confluence-wiki/SKILL.md']) {
     assert.deepEqual(await readFile(path.join(packageRoot, file)), await readFile(path.join(root, file)));
   }
+  const skillProject = path.join(temporary, 'agent-project');
+  const skills = JSON.parse((await cli(['skill', 'install', '--agent', 'all', '--project', skillProject, '--json'])).stdout);
+  for (const skill of skills.skills) {
+    assert.equal(skill.action, 'install');
+    assert.deepEqual(await readFile(path.join(skill.destination, 'SKILL.md')), await readFile(path.join(packageRoot, 'skills/confluence-wiki/SKILL.md')));
+  }
+  const repeated = JSON.parse((await cli(['skill', 'install', '--agent', 'all', '--project', skillProject, '--json'])).stdout);
+  assert.ok(repeated.skills.every((skill) => skill.action === 'unchanged'));
+  const skillExecutable = path.join(prefix, process.platform === 'win32' ? 'node_modules/' + manifest.name + '/' + manifest.bin['cfwiki-skill'] : 'bin/cfwiki-skill');
+  const skillPaths = await run(process.platform === 'win32' ? process.execPath : skillExecutable, [...(process.platform === 'win32' ? [skillExecutable] : []), 'paths', '--agent', 'all', '--project', skillProject, '--json']);
+  assert.equal(JSON.parse(skillPaths.stdout).skills.length, 4);
+  const oneShot = await npm(['exec', '--yes', '--package=' + tarball, '--', 'cfwiki', '--help']);
+  assert.match(oneShot.stdout, /Usage: cfwiki/);
+  const oneShotSkill = await npm(['exec', '--yes', '--package=' + tarball, '--', 'cfwiki-skill', 'paths', '--agent', 'codex', '--project', skillProject, '--json']);
+  assert.equal(JSON.parse(oneShotSkill.stdout).skills[0].agent, 'codex');
   const workflows = await run(process.execPath, [
     '--test', '--test-reporter=tap',
     '--test-name-pattern=CLI init create explore and term lifecycle|CLI reports unknown root create|CLI explore keeps host assessment|CLI rejects root deletion and foreign evidence|CLI scoped read|CLI lookup|CLI supports create, Markdown download|bundle push resolves cyclic',
@@ -95,7 +115,7 @@ try {
     await copyFile(tarball, path.join(destination, 'confluence-wiki-md.tgz'));
     await writeFile(path.join(destination, 'SHA256SUMS'), sha256 + '  confluence-wiki-md.tgz\n');
   }
-  process.stdout.write(JSON.stringify({ name: manifest.name, version: manifest.version, files: packed.files.map((file) => file.path), bytes: bytes.length, sha256, checks: ['global CLI installation outside checkout', 'Cloud/DC installed root, term, evidence and refusal workflows', 'installed legacy upload and cyclic bundle workflows', 'installed README and skill equal shipped source bytes', 'Markdown validation and conversion round trip', 'Cloud/PAT templates without credentials', 'agent skill and diagram worker included'] }, null, 2) + '\n');
+  process.stdout.write(JSON.stringify({ name: manifest.name, version: manifest.version, files: packed.files.map((file) => file.path), bytes: bytes.length, sha256, checks: ['global CLI installation outside checkout without registry authentication', 'one-shot npm exec CLI and skill bins', 'copied skills for Codex, Claude, OpenCode and Cursor with idempotent reinstall', 'Cloud/DC installed root, term, evidence and refusal workflows', 'installed legacy upload and cyclic bundle workflows', 'installed README and skill equal shipped source bytes', 'Markdown validation and conversion round trip', 'Cloud/PAT templates without credentials', 'agent skill and diagram worker included'] }, null, 2) + '\n');
 } finally {
   await rm(temporary, { recursive: true, force: true });
   await assert.rejects(access(temporary), { code: 'ENOENT' });

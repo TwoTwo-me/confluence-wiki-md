@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-15",
+  "scope": "Independent review of page tree behavior, README, bundled skill references, and installer documentation",
+  "result": "concrete findings corrected",
+  "corrections": [
+    "Numeric attachment filenames are renamed to avoid descendant folder collisions.",
+    "Case-only page title changes safely retain one correctly named Markdown file on case-insensitive filesystems.",
+    "File-based delete examples include the required explicit version.",
+    "Skill removal examples provide the required --agent option and inspect paths before uninstalling the CLI.",
+    "Legacy navigation exclusion is described by its metadata checks rather than a blanket reserved filename rule.",
+    "Attachment documentation distinguishes safe filename substitution from rejected path-like names."
+  ],
+  "verification": [
+    "node --test test/page-tree.test.mjs: 8 passed",
+    "cfwiki skill paths --agent all --json: all four documented destinations matched"
+  ],
+  "liveEvidence": "page-tree-live-2026-10-15.json"
+}

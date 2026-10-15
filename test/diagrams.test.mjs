@@ -64,3 +64,16 @@ test('server macro rejection prevents page writes after successful local validat
   await assert.rejects(upload(api, body, { preparedDiagrams: prepared }), /Server rejected macro/);
   assert.equal(writes, 0);
 });
+
+test('diagrams inside nested rich macro fences are validated with original line numbers', async () => {
+  const body = 'Intro\n\n`````confluence-panel\n---\ntitle: Diagram panel\n---\n\n````confluence-info\nDetails\n\n```mermaid\ngraph TD; A-->B\n```\n````\n`````\n';
+  const prepared = await prepareDiagrams(body, { env, lineOffset: 2, requireMacros: true, validator });
+  assert.equal(prepared.blocks.length, 1);
+  assert.equal(prepared.blocks[0].line, 13);
+  const storage = markdownToStorage(body, { diagrams: prepared.macros }).storage;
+  assert.match(storage, /ac:name="panel"/);
+  assert.match(storage, /ac:name="info"/);
+  assert.match(storage, /ac:name="mermaid-chart"/);
+  assert.doesNotMatch(storage, /ac:name="code"/);
+  await assert.rejects(prepareDiagrams(body, { env: {}, requireMacros: true, validator }), /CONFLUENCE_MERMAID_MACRO/);
+});

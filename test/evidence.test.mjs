@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { hasSamePreservedXml, readEvidence, readStorageSnapshot, validateStorageXml } from '../src/evidence.mjs';
-import { hash } from '../src/document.mjs';
+import { hash, markdownToStorage, loadStorageXml } from '../src/document.mjs';
 
 const config = {
   deployment: 'datacenter',
@@ -378,11 +378,13 @@ test('storage XML accepts predefined and numeric entities, CDATA ampersands, com
 
   assert.equal(snapshot.storage, storage);
   assert.equal(snapshot.storageHash.length, 64);
-  assert.match(snapshot.markdown, /A & B < C > D A/);
+  assert.match(snapshot.markdown, /A & B \\< C > D A/);
+  const visible = loadStorageXml(markdownToStorage(snapshot.markdown).storage).root().text().replace(/\s+/g, ' ').trim();
+  assert.equal(visible, 'A & B < C > D A 🙂 literal &bogus; & bare <text> Related');
   assert.match(snapshot.storage, /literal &bogus; & bare <text>/);
   assert.deepEqual(evidence.passages.map(({ text }) => text), [
-    'A & B < C > D A 🙂',
-    'literal &bogus; & bare <text>',
+    'A & B \\< C > D A 🙂',
+    'literal \\&bogus; & bare \\<text>',
     '[Related](https://wiki.example.test/confluence/pages/viewpage.action?pageId=99)',
   ]);
 });

@@ -1,0 +1,23 @@
+{
+  "date": "2026-10-15",
+  "source": "dedicated live synthetic page 6586372",
+  "tokenizer": "tiktoken 0.12.0",
+  "encodings": {
+    "o200k_base": {
+      "fullDocument": 353,
+      "compactDocument": 315,
+      "bodyOnly": 101,
+      "documentReductionPercent": 10.76,
+      "fullFrontMatter": 250,
+      "compactFrontMatter": 212
+    },
+    "cl100k_base": {
+      "fullDocument": 349,
+      "compactDocument": 312,
+      "bodyOnly": 100,
+      "documentReductionPercent": 10.6,
+      "fullFrontMatter": 247,
+      "compactFrontMatter": 210
+    }
+  }
+}

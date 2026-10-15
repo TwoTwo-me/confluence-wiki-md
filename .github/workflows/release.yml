@@ -77,13 +77,14 @@ jobs:
             gh release create "$RELEASE_TAG" artifacts/release/confluence-wiki-md.tgz artifacts/release/SHA256SUMS --verify-tag --title "$RELEASE_TAG" --notes-file docs/release-notes.md
           fi
 
-  github-packages:
+  npm-publish:
+    if: vars.NPM_PUBLISH_ENABLED == 'true'
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
-      packages: write
+      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -92,8 +93,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
-          registry-url: https://npm.pkg.github.com
-          scope: '@twotwo-me'
+          registry-url: https://registry.npmjs.org
           package-manager-cache: false
       - name: Download release package (download-artifact v8.0.1)
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
@@ -103,18 +103,23 @@ jobs:
       - name: Verify archive checksum
         working-directory: artifacts/release
         run: sha256sum --check SHA256SUMS
-      - name: Publish to GitHub Packages
-        run: npm publish artifacts/release/confluence-wiki-md.tgz --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ github.token }}
+      - name: Verify npm supports trusted publishing
+        run: node --input-type=module -e 'import {execFileSync} from "node:child_process"; const [major, minor, patch] = execFileSync("npm", ["--version"], {encoding:"utf8"}).trim().split(".").map(Number); if (major < 11 || major === 11 && (minor < 5 || minor === 5 && patch < 1)) throw new Error("Trusted publishing requires npm >= 11.5.1");'
+      - name: Publish verified archive to public npm (OIDC)
+        run: |
+          PACKAGE_SPEC=$(node --input-type=module -e 'import fs from "node:fs"; const p = JSON.parse(fs.readFileSync("package.json", "utf8")); console.log(p.name + "@" + p.version);')
+          if npm view "$PACKAGE_SPEC" dist.integrity --json --registry=https://registry.npmjs.org/ > published-integrity.json; then
+            node --input-type=module -e 'import fs from "node:fs"; import assert from "node:assert/strict"; import {createHash} from "node:crypto"; assert.equal(JSON.parse(fs.readFileSync("published-integrity.json", "utf8")), "sha512-" + createHash("sha512").update(fs.readFileSync("artifacts/release/confluence-wiki-md.tgz")).digest("base64"), "Published version differs from verified archive");'
+          else
+            npm publish artifacts/release/confluence-wiki-md.tgz --access public --registry=https://registry.npmjs.org/
+          fi
 
   registry-install:
-    needs: github-packages
+    needs: npm-publish
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
-      packages: read
     steps:
       - name: Check out release (checkout v7.0.1)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -131,7 +136,28 @@ jobs:
         with:
           name: release-package
           path: artifacts/release
-      - name: Install published package with read-only package access
+      - name: Install public package without credentials
         run: npm run test:registry -- artifacts/release/confluence-wiki-md.tgz
-        env:
-          NODE_AUTH_TOKEN: ${{ github.token }}
+
+  github-install:
+    needs: github-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Download verified archive
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-package
+          path: artifacts/release
+      - name: Install GitHub release without a GitHub token
+        run: npm run test:release -- artifacts/release/confluence-wiki-md.tgz

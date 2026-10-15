@@ -13,18 +13,21 @@ const manifest = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf
 const [archive, ...extra] = process.argv.slice(2);
 assert.ok(archive && extra.length === 0, 'Pass the verified release archive.');
 assert.ok(process.env.npm_execpath, 'Run this check with npm run test:registry.');
-assert.ok(process.env.NODE_AUTH_TOKEN, 'A GitHub token with read:packages is required.');
 assert.equal(manifest.name, '@twotwo-me/confluence-wiki-md');
 const expectedIntegrity = 'sha512-' + createHash('sha512').update(await readFile(path.resolve(archive))).digest('base64');
 const temporary = await mkdtemp(path.join(tmpdir(), 'cfwiki-registry-'));
-const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^(CONFLUENCE_|CFWIKI_|NPM_CONFIG_|npm_config_)/.test(key)));
+const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^(CONFLUENCE_|CFWIKI_|NPM_CONFIG_|npm_config_|NODE_AUTH_TOKEN$|NPM_TOKEN$|ACTIONS_ID_TOKEN_)/.test(key)));
 env.NPM_CONFIG_USERCONFIG = path.join(temporary, 'npmrc');
+env.NPM_CONFIG_GLOBALCONFIG = path.join(temporary, 'global-npmrc');
+env.NPM_CONFIG_CACHE = path.join(temporary, 'npm-cache');
+env.NPM_CONFIG_REGISTRY = 'https://registry.npmjs.org/';
 env.PUPPETEER_SKIP_DOWNLOAD = 'true';
 env.XDG_CONFIG_HOME = path.join(temporary, 'config');
 const npm = (args) => exec(process.execPath, [process.env.npm_execpath, ...args], { cwd: temporary, env, timeout: 180000, maxBuffer: 2 * 1024 * 1024 });
 
 try {
-  await writeFile(env.NPM_CONFIG_USERCONFIG, 'registry=https://registry.npmjs.org/\n@twotwo-me:registry=https://npm.pkg.github.com/\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n', { mode: 0o600 });
+  await writeFile(env.NPM_CONFIG_USERCONFIG, 'registry=https://registry.npmjs.org/\n@twotwo-me:registry=https://registry.npmjs.org/\n', { mode: 0o600 });
+  await writeFile(env.NPM_CONFIG_GLOBALCONFIG, '');
   const spec = manifest.name + '@' + manifest.version;
   const publishedIntegrity = JSON.parse((await npm(['view', spec, 'dist.integrity', '--json'])).stdout);
   assert.equal(publishedIntegrity, expectedIntegrity, 'Registry package differs from the verified release archive.');
@@ -40,7 +43,13 @@ try {
   const example = path.join(packageRoot, 'examples/getting-started.md');
   assert.equal(JSON.parse((await cli(['validate', example, '--json'])).stdout).valid, true);
   assert.equal(JSON.parse((await cli(['status', example, '--json'])).stdout).bodyStatus, 'unknown');
-  process.stdout.write(JSON.stringify({ package: spec, registry: 'https://npm.pkg.github.com/', integrity: publishedIntegrity, install: 'passed', help: 'passed', markdownValidation: 'passed', localStatus: 'passed' }, null, 2) + '\n');
+  const skills = JSON.parse((await cli(['skill', 'install', '--agent', 'all', '--project', path.join(temporary, 'project'), '--json'])).stdout);
+  assert.equal(skills.skills.length, 4);
+  for (const skill of skills.skills) assert.deepEqual(await readFile(path.join(skill.destination, 'SKILL.md')), await readFile(path.join(packageRoot, 'skills/confluence-wiki/SKILL.md')));
+  assert.match((await npm(['exec', '--yes', '--package=' + spec, '--', 'cfwiki', '--help'])).stdout, /Usage: cfwiki/);
+  const oneShot = JSON.parse((await npm(['exec', '--yes', '--package=' + spec, '--', 'cfwiki-skill', 'paths', '--agent', 'all', '--project', temporary, '--json'])).stdout);
+  assert.equal(oneShot.skills.length, 4);
+  process.stdout.write(JSON.stringify({ package: spec, registry: 'https://registry.npmjs.org/', authentication: 'none (empty isolated user/global npm config; token environment removed)', integrity: publishedIntegrity, install: 'passed', help: 'passed', markdownValidation: 'passed', localStatus: 'passed', multiAgentSkillInstall: 'passed', oneShotExecution: 'passed' }, null, 2) + '\n');
 } finally {
   await rm(temporary, { recursive: true, force: true });
 }

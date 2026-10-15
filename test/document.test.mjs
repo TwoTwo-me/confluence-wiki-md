@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseDocument, formatDocument, markdownToStorage, storageToMarkdown, loadStorageXml } from '../src/document.mjs';
+import { parseDocument, formatDocument, compactMetadata, markdownToStorage, storageToMarkdown, loadStorageXml } from '../src/document.mjs';
+import { load } from 'cheerio';
 
 const context = { pageUrl: 'https://wiki.example.test/confluence/pages/viewpage.action?pageId=42', siteUrl: 'https://wiki.example.test/confluence', pageId: '42' };
 
@@ -210,4 +211,97 @@ test('Confluence-stripped HTML IDs do not lose footnote identifiers', () => {
   const back = storageToMarkdown(storage, context);
   assert.match(back.markdown, /\[\^source\]: Evidence/);
   assert.doesNotMatch(back.markdown, /Confluence: anchor/);
+});
+
+test('compact YAML retains binding, conflict protection, explicit empty tags and custom metadata', () => {
+  const metadata = {
+    type: 'Reference', title: 'Compact', resource: context.pageUrl, tags: [],
+    custom: { owner: '문서 담당자', policy: ['retain', 'unknown fields'] },
+    confluence: {
+      api_url: 'https://wiki.example.test/confluence/api/v2', site_url: context.siteUrl,
+      id: '42', version: 7, status: 'current', url: context.pageUrl, labels: [],
+      storage_hash: 'a'.repeat(64), base_body_hash: 'sha256:' + 'b'.repeat(64),
+      custom: { retain: true }, preserved: [],
+    },
+  };
+  const before = structuredClone(metadata);
+  const ordinary = formatDocument({ metadata, body: 'Content\n' });
+  const compact = formatDocument({ metadata, body: 'Content\n' }, { compact: true });
+  const parsed = parseDocument(compact);
+  assert.ok(compact.length < ordinary.length);
+  assert.equal(parsed.metadata.type, 'Reference');
+  assert.deepEqual(parsed.metadata.tags, []);
+  assert.deepEqual(parsed.metadata.custom, metadata.custom);
+  for (const key of ['api_url', 'site_url', 'id', 'version', 'storage_hash', 'base_body_hash', 'custom', 'labels']) assert.deepEqual(parsed.metadata.confluence[key], metadata.confluence[key]);
+  assert.deepEqual(metadata, before);
+  assert.equal(compactMetadata({ ...metadata, type: 'Playbook' }).type, 'Playbook');
+  assert.deepEqual(compactMetadata({ tags: [], confluence: { labels: ['different'], status: 'draft', url: 'https://other.test', preserved: [{ markdown: 'x', storage: '<p>x</p>', block: true }, { markdown: 'y', storage: '<b>y</b>', block: false }] } }).confluence, {
+    labels: ['different'], status: 'draft', url: 'https://other.test', preserved: [{ markdown: 'x', storage: '<p>x</p>', block: true }, { markdown: 'y', storage: '<b>y</b>', block: false }],
+  });
+});
+
+test('same-site bundle page links retain their exact hash anchor', () => {
+  for (const href of ['https://wiki.example.test/confluence/pages/99/Target#Part%20One', '/confluence/pages/viewpage.action?pageId=99#Part%20One']) {
+    const converted = storageToMarkdown('<p><a href="' + href + '">Target</a></p>', { ...context, pageLinks: { 99: '../99/Target.md' }, preserve: 'minimal' });
+    assert.equal(converted.markdown, '[Target](../99/Target.md#Part%20One)\n');
+  }
+});
+
+test('explicit cross-space native links cannot be redirected by an equal local title', () => {
+  const storage = '<ac:link><ri:page ri:content-title="Guide" ri:space-key="OTHER"/><ac:plain-text-link-body>Other guide</ac:plain-text-link-body></ac:link>';
+  const converted = storageToMarkdown(storage, { ...context, pageLinks: { Guide: './99/Guide.md' }, preserve: 'minimal' });
+  assert.match(converted.markdown, /spaceKey=OTHER&title=Guide/);
+  assert.doesNotMatch(converted.markdown, /\.\/99\/Guide/);
+});
+
+test('ordinary object property names remain literal link titles and image sources', () => {
+  const source = '<ac:link><ri:page ri:content-title="constructor"/></ac:link><ac:image><ri:attachment ri:filename="toString"/></ac:image>';
+  const converted = storageToMarkdown(source, { ...context, preserve: 'minimal' });
+  assert.match(converted.markdown, /title=constructor/);
+  assert.match(converted.markdown, /attachments\/42\/toString/);
+  const $ = load(markdownToStorage('[literal](constructor)\n\n![literal](toString)').storage, { xmlMode: true });
+  assert.equal($('a').attr('href'), 'constructor');
+  assert.equal($('ri\\:url').attr('ri:value'), 'toString');
+});
+
+test('native link and image bracket labels and image titles retain their text', () => {
+  const original = '<p><ac:link><ri:page ri:content-id="99"/><ac:plain-text-link-body><![CDATA[A [B] \\ C]]></ac:plain-text-link-body></ac:link></p><ac:image ac:alt="Chart [A]" ac:title="Image &quot;title&quot;"><ri:url ri:value="https://example.com/chart.png"/></ac:image>';
+  const converted = storageToMarkdown(original, { ...context, preserve: 'minimal' });
+  assert.deepEqual(converted.preserved, []);
+  const $ = load(markdownToStorage(converted.markdown).storage, { xmlMode: true });
+  assert.equal($('a').text(), 'A [B] \\ C');
+  assert.equal($('ac\\:image').attr('ac:alt'), 'Chart [A]');
+  assert.equal($('ac\\:image').attr('ac:title'), 'Image "title"');
+});
+
+test('nested tasks retain every checked state without task ID text leaking into content', () => {
+  const body = '- [x] first\n  - [ ] nested\n    - [x] third\n- [ ] last\n';
+  const first = markdownToStorage(body).storage;
+  const converted = storageToMarkdown(first, { ...context, preserve: 'minimal' });
+  const second = markdownToStorage(converted.markdown).storage;
+  const inspect = (xml) => {
+    const $ = load(xml, { xmlMode: true });
+    return $('ac\\:task').toArray().map((node) => ({ depth: $(node).parents('ac\\:task').length, status: $(node).children('ac\\:task-status').text(), text: $(node).children('ac\\:task-body').clone().children('ul,ac\\:task-list').remove().end().text().trim() }));
+  };
+  assert.deepEqual(inspect(second), inspect(first));
+  assert.doesNotMatch(converted.markdown, /incomplete|complete|CFWIKISNIPPET/);
+});
+
+test('code, images and links remain inside a task across a cache-free round trip', () => {
+  const body = '- [x] item\n\n  ```js\n  const a = 1;\n  ```\n\n  ![image](https://example.com/x.png) and [link](https://example.com)\n';
+  const first = markdownToStorage(body).storage;
+  const converted = storageToMarkdown(first, { ...context, preserve: 'minimal' });
+  assert.deepEqual(converted.preserved, []);
+  assert.equal(markdownToStorage(converted.markdown).storage, first);
+});
+
+test('a task containing unsupported native content keeps the original complete task', () => {
+  const original = '<ac:task-list><ac:task><ac:task-id>77</ac:task-id><ac:task-status>complete</ac:task-status><ac:task-body>Review <ac:emoticon ac:name="smile"/> and <ac:image ac:width="40"><ri:url ri:value="https://example.com/x.png"/></ac:image></ac:task-body></ac:task></ac:task-list>';
+  const converted = storageToMarkdown(original, { ...context, preserve: 'minimal' });
+  assert.equal(converted.preserved.length, 1);
+  const output = markdownToStorage(converted.markdown, { preserved: converted.preserved }).storage;
+  assert.ok(output.includes(converted.preserved[0].storage));
+  assert.match(output, /ac:task-id>77/);
+  assert.match(output, /ac:width="40"/);
+  assert.match(output, /ac:emoticon/);
 });

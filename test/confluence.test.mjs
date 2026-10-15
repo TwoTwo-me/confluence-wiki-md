@@ -626,7 +626,7 @@ for (const deployment of ['cloud', 'datacenter']) {
     assert.equal(deletes(), 0);
     assert.equal(rootPage.status, 'current');
 
-    const download = await f.cli('download', root.id);
+    const download = await f.cli('read', root.id);
     assert.equal(download.code, 0, download.stderr);
     const rootFile = path.join(f.directory, 'root.md');
     await writeFile(rootFile, download.stdout);
@@ -715,7 +715,7 @@ for (const deployment of ['cloud', 'datacenter']) {
     const outsideRead = await f.cli('read', '970', '--wiki-root', root.id, '--space', 'TEST', '--json');
     assert.notEqual(outsideRead.code, 0);
     assert.ok(!outsideRead.stdout.includes('Outside root page.'));
-    const outsideDownload = await f.cli('download', '970');
+    const outsideDownload = await f.cli('read', '970');
     assert.equal(outsideDownload.code, 0, outsideDownload.stderr);
     const basePath = path.join(f.directory, 'outside-base.md');
     const draftPath = path.join(f.directory, 'outside-draft.md');
@@ -892,7 +892,7 @@ for (const deployment of ['cloud', 'datacenter']) {
     assert.match(humanRead.stdout, /Before update/);
     assert.ok(f.requests.length > beforeLegacy);
     assert.ok(!humanRead.stdout.includes(f.token));
-    const download = await f.cli('download', '42');
+    const download = await f.cli('read', '42');
     assert.equal(download.code, 0, download.stderr);
     assert.match(download.stdout, /Before update/);
   });

@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-15",
+  "tokenizer": "tiktoken",
+  "tokenizerVersion": "0.12.0",
+  "metric": "text tokens, not billed model usage",
+  "oldRef": "v0.3.0",
+  "currentVersion": "0.4.0",
+  "encodings": {
+    "o200k_base": {
+      "oldEntry": 5231,
+      "newEntry": 1138,
+      "entryReductionPercent": 78.25,
+      "references": {
+        "skills/confluence-wiki/references/collaboration.md": 1525,
+        "skills/confluence-wiki/references/rich-content.md": 1538,
+        "skills/confluence-wiki/references/evidence-workflows.md": 1315
+      },
+      "allReferencesAndEntry": 5516
+    },
+    "cl100k_base": {
+      "oldEntry": 5237,
+      "newEntry": 1138,
+      "entryReductionPercent": 78.27,
+      "references": {
+        "skills/confluence-wiki/references/collaboration.md": 1527,
+        "skills/confluence-wiki/references/rich-content.md": 1537,
+        "skills/confluence-wiki/references/evidence-workflows.md": 1313
+      },
+      "allReferencesAndEntry": 5515
+    }
+  }
+}

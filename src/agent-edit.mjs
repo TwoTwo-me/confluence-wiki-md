@@ -2,8 +2,9 @@ import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
+import { randomUUID } from 'node:crypto';
 import { ApiError } from './api.mjs';
-import { parseDocument, formatDocument, bodyHash, markdownToStorage, validateAgentPreservation, validateStorageXml, loadStorageXml } from './document.mjs';
+import { parseDocument, formatDocument, bodyHash, markdownToStorage, storageToMarkdown, validateAgentPreservation, validateStorageXml, loadStorageXml } from './document.mjs';
 import { readStorageSnapshot } from './evidence.mjs';
 import { mergeDocument } from './merge.mjs';
 import { upload } from './wiki.mjs';
@@ -11,6 +12,32 @@ import { upload } from './wiki.mjs';
 // Cached source may omit the one final newline emitted by storageToMarkdown.
 // Do not trim body whitespace or trust cached prose as historical authority.
 const canonicalBody = (body) => body.endsWith('\n') ? body : body + '\n';
+
+function assignCloudMacroIds(storage, preserved) {
+  const $ = loadStorageXml(storage);
+  const opaque = new Set(preserved.map((fragment) => fragment.storage));
+  const supported = new Set(['code', 'toc', 'info', 'note', 'tip', 'warning', 'panel', 'expand', 'quote', 'anchor']);
+  const raw = (node) => storage.slice(node.startIndex, node.endIndex + 1);
+  const insertions = [];
+  for (const node of $('ac\\:structured-macro, ac\\:macro').toArray()) {
+    if (!supported.has($(node).attr('ac:name')) || $(node).attr('ac:macro-id') !== undefined ||
+        [node, ...$(node).parents().toArray()].some((ancestor) => opaque.has(raw(ancestor)))) continue;
+    // Splice only the opening tag. Serializing the whole document could change
+    // quotes/entities inside a byte-exact native fragment elsewhere in it.
+    let quote = null;
+    for (let cursor = node.startIndex; cursor <= node.endIndex; cursor++) {
+      const character = storage[cursor];
+      if (quote) { if (character === quote) quote = null; }
+      else if (character === '"' || character === "'") quote = character;
+      else if (character === '>') {
+        insertions.push({ at: storage[cursor - 1] === '/' ? cursor - 1 : cursor, value: ' ac:macro-id="' + randomUUID() + '"' });
+        break;
+      }
+    }
+  }
+  for (const { at, value } of insertions.sort((left, right) => right.at - left.at)) storage = storage.slice(0, at) + value + storage.slice(at);
+  return storage;
+}
 
 export function equivalentStorage(left, right, preserved) {
   for (const fragment of preserved) {
@@ -129,6 +156,29 @@ function snapshotDocument(snapshot) {
   };
 }
 
+function portableSnapshotDocument(snapshot, api) {
+  const document = snapshotDocument(snapshot);
+  const kept = [];
+  for (const fragment of snapshot.preserved) {
+    const converted = storageToMarkdown(fragment.storage, {
+      pageUrl: snapshot.url, siteUrl: api.config.webBase, pageId: snapshot.id,
+      diagramProfile: api.config.diagramProfile,
+      preserve: 'minimal',
+    });
+    const replacement = converted.markdown.trimEnd();
+    const ordinary = replacement === fragment.markdown;
+    const toc = /^`{3,}confluence-toc\n/.test(replacement);
+    // Never replace a projected evidence fallback with a lossy conversion of
+    // its raw XML (notably rich-text CDATA). Unknown/custom native XML remains
+    // a byte-exact fragment. Portable content must match trusted evidence.
+    if (!converted.preserved.length && (ordinary || toc)) document.body = document.body.replace(fragment.markdown, () => replacement);
+    else kept.push(fragment);
+  }
+  document.metadata.confluence.preserved = kept;
+  document.metadata.confluence.base_body_hash = bodyHash(document.body);
+  return document;
+}
+
 const userFields = (metadata) => Object.fromEntries(
   Object.entries(metadata).filter(([key]) => !['title', 'confluence', 'preserved'].includes(key)),
 );
@@ -211,8 +261,12 @@ export async function applyAgentEdit(api, baseSource, draftSource, { space, wiki
     if (!storageIsRepresentable(historical)) {
       return conflict('representation', 'Historical storage cannot be represented safely as Markdown and trusted native fragments.');
     }
-    const trustedBase = snapshotDocument(historical);
-    if (binding.storage_hash !== historical.storageHash || canonicalBody(base.body) !== historical.markdown ||
+    // Downloads may omit XML for content fully represented by supported
+    // Markdown. Infer that representation only from a verified historical
+    // snapshot; no omitted unknown fragment or draft-provided XML is trusted.
+    const portable = (binding.preserved?.length ?? 0) < historical.preserved.length;
+    const trustedBase = portable ? portableSnapshotDocument(historical, api) : snapshotDocument(historical);
+    if (binding.storage_hash !== historical.storageHash || canonicalBody(base.body) !== trustedBase.body ||
         base.metadata.title !== historical.title) {
       return conflict('unverified_baseline', 'The claimed hash, body and title must match historical Confluence storage.');
     }
@@ -229,7 +283,7 @@ export async function applyAgentEdit(api, baseSource, draftSource, { space, wiki
         !isDeepStrictEqual(pageTuple(current), pageTuple({ ...historical, status: 'current' }))) {
       return conflict('version', 'Current storage changed without advancing the verified baseline version.');
     }
-    const trustedRemote = snapshotDocument(current);
+    const trustedRemote = portable ? portableSnapshotDocument(current, api) : snapshotDocument(current);
     const local = {
       metadata: {
         ...trustedBase.metadata,
@@ -300,6 +354,9 @@ export async function applyAgentEdit(api, baseSource, draftSource, { space, wiki
           page.space.key !== space || (page.parentId ?? null) !== current.parentId) {
         throw new Error('Upload changed the verified page binding.');
       }
+      // Cloud assigns IDs to new native macros. Supply them before freezing the
+      // intended tuple, keeping strict readback and identical retry payloads.
+      if (api.config.deployment === 'cloud') page = { ...page, storage: assignCloudMacroIds(page.storage, validation.preserved) };
       for (const fragment of validation.preserved) {
         if (page.storage.split(fragment.storage).length - 1 !== 1) {
           throw new Error('Upload did not preserve a trusted native fragment exactly once.');

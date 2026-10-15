@@ -1,0 +1,384 @@
+{
+  "schema": 1,
+  "measuredAt": "2026-10-15T13:05:02.397Z",
+  "runId": "2026-10-15T13-04-47-9df5ae",
+  "environment": {
+    "node": "v24.18.0",
+    "packageVersion": "0.4.0",
+    "tokenizer": "tiktoken 0.12.0",
+    "encodings": [
+      "o200k_base",
+      "cl100k_base"
+    ],
+    "mcpEndpoint": "https://mcp.atlassian.com/v2/mcp",
+    "mcpReady": true
+  },
+  "methodology": {
+    "scope": "Exact tokenizer counts of captured synthetic document reads, serialized update inputs, and command outputs; not provider-billed session usage.",
+    "auth": "Authorization headers/config and API tokens excluded. No model API calls were made.",
+    "creation": "Each method creates a fresh child under the explicit confirmed test parent; setup creation excluded from read/edit workflow totals.",
+    "filtering": "curl filtered variants use actual read/update responses projected to required fields. Local-patch variants count a small literal replacement instead of returning full local file content to the model.",
+    "safety": "Content verification compares visible text in order, macro names/parameters, links, task states, table-cell counts, and code text after an independent REST re-read. Generated task IDs, inter-block layout whitespace, one final code newline, javascript/js language aliases, and a panel title moved into visible body are accepted normalizations and are not byte equality. It is not complete visual fidelity verification.",
+    "overhead": "Session tool schemas and authoring prerequisites are recorded separately; wire/result envelopes are marked wireOnly and excluded from scenario totals.",
+    "limitations": [
+      "CLI local-patch and filtered curl local-patch use local file manipulation; any coding agent can implement equivalent local preprocessing.",
+      "Tool call scaffolding, hidden reasoning, cache hits, history replay, client context injection and billing are not measured.",
+      "Failed or lossy methods must not be compared as successful token savings.",
+      "MCP Markdown replacement on rich native content is an explicit stress case; the official format guide recommends HTML for such edits."
+    ]
+  },
+  "corpus": [
+    {
+      "id": "table-code-tasks",
+      "title": "표 코드 체크리스트",
+      "storageBytes": 819,
+      "sha256": "33385824f32d378553e38f782a93d8f7755fa6a9772e20c25cede6b4f7d14beb"
+    },
+    {
+      "id": "rich-panel-toc",
+      "title": "패널 목차 접기 상태",
+      "storageBytes": 798,
+      "sha256": "6370cc0cec719298981c65e2691d0630319421eb08f8c016091bc83025852cb0"
+    }
+  ],
+  "results": [
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "id": "6619915",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "id": "6619936",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "preservationPassed": true,
+      "variant": "local-or-granular-patch",
+      "tokens": {
+        "o200k_base": 663,
+        "cl100k_base": 682
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "preservationPassed": true,
+      "variant": "local-or-granular-patch",
+      "tokens": {
+        "o200k_base": 906,
+        "cl100k_base": 926
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "initialize-result",
+      "artifact": "0001-session-official-mcp-initialize-result.txt",
+      "bytes": 4806,
+      "sha256": "7d22a22f724a39ab340488db04bc2112dbdc55d864d20d23be09b1a022a54b37",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 2103,
+        "cl100k_base": 2192
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "tool-schemas",
+      "artifact": "0002-session-official-mcp-tool-schemas.txt",
+      "bytes": 68139,
+      "sha256": "357ebe9b71ecca10f0abb5b329bae63e15d35cf2c4b62690201280724227be00",
+      "tokens": {
+        "o200k_base": 15359,
+        "cl100k_base": 15225
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "accessible-input",
+      "artifact": "0003-session-official-mcp-accessible-input.txt",
+      "bytes": 57,
+      "sha256": "2219c6342ac5ab0adaedf0bcc7dddc423e53e27c9f70f34809a961b4d027ae7f",
+      "tokens": {
+        "o200k_base": 14,
+        "cl100k_base": 13
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "accessible-output",
+      "artifact": "0004-session-official-mcp-accessible-output.txt",
+      "bytes": 189,
+      "sha256": "d28688f6973c8726d1ede8d783f372c1fc62610e277c05d2231354bfb81a7616",
+      "tokens": {
+        "o200k_base": 67,
+        "cl100k_base": 64
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "discover-space-input",
+      "artifact": "0005-session-official-mcp-discover-space-input.txt",
+      "bytes": 96,
+      "sha256": "8c342541cfba5da54a23707c1781c74c1767a828ab922869fbc055701540145b",
+      "tokens": {
+        "o200k_base": 19,
+        "cl100k_base": 19
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "discover-space-output",
+      "artifact": "0006-session-official-mcp-discover-space-output.txt",
+      "bytes": 10274,
+      "sha256": "c48a3ffff36c848de0302043e01c98ccf2f3114d519881b51d23c1cb6b150f66",
+      "tokens": {
+        "o200k_base": 2325,
+        "cl100k_base": 2323
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "discover-guide-input",
+      "artifact": "0007-session-official-mcp-discover-guide-input.txt",
+      "bytes": 86,
+      "sha256": "09853047c7a0a8211b743af8926cf0fb159f2e203e807e3ac73a2d8fca922325",
+      "tokens": {
+        "o200k_base": 18,
+        "cl100k_base": 17
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "discover-guide-output",
+      "artifact": "0008-session-official-mcp-discover-guide-output.txt",
+      "bytes": 13520,
+      "sha256": "e42afdb449f80246b73f077f8125b583e013b3fc752dcd152cbdcf4202baa9bb",
+      "tokens": {
+        "o200k_base": 2954,
+        "cl100k_base": 2930
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "space-instructions-input",
+      "artifact": "0009-session-official-mcp-space-instructions-input.txt",
+      "bytes": 161,
+      "sha256": "38028729fe75918c4bfac02b6e30df4a0460980bfea81d4b062095e41d94164f",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "space-instructions-output",
+      "artifact": "0010-session-official-mcp-space-instructions-output.txt",
+      "bytes": 572,
+      "sha256": "8e3f7e00189464d961cdb0e3000324d8f8b2ad487c4d7df43e5408e18759f919",
+      "tokens": {
+        "o200k_base": 149,
+        "cl100k_base": 143
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "format-guide-input",
+      "artifact": "0011-session-official-mcp-format-guide-input.txt",
+      "bytes": 175,
+      "sha256": "c0798fa6116684181f5fc07443a5d617d731a591adf8f9ffeeefffafe9fd7b39",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 42
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "format-guide-output",
+      "artifact": "0012-session-official-mcp-format-guide-output.txt",
+      "bytes": 39112,
+      "sha256": "7c88db18c371373d877619f2acbd8d45d81d2eee5c9965caf087b85de4e1f0ab",
+      "tokens": {
+        "o200k_base": 9878,
+        "cl100k_base": 9857
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "phase": "read-input",
+      "artifact": "0013-table-code-tasks-cfwiki-apply-read-input.txt",
+      "bytes": 106,
+      "sha256": "b4b4b084a75d66efecfbf4a8dc5d8f5d157844df6d87a89ba6a58c8dc8689361",
+      "tokens": {
+        "o200k_base": 34,
+        "cl100k_base": 33
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "phase": "read-output",
+      "artifact": "0014-table-code-tasks-cfwiki-apply-read-output.txt",
+      "bytes": 1085,
+      "sha256": "a502073bb6adaa10ff582d747907457c5ea0972b36e98403650a503ab14c638e",
+      "tokens": {
+        "o200k_base": 376,
+        "cl100k_base": 398
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "phase": "local-edit",
+      "artifact": "0015-table-code-tasks-cfwiki-apply-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "phase": "write-input",
+      "artifact": "0016-table-code-tasks-cfwiki-apply-write-input.txt",
+      "bytes": 416,
+      "sha256": "73c07fb6947e72418fff6f6b4188aa8b66ee69d6d56128b648ef177d7dc37bd8",
+      "tokens": {
+        "o200k_base": 118,
+        "cl100k_base": 116
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "phase": "write-output",
+      "artifact": "0017-table-code-tasks-cfwiki-apply-write-output.txt",
+      "bytes": 322,
+      "sha256": "431cb783dd95db0981ed9b6e7be2592e97a4e0cb96eadaadb17626bf3caa8959",
+      "tokens": {
+        "o200k_base": 102,
+        "cl100k_base": 100
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "phase": "read-input",
+      "artifact": "0018-rich-panel-toc-cfwiki-apply-read-input.txt",
+      "bytes": 106,
+      "sha256": "ccab1ed824fb4c7ffffc5a1d78a5b1bc57e1d9f6720e6d7861ce533855683b88",
+      "tokens": {
+        "o200k_base": 34,
+        "cl100k_base": 33
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "phase": "read-output",
+      "artifact": "0019-rich-panel-toc-cfwiki-apply-read-output.txt",
+      "bytes": 1707,
+      "sha256": "48512bf77ad9b775638524106ca6c9c57884ab7ea941d5ba971c1682ac89c4aa",
+      "tokens": {
+        "o200k_base": 583,
+        "cl100k_base": 602
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "phase": "local-edit",
+      "artifact": "0020-rich-panel-toc-cfwiki-apply-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "phase": "write-input",
+      "artifact": "0021-rich-panel-toc-cfwiki-apply-write-input.txt",
+      "bytes": 412,
+      "sha256": "9fee0e3daf3b2156f46c7a571bb1b1710dddc04b5e9b1f96cfe5791f971a1051",
+      "tokens": {
+        "o200k_base": 120,
+        "cl100k_base": 118
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "phase": "write-output",
+      "artifact": "0022-rich-panel-toc-cfwiki-apply-write-output.txt",
+      "bytes": 494,
+      "sha256": "e91430566250b2c749463fec48d2ccd4e79071370f3e3e785841bb7777190612",
+      "tokens": {
+        "o200k_base": 136,
+        "cl100k_base": 138
+      }
+    }
+  ],
+  "errors": [],
+  "createdPages": [
+    {
+      "key": "table-code-tasks:cfwiki-apply",
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "title": "cfwiki benchmark 2026-10-15T13-04-47-9df5ae table-code-tasks cfwiki-apply",
+      "pending": false,
+      "id": "6619915",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "rich-panel-toc:cfwiki-apply",
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "title": "cfwiki benchmark 2026-10-15T13-04-47-9df5ae rich-panel-toc cfwiki-apply",
+      "pending": false,
+      "id": "6619936",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    }
+  ]
+}

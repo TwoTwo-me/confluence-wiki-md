@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { forgeStorage } from './forge.mjs';
+import { richMacroName, richMacroBody } from './markdown-macros.mjs';
 
 const engines = { mermaid: 'mermaid', uml: 'plantuml', plantuml: 'plantuml' };
 const xml = (value) => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
@@ -12,9 +13,15 @@ export const diagramKey = (language, code) => createHash('sha256').update(langua
 export const diagramSource = (block) => block.engine === 'plantuml' && !/^\s*@start\w+/m.test(block.code) ? '@startuml\n' + block.code + '\n@enduml\n' : block.code;
 
 export function diagramBlocks(markdown, lineOffset = 0) {
-  return new MarkdownIt().use(footnote).parse(markdown, {}).filter((token) => token.type === 'fence' && Object.hasOwn(engines, token.info.trim().split(/\s+/)[0].toLowerCase())).map((token) => {
+  return new MarkdownIt().use(footnote).parse(markdown, {}).flatMap((token) => {
+    if (token.type !== 'fence') return [];
     const language = token.info.trim().split(/\s+/)[0].toLowerCase();
-    return { language, engine: engines[language], code: token.content, line: (token.map?.[0] ?? 0) + lineOffset + 1, key: diagramKey(language, token.content) };
+    const line = (token.map?.[0] ?? 0) + lineOffset + 1;
+    if (richMacroName(token.info)) {
+      const { body, bodyLineOffset } = richMacroBody(token.content);
+      return diagramBlocks(body, line + bodyLineOffset);
+    }
+    return Object.hasOwn(engines, language) ? [{ language, engine: engines[language], code: token.content, line, key: diagramKey(language, token.content) }] : [];
   });
 }
 

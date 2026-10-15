@@ -1,7 +1,7 @@
 {
   "name": "@twotwo-me/confluence-wiki-md",
-  "version": "0.3.0",
-  "description": "Read and edit Confluence Cloud and Data Center wiki pages as Markdown with OKF front matter.",
+  "version": "0.4.0",
+  "description": "Download, edit, and safely sync Confluence Cloud and Data Center pages as Markdown.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/TwoTwo-me/confluence-wiki-md.git"
@@ -13,17 +13,21 @@
     "markdown",
     "wiki",
     "cli",
-    "okf"
+    "agent-skills"
   ],
   "publishConfig": {
     "access": "public",
-    "registry": "https://npm.pkg.github.com/"
+    "registry": "https://registry.npmjs.org/"
   },
   "files": [
     "scripts/confluence.mjs",
+    "scripts/skill.mjs",
     "src/*.mjs",
-    "skills/confluence-wiki/SKILL.md",
+    "skills/confluence-wiki/**/*.md",
     "skills/confluence-wiki/agents/openai.yaml",
+    "docs/installation.md",
+    "docs/token-benchmark.md",
+    "docs/benchmarks/*.json",
     "examples/*.md",
     "examples/*.yaml",
     "examples/sample.svg",
@@ -33,7 +37,8 @@
   ],
   "type": "module",
   "bin": {
-    "cfwiki": "scripts/confluence.mjs"
+    "cfwiki": "scripts/confluence.mjs",
+    "cfwiki-skill": "scripts/skill.mjs"
   },
   "engines": {
     "node": ">=24"
@@ -45,6 +50,7 @@
     "test": "node --test test/*.test.mjs",
     "test:package": "node checks/package-install.mjs",
     "test:registry": "node checks/registry-install.mjs",
+    "test:release": "node checks/release-install.mjs",
     "test:live": "node scripts/live-check.mjs",
     "test:diagrams": "node --test checks/diagram-engines.mjs"
   },

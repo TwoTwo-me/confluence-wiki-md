@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-15",
+  "deployment": "cloud",
+  "result": "passed",
+  "testParentId": "6619137",
+  "createdPages": {
+    "root": "6586372",
+    "child": "6651905",
+    "index": "6651925",
+    "log": "6651945"
+  },
+  "verified": [
+    "default download creates ID/title.md",
+    "recursive download includes root, children and grandchild",
+    "subtree export includes root",
+    "one page Markdown per numeric folder",
+    "index.md and log.md pages are searchable and pushed",
+    "parent/child relative links retain anchors after push",
+    "attachment bytes match source SVG",
+    "attachment names do not grow or duplicate during push",
+    "compact metadata body baseline reports unchanged",
+    "bundle update is visible in live storage",
+    "stale version upload is rejected"
+  ],
+  "counts": {
+    "pages": 4,
+    "markdownFiles": 4,
+    "localSearchResults": 4
+  },
+  "commands": [
+    "cfwiki download ROOT_ID --env \"$PROFILE\"",
+    "cfwiki download ROOT_ID --recursive -o OUTPUT --assets --env \"$PROFILE\"",
+    "cfwiki export OUTPUT --parent ROOT_ID --assets --env \"$PROFILE\"",
+    "cfwiki search \"Live page tree\" --local OUTPUT --json",
+    "cfwiki push OUTPUT --template none --env \"$PROFILE\""
+  ],
+  "limitations": [
+    "Confluence Cloud verified; real Data Center server was not available.",
+    "Test pages retained under the existing dedicated test root."
+  ]
+}

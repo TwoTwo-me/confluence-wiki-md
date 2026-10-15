@@ -10,7 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readWikiConfig, ConfluenceApi } from '../src/api.mjs';
 import { parseDocument, formatDocument } from '../src/document.mjs';
-import { upload, download } from '../src/wiki.mjs';
+import { upload, download, downloadTree } from '../src/wiki.mjs';
 
 const entry = process.env.CFWIKI_TEST_ENTRY ?? fileURLToPath(new URL('../scripts/confluence.mjs', import.meta.url));
 const bodyDigest = (body) => 'sha256:' + createHash('sha256').update(body.replaceAll('\r\n', '\n')).digest('hex');
@@ -287,6 +287,29 @@ test('a downloaded attachment URL updates its native attachment without preserve
   assert.deepEqual(preview.attachments, []);
 });
 
+test('downloaded local assets keep native filenames and Markdown attachment links across upload', async (t) => {
+  const f = await serverFixture(t);
+  const created = await upload(f.api, '---\ntitle: Asset bundle\n---\nAssets');
+  const id = created.metadata.confluence.id;
+  const page = f.pages.get(id);
+  page.body.storage.value = '<ac:image><ri:attachment ri:filename="photo.svg"/></ac:image><ac:image><ri:attachment ri:filename="unsafe:name.svg"/></ac:image><ac:link><ri:attachment ri:filename="notes.md"/></ac:link>';
+  page.version.number++;
+  f.api.attachments = async () => [{ id: 'att91', title: 'photo.svg' }, { id: 'att92', title: 'unsafe:name.svg' }, { id: 'att93', title: 'notes.md' }];
+  f.api.downloadAttachment = async () => Buffer.from('<svg/>');
+  const uploaded = [];
+  f.api.uploadAttachment = async (_id, name) => { uploaded.push(name); };
+  const directory = path.join(f.directory, 'assets-tree');
+  const downloaded = await downloadTree(f.api, id, directory, { assets: true });
+  const filename = downloaded.files[0];
+  await upload(f.api, await readFile(filename, 'utf8'), { filename, root: directory });
+  const saved = f.pages.get(id).body.storage.value;
+  assert.deepEqual(uploaded.sort(), ['photo.svg', 'unsafe:name.svg']);
+  assert.match(saved, /ri:filename="photo.svg"/);
+  assert.match(saved, /ri:filename="unsafe:name.svg"/);
+  assert.match(saved, new RegExp('/download/attachments/' + id + '/notes.md'));
+  assert.doesNotMatch(saved, /href="\.\//);
+});
+
 test('a portable TOC receives a server preview without an active template', async (t) => {
   const f = await serverFixture(t);
   await upload(f.api, '---\ntitle: Portable TOC\n---\n```confluence-toc\nmaxLevel: 3\n```\n\n## Body');
@@ -369,6 +392,11 @@ async function serverFixture(t) {
       return send(200, { results: labels.get(id) ?? [] });
     }
     if (suffix === '/child/attachment') return send(200, { results: [] });
+    if (suffix === '/child/page') {
+      const children = [...pages.values()].filter((candidate) => String(candidate.ancestors?.at(-1)?.id ?? candidate.parentId ?? '') === id);
+      const start = Number(url.searchParams.get('start') ?? 0);
+      return send(200, { results: children.slice(start, start + 1), _links: start + 1 < children.length ? { next: '/confluence/rest/api/content/' + id + '/child/page?start=' + (start + 1) } : {} });
+    }
     return send(404, {});
   });
   t.after(async () => {
@@ -557,7 +585,7 @@ test('a downloaded document cannot redirect authenticated writes to another API 
   assert.equal(fixture.requests.length, 0);
 });
 
-test('bundle push resolves cyclic Markdown links and export paginates into a portable OKF index', async (t) => {
+test('bundle push resolves cyclic Markdown links and export paginates into title files in ID folders', async (t) => {
   const fixture = await serverFixture(t);
   const directory = path.join(fixture.directory, 'bundle');
   await mkdir(directory);
@@ -570,12 +598,56 @@ test('bundle push resolves cyclic Markdown links and export paginates into a por
   assert.ok(fixture.pages.get(a.metadata.confluence.id).body.storage.value.includes('pageId=' + b.metadata.confluence.id));
   const exported = await fixture.cli('export', 'exported');
   assert.equal(exported.code, 0, exported.stderr);
-  const index = await readFile(path.join(fixture.directory, 'exported/index.md'), 'utf8');
-  assert.match(index, /okf_version: "0.2"/);
-  assert.ok(index.includes('pages/' + a.metadata.confluence.id + '.md'));
+  const manifest = JSON.parse(await readFile(path.join(fixture.directory, 'exported/cfwiki-manifest.json'), 'utf8'));
+  assert.equal(manifest.format, 'id-title-tree');
+  assert.ok(manifest.pages.some((page) => page.file === a.metadata.confluence.id + '/A.md'));
+  const exportedA = parseDocument(await readFile(path.join(fixture.directory, 'exported', a.metadata.confluence.id, 'A.md'), 'utf8'));
+  assert.match(exportedA.body, new RegExp('\\.\\./' + b.metadata.confluence.id + '/B\\.md'));
   const local = await fixture.cli('search', 'Related', '--local', 'exported');
   assert.equal(local.code, 0, local.stderr);
   assert.match(local.stdout, /Local wiki search/);
+});
+
+test('download defaults to an ID/title file and recursive download includes its complete paginated subtree', async (t) => {
+  const f = await serverFixture(t);
+  const root = await upload(f.api, '---\ntitle: 안녕\n---\nRoot');
+  const rootId = root.metadata.confluence.id;
+  const child = await upload(f.api, '---\ntitle: 어서와\n---\nChild', { parent: rootId });
+  const childId = child.metadata.confluence.id;
+  const grandchild = await upload(f.api, '---\ntitle: Nested\n---\nGrandchild', { parent: childId });
+  await upload(f.api, '---\ntitle: Sibling\n---\nSibling', { parent: rootId });
+  const single = await f.cli('download', rootId);
+  assert.equal(single.code, 0, single.stderr);
+  assert.match(await readFile(path.join(f.directory, rootId, '안녕.md'), 'utf8'), /Root/);
+  const recursive = await f.cli('download', rootId, '-r', '-o', 'tree', '--json');
+  assert.equal(recursive.code, 0, recursive.stderr);
+  assert.equal(JSON.parse(recursive.stdout).pages, 4);
+  assert.match(await readFile(path.join(f.directory, 'tree', rootId, childId, grandchild.metadata.confluence.id, 'Nested.md'), 'utf8'), /Grandchild/);
+  assert.ok(f.requests.some((request) => request.path.endsWith('/' + rootId + '/child/page') && request.query.includes('start=1')));
+  const subtree = await f.cli('export', 'subtree', '--parent', childId, '--json');
+  assert.equal(subtree.code, 0, subtree.stderr);
+  assert.equal(JSON.parse(subtree.stdout).pages, 2);
+  assert.match(await readFile(path.join(f.directory, 'subtree', childId, '어서와.md'), 'utf8'), /Child/);
+});
+
+test('successful uploads keep tree metadata compact and refresh safe title-move tracking', async (t) => {
+  const f = await serverFixture(t);
+  const created = await upload(f.api, '---\ntitle: Before rename\n---\nOriginal');
+  const id = created.metadata.confluence.id;
+  assert.equal((await f.cli('download', id, '-o', 'tree')).code, 0);
+  const file = path.join(f.directory, 'tree', id, 'Before rename.md');
+  const doc = parseDocument(await readFile(file, 'utf8'));
+  doc.body += '\nPublished edit\n';
+  await writeFile(file, formatDocument(doc, { compact: true }));
+  const updated = await f.cli('upload', file, '--title', 'After rename');
+  assert.equal(updated.code, 0, updated.stderr);
+  assert.doesNotMatch(await readFile(file, 'utf8'), /^type: Reference$/m);
+  const manifest = JSON.parse(await readFile(path.join(f.directory, 'tree/cfwiki-manifest.json'), 'utf8'));
+  assert.equal(manifest.pages[0].version, parseDocument(updated.stdout).metadata.confluence.version);
+  const moved = await f.cli('download', id, '-o', 'tree', '--overwrite');
+  assert.equal(moved.code, 0, moved.stderr);
+  assert.match(await readFile(path.join(f.directory, 'tree', id, 'After rename.md'), 'utf8'), /Published edit/);
+  await assert.rejects(readFile(file), { code: 'ENOENT' });
 });
 
 test('download refuses to overwrite a local document without an explicit flag', async (t) => {

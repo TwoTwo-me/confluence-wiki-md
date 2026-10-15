@@ -365,6 +365,108 @@ const assertNoWrite = (f, before) => {
 };
 
 for (const deployment of ['cloud', 'datacenter']) {
+  if (deployment === 'cloud') for (const mode of [null, 'lost-response', 'lost-before-commit']) {
+    test('Cloud apply preassigns generated macro IDs and reuses them after uncertain responses: ' + mode, async (t) => {
+      const code = '<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">javascript</ac:parameter><ac:plain-text-body><![CDATA[const safe = true;\n]]></ac:plain-text-body></ac:structured-macro>';
+      const toc = '<ac:structured-macro ac:name="toc"><ac:parameter ac:name="maxLevel">3</ac:parameter></ac:structured-macro>';
+      const panel = '<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">Release</ac:parameter><ac:rich-text-body><p>Preserve panel content</p></ac:rich-text-body></ac:structured-macro>';
+      const opaque = "<ac:structured-macro ac:name='cfwiki-unknown'><ac:parameter ac:name='key'>DOC-&#49;</ac:parameter><ac:rich-text-body><ac:structured-macro ac:name='code'><ac:plain-text-body><![CDATA[opaque <code>]]></ac:plain-text-body></ac:structured-macro></ac:rich-text-body></ac:structured-macro>";
+      const storage = baseStorage + code + toc + panel + opaque;
+      const f = await serverFixture(t, deployment, { storage, current: storage, version: 1, baselineVersion: 1 });
+      f.api.previewStorage = async () => ({ verified: true });
+      f.state.mode = mode;
+      let serverAddedIds = 0;
+      f.state.normalizeStorage = (value) => value.replace(/<ac:structured-macro\b([^>]*\bac:name="(?:code|toc|panel)"[^>]*)>/g, (opening, attributes) => {
+        if (/\bac:macro-id=/.test(attributes)) return opening;
+        serverAddedIds++;
+        return opening.slice(0, -1) + ' ac:macro-id="server-added-id">';
+      });
+      const base = await download(f.api, '42');
+      const draft = structuredClone(base);
+      draft.body = draft.body.replace('First original', 'First local');
+      const result = await f.invoke(base, draft);
+      assert.equal(result.status, 'success', JSON.stringify(result));
+      assert.equal(serverAddedIds, 0);
+      const sent = puts(f).map((request) => request.body);
+      assert.equal(sent.length, mode === 'lost-before-commit' ? 2 : 1);
+      if (sent.length === 2) assert.deepEqual(sent[0], sent[1]);
+      const $ = loadStorageXml(sent[0].body.value);
+      const generated = $('ac\\:structured-macro').toArray().filter((node) => ['code', 'toc', 'panel'].includes($(node).attr('ac:name')) && !$(node).parents('ac\\:structured-macro[ac\\:name="cfwiki-unknown"]').length);
+      assert.equal(generated.length, 3);
+      const ids = generated.map((node) => $(node).attr('ac:macro-id'));
+      for (const id of ids) assert.match(id, /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);
+      assert.equal(new Set(ids).size, ids.length);
+      assert.ok(sent[0].body.value.includes(opaque));
+      assert.ok(f.state.page.body.storage.value.includes(opaque));
+      assert.match(f.state.page.body.storage.value, /First local/);
+    });
+  }
+
+  test('default minimal downloads apply editable code, images and panels while keeping unknown native bytes - ' + deployment, async (t) => {
+    const originalNative = "<ac:structured-macro ac:name='jira' ac:macro-id='raw'><ac:parameter ac:name='key'>DOC-&#49;</ac:parameter></ac:structured-macro>";
+    const code = '<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">javascript</ac:parameter><ac:plain-text-body><![CDATA[const before = true;\n]]></ac:plain-text-body></ac:structured-macro>';
+    const image = '<ac:image ac:alt="Chart"><ri:url ri:value="https://example.com/chart.png"/></ac:image>';
+    const panel = '<ac:structured-macro ac:name="info"><ac:parameter ac:name="title">Keep panel title</ac:parameter><ac:rich-text-body><p>Panel original</p></ac:rich-text-body></ac:structured-macro>';
+    const storage = baseStorage + originalNative + code + image + panel;
+    const f = await serverFixture(t, deployment, { storage, current: storage, version: 1, baselineVersion: 1 });
+    assert.equal((await f.cli('download', '42', '--output', f.files[0])).code, 0);
+    const base = parseDocument(await readFile(f.files[0], 'utf8'));
+    assert.deepEqual(base.metadata.confluence.preserved.map((item) => item.storage), [originalNative]);
+    const draft = structuredClone(base);
+    draft.body = draft.body.replace('First original', 'First local').replace('const before', 'const after').replace('Panel original', 'Panel updated');
+    const result = await f.invoke(base, draft);
+    assert.equal(result.status, 'success', JSON.stringify(result));
+    assert.equal(puts(f).length, 1);
+    const output = f.state.page.body.storage.value;
+    assert.equal(output.split(originalNative).length - 1, 1);
+    assert.match(output, /const after = true/);
+    assert.match(output, /Panel updated/);
+    assert.match(output, /Keep panel title/);
+    assert.match(output, /https:\/\/example.com\/chart.png/);
+    assert.match(output, /First local/);
+  });
+
+  test('minimal apply handles native task numbering, TOC, panels and opaque status from the live corpus - ' + deployment, async (t) => {
+    const tasks = '<ac:task-list><ac:task><ac:task-id>1</ac:task-id><ac:task-status>complete</ac:task-status><ac:task-body>원본 백업</ac:task-body></ac:task><ac:task><ac:task-id>2</ac:task-id><ac:task-status>incomplete</ac:task-status><ac:task-body>최종 승인</ac:task-body></ac:task></ac:task-list>';
+    const toc = '<ac:structured-macro ac:name="toc" ac:macro-id="toc-id"><ac:parameter ac:name="maxLevel">3</ac:parameter></ac:structured-macro>';
+    const panel = '<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">릴리스 안내</ac:parameter><ac:rich-text-body><p>내용 보존</p></ac:rich-text-body></ac:structured-macro>';
+    const status = '<ac:structured-macro ac:name="status"><ac:parameter ac:name="title">진행 중</ac:parameter><ac:parameter ac:name="colour">Blue</ac:parameter></ac:structured-macro>';
+    const storage = baseStorage + tasks + toc + panel + '<p>진행 상태: ' + status + '</p>';
+    const f = await serverFixture(t, deployment, { storage, current: storage, version: 1, baselineVersion: 1 });
+    let previews = 0;
+    f.api.previewStorage = async (value) => { previews++; assert.ok(value.includes(status)); return { verified: true }; };
+    const base = await download(f.api, '42');
+    assert.deepEqual(base.metadata.confluence.preserved.map((item) => item.storage), [status]);
+    const draft = structuredClone(base);
+    draft.body = draft.body.replace('First original', 'First local');
+    const result = await f.invoke(base, draft);
+    assert.equal(result.status, 'success', JSON.stringify(result));
+    assert.equal(puts(f).length, 1);
+    assert.equal(previews, 1);
+    const $ = loadStorageXml(f.state.page.body.storage.value);
+    assert.deepEqual($('ac\\:task-status').toArray().map((node) => $(node).text()), ['complete', 'incomplete']);
+    assert.deepEqual($('ac\\:task-body').toArray().map((node) => $(node).text().trim()), ['원본 백업', '최종 승인']);
+    assert.ok(f.state.page.body.storage.value.includes(status));
+    assert.match(f.state.page.body.storage.value, /ac:name="maxLevel">3/);
+  });
+
+  for (const loss of ['unknown', 'custom-code', 'rich-text-cdata']) {
+    test('minimal apply refuses omitted opaque or lossy native content: ' + loss + ' - ' + deployment, async (t) => {
+      const code = '<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">javascript</ac:parameter><ac:plain-text-body><![CDATA[const safe = true;\n]]></ac:plain-text-body></ac:structured-macro>';
+      const sensitive = loss === 'unknown' ? native : loss === 'custom-code' ? '<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:parameter ac:name="title">Keep custom title</ac:parameter><ac:plain-text-body><![CDATA[{}\n]]></ac:plain-text-body></ac:structured-macro>' : '<ac:structured-macro ac:name="info"><ac:rich-text-body><p><![CDATA[Do not lose this text]]></p></ac:rich-text-body></ac:structured-macro>';
+      const storage = baseStorage + code + sensitive;
+      const f = await serverFixture(t, deployment, { storage, current: storage, version: 1, baselineVersion: 1 });
+      const base = await download(f.api, '42');
+      base.metadata.confluence.preserved = [];
+      const draft = structuredClone(base);
+      draft.body = draft.body.replace('First original', 'First local');
+      const before = structuredClone(f.state.page);
+      const result = await f.invoke(base, draft);
+      assert.equal(result.status, 'conflict', JSON.stringify(result));
+      assertNoWrite(f, before);
+    });
+  }
+
   for (const lost of [false, true]) {
     test('CLI layout preserves minimal and all baselines through apply: response lost ' + lost + ' - ' + deployment, { timeout: 15000 }, async (t) => {
       const fragment = "<ac:structured-macro ac:name='jira' ac:macro-id='raw'><ac:parameter ac:name='key'>DOC-&#49;</ac:parameter></ac:structured-macro>";

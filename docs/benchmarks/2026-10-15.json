@@ -1,0 +1,4116 @@
+{
+  "schema": 1,
+  "measuredAt": "2026-10-15T13:05:42.243Z",
+  "runId": "2026-10-15T12-57-21-40bd4e",
+  "environment": {
+    "node": "v24.18.0",
+    "packageVersion": "0.4.0",
+    "tokenizer": "tiktoken 0.12.0",
+    "encodings": [
+      "o200k_base",
+      "cl100k_base"
+    ],
+    "mcpEndpoint": "https://mcp.atlassian.com/v2/mcp",
+    "mcpReady": true
+  },
+  "methodology": {
+    "scope": "Exact tokenizer counts of captured synthetic document reads, serialized update inputs, and command outputs; not provider-billed session usage.",
+    "auth": "Authorization headers/config and API tokens excluded. No model API calls were made.",
+    "creation": "Each method creates a fresh child under the explicit confirmed test parent; setup creation excluded from read/edit workflow totals.",
+    "filtering": "curl filtered variants use actual read/update responses projected to required fields. Local-patch variants count a small literal replacement instead of returning full local file content to the model.",
+    "safety": "Content verification compares visible text in order, macro names/parameters, links, task states, table-cell counts, and code text after an independent REST re-read. Generated task IDs, inter-block layout whitespace, one final code newline, javascript/js language aliases, and a panel title moved into visible body are accepted normalizations and are not byte equality. It is not complete visual fidelity verification.",
+    "overhead": "Session tool schemas and authoring prerequisites are recorded separately; wire/result envelopes are marked wireOnly and excluded from scenario totals.",
+    "limitations": [
+      "CLI local-patch and filtered curl local-patch use local file manipulation; any coding agent can implement equivalent local preprocessing.",
+      "Tool call scaffolding, hidden reasoning, cache hits, history replay, client context injection and billing are not measured.",
+      "Failed or lossy methods must not be compared as successful token savings.",
+      "MCP Markdown replacement on rich native content is an explicit stress case; the official format guide recommends HTML for such edits."
+    ]
+  },
+  "corpus": [
+    {
+      "id": "korean-prose",
+      "title": "한글 운영 문서",
+      "storageBytes": 3862,
+      "sha256": "9d0cf61c4b7174c1ce668026db90b9142d8f4b688838b5537aa30e3a5868212d"
+    },
+    {
+      "id": "table-code-tasks",
+      "title": "표 코드 체크리스트",
+      "storageBytes": 819,
+      "sha256": "33385824f32d378553e38f782a93d8f7755fa6a9772e20c25cede6b4f7d14beb"
+    },
+    {
+      "id": "rich-panel-toc",
+      "title": "패널 목차 접기 상태",
+      "storageBytes": 798,
+      "sha256": "6370cc0cec719298981c65e2691d0630319421eb08f8c016091bc83025852cb0"
+    },
+    {
+      "id": "opaque-macro",
+      "title": "알 수 없는 앱 매크로 보존",
+      "storageBytes": 481,
+      "sha256": "6c8d8758f463d7df1cd0b44f4eb6800a356fbd94e4b51659ef2cb64a7debe4c5"
+    },
+    {
+      "id": "links-lists-quote",
+      "title": "링크 인용 중첩 목록",
+      "storageBytes": 472,
+      "sha256": "c642e5090c68dccc0e080327cd20948b4ee728aeccee02aefbf7f6dd142d0366"
+    },
+    {
+      "id": "long-reference",
+      "title": "긴 참조 문서의 한 줄 수정",
+      "storageBytes": 15247,
+      "sha256": "fa8e02d63f0ee9c134235d155c881525a720691a5a54956acdbbf1a1b6a4174c"
+    }
+  ],
+  "results": [
+    {
+      "corpus": "korean-prose",
+      "method": "curl",
+      "id": "6619605",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "cfwiki-upload",
+      "id": "6619625",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "cfwiki-apply",
+      "id": "6619654",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-markdown",
+      "id": "6717708",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-html",
+      "id": "6619681",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-edits",
+      "id": "6717731",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "curl",
+      "id": "6652236",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-upload",
+      "id": "6652257",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-markdown",
+      "id": "6717790",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-html",
+      "id": "6586651",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": [
+          "code language javascript/js"
+        ]
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-edits",
+      "id": "6717823",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": [
+          "code language javascript/js"
+        ]
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "curl",
+      "id": "6619714",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-upload",
+      "id": "6717844",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-markdown",
+      "id": "6717886",
+      "status": "refused",
+      "verification": {
+        "passed": false,
+        "failures": [
+          "write-refused"
+        ],
+        "normalizations": []
+      },
+      "reason": "validation_failed",
+      "message": "Markdown body replacement would cause data loss. The existing content contains elements that cannot be represented in markdown: confluence macro (toc), confluence macro (panel), confluence macro (expand). Use 'edits' for targeted changes or 'html' format for full replacement.",
+      "originalContentRetained": true
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-html",
+      "id": "6717907",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": [
+          "panel title moved into visible body"
+        ]
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-edits",
+      "id": "6717928",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": [
+          "panel title moved into visible body"
+        ]
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "curl",
+      "id": "6652300",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "cfwiki-upload",
+      "id": "6619755",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "cfwiki-apply",
+      "id": "6619776",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-markdown",
+      "id": "6717961",
+      "status": "refused",
+      "verification": {
+        "passed": false,
+        "failures": [
+          "write-refused"
+        ],
+        "normalizations": []
+      },
+      "reason": "validation_failed",
+      "message": "Markdown body replacement would cause data loss. The existing content contains elements that cannot be represented in markdown: confluence macro (cfwiki-benchmark-unknown). Use 'edits' for targeted changes or 'html' format for full replacement.",
+      "originalContentRetained": true
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-html",
+      "id": "6586713",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-edits",
+      "id": "6652330",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "curl",
+      "id": "6586744",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "cfwiki-upload",
+      "id": "6717992",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "cfwiki-apply",
+      "id": "6619816",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-markdown",
+      "id": "6652353",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-html",
+      "id": "6586773",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-edits",
+      "id": "6619838",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "curl",
+      "id": "6619867",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "cfwiki-upload",
+      "id": "6619887",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "cfwiki-apply",
+      "id": "6718033",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-markdown",
+      "id": "6718053",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-html",
+      "id": "6586805",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-edits",
+      "id": "6652389",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "id": "6619915",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      },
+      "sourceRun": "2026-10-15T13-04-47-9df5ae"
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "id": "6619936",
+      "status": "saved",
+      "verification": {
+        "passed": true,
+        "failures": [],
+        "normalizations": []
+      },
+      "sourceRun": "2026-10-15T13-04-47-9df5ae"
+    }
+  ],
+  "scenarios": [
+    {
+      "corpus": "korean-prose",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "raw-full-body",
+      "tokens": {
+        "o200k_base": 4029,
+        "cl100k_base": 5201
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "filtered-full-body",
+      "tokens": {
+        "o200k_base": 2323,
+        "cl100k_base": 3120
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "filtered-local-patch",
+      "tokens": {
+        "o200k_base": 1211,
+        "cl100k_base": 1611
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "cfwiki-upload",
+      "preservationPassed": true,
+      "variant": "full-body",
+      "tokens": {
+        "o200k_base": 3548,
+        "cl100k_base": 4809
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "cfwiki-apply",
+      "preservationPassed": true,
+      "variant": "local-or-granular-patch",
+      "tokens": {
+        "o200k_base": 1457,
+        "cl100k_base": 1874
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-markdown",
+      "preservationPassed": true,
+      "variant": "full-body",
+      "tokens": {
+        "o200k_base": 2320,
+        "cl100k_base": 3159
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-html",
+      "preservationPassed": true,
+      "variant": "full-body",
+      "tokens": {
+        "o200k_base": 3975,
+        "cl100k_base": 4757
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-edits",
+      "preservationPassed": true,
+      "variant": "local-or-granular-patch",
+      "tokens": {
+        "o200k_base": 2218,
+        "cl100k_base": 2605
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "raw-full-body",
+      "tokens": {
+        "o200k_base": 1758,
+        "cl100k_base": 1790
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "filtered-full-body",
+      "tokens": {
+        "o200k_base": 809,
+        "cl100k_base": 846
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "filtered-local-patch",
+      "tokens": {
+        "o200k_base": 454,
+        "cl100k_base": 474
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-upload",
+      "preservationPassed": true,
+      "variant": "full-body",
+      "tokens": {
+        "o200k_base": 1141,
+        "cl100k_base": 1207
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-markdown",
+      "preservationPassed": true,
+      "variant": "full-body",
+      "tokens": {
+        "o200k_base": 631,
+        "cl100k_base": 672
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-html",
+      "preservationPassed": true,
+      "variant": "full-body",
+      "tokens": {
+        "o200k_base": 2312,
+        "cl100k_base": 2342
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-edits",
+      "preservationPassed": true,
+      "variant": "local-or-granular-patch",
+      "tokens": {
+        "o200k_base": 1406,
+        "cl100k_base": 1418
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "raw-full-body",
+      "tokens": {
+        "o200k_base": 1923,
+        "cl100k_base": 1972
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "filtered-full-body",
+      "tokens": {
+        "o200k_base": 919,
+        "cl100k_base": 966
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "filtered-local-patch",
+      "tokens": {
+        "o200k_base": 509,
+        "cl100k_base": 534
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-upload",
+      "preservationPassed": true,
+      "variant": "full-body",
+      "tokens": {
+        "o200k_base": 1747,
+        "cl100k_base": 1803
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-html",
+      "preservationPassed": true,
+      "variant": "full-body",
+      "tokens": {
+        "o200k_base": 1608,
+        "cl100k_base": 1638
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-edits",
+      "preservationPassed": true,
+      "variant": "local-or-granular-patch",
+      "tokens": {
+        "o200k_base": 1079,
+        "cl100k_base": 1090
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "raw-full-body",
+      "tokens": {
+        "o200k_base": 1348,
+        "cl100k_base": 1377
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "filtered-full-body",
+      "tokens": {
+        "o200k_base": 537,
+        "cl100k_base": 572
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "filtered-local-patch",
+      "tokens": {
+        "o200k_base": 318,
+        "cl100k_base": 337
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "cfwiki-upload",
+      "preservationPassed": true,
+      "variant": "full-body",
+      "tokens": {
+        "o200k_base": 1812,
+        "cl100k_base": 1859
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "cfwiki-apply",
+      "preservationPassed": true,
+      "variant": "local-or-granular-patch",
+      "tokens": {
+        "o200k_base": 909,
+        "cl100k_base": 922
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-html",
+      "preservationPassed": true,
+      "variant": "full-body",
+      "tokens": {
+        "o200k_base": 1585,
+        "cl100k_base": 1601
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-edits",
+      "preservationPassed": true,
+      "variant": "local-or-granular-patch",
+      "tokens": {
+        "o200k_base": 1058,
+        "cl100k_base": 1064
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "raw-full-body",
+      "tokens": {
+        "o200k_base": 1277,
+        "cl100k_base": 1337
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "filtered-full-body",
+      "tokens": {
+        "o200k_base": 487,
+        "cl100k_base": 544
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "filtered-local-patch",
+      "tokens": {
+        "o200k_base": 293,
+        "cl100k_base": 323
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "cfwiki-upload",
+      "preservationPassed": true,
+      "variant": "full-body",
+      "tokens": {
+        "o200k_base": 1188,
+        "cl100k_base": 1260
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "cfwiki-apply",
+      "preservationPassed": true,
+      "variant": "local-or-granular-patch",
+      "tokens": {
+        "o200k_base": 671,
+        "cl100k_base": 691
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-markdown",
+      "preservationPassed": true,
+      "variant": "full-body",
+      "tokens": {
+        "o200k_base": 642,
+        "cl100k_base": 690
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-html",
+      "preservationPassed": true,
+      "variant": "full-body",
+      "tokens": {
+        "o200k_base": 1625,
+        "cl100k_base": 1668
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-edits",
+      "preservationPassed": true,
+      "variant": "local-or-granular-patch",
+      "tokens": {
+        "o200k_base": 1080,
+        "cl100k_base": 1095
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "raw-full-body",
+      "tokens": {
+        "o200k_base": 13528,
+        "cl100k_base": 18263
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "filtered-full-body",
+      "tokens": {
+        "o200k_base": 8657,
+        "cl100k_base": 11828
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "curl",
+      "preservationPassed": true,
+      "variant": "filtered-local-patch",
+      "tokens": {
+        "o200k_base": 4378,
+        "cl100k_base": 5965
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "cfwiki-upload",
+      "preservationPassed": true,
+      "variant": "full-body",
+      "tokens": {
+        "o200k_base": 11430,
+        "cl100k_base": 16466
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "cfwiki-apply",
+      "preservationPassed": true,
+      "variant": "local-or-granular-patch",
+      "tokens": {
+        "o200k_base": 4078,
+        "cl100k_base": 5754
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-markdown",
+      "preservationPassed": true,
+      "variant": "full-body",
+      "tokens": {
+        "o200k_base": 7935,
+        "cl100k_base": 11290
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-html",
+      "preservationPassed": true,
+      "variant": "full-body",
+      "tokens": {
+        "o200k_base": 14162,
+        "cl100k_base": 17324
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-edits",
+      "preservationPassed": true,
+      "variant": "local-or-granular-patch",
+      "tokens": {
+        "o200k_base": 7320,
+        "cl100k_base": 8904
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "preservationPassed": true,
+      "variant": "local-or-granular-patch",
+      "tokens": {
+        "o200k_base": 663,
+        "cl100k_base": 682
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "preservationPassed": true,
+      "variant": "local-or-granular-patch",
+      "tokens": {
+        "o200k_base": 906,
+        "cl100k_base": 926
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "initialize-result",
+      "artifact": "0001-session-official-mcp-initialize-result.txt",
+      "bytes": 4806,
+      "sha256": "7d22a22f724a39ab340488db04bc2112dbdc55d864d20d23be09b1a022a54b37",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 2103,
+        "cl100k_base": 2192
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "tool-schemas",
+      "artifact": "0002-session-official-mcp-tool-schemas.txt",
+      "bytes": 68139,
+      "sha256": "357ebe9b71ecca10f0abb5b329bae63e15d35cf2c4b62690201280724227be00",
+      "tokens": {
+        "o200k_base": 15359,
+        "cl100k_base": 15225
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "accessible-input",
+      "artifact": "0003-session-official-mcp-accessible-input.txt",
+      "bytes": 57,
+      "sha256": "2219c6342ac5ab0adaedf0bcc7dddc423e53e27c9f70f34809a961b4d027ae7f",
+      "tokens": {
+        "o200k_base": 14,
+        "cl100k_base": 13
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "accessible-output",
+      "artifact": "0004-session-official-mcp-accessible-output.txt",
+      "bytes": 189,
+      "sha256": "d28688f6973c8726d1ede8d783f372c1fc62610e277c05d2231354bfb81a7616",
+      "tokens": {
+        "o200k_base": 67,
+        "cl100k_base": 64
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "discover-space-input",
+      "artifact": "0005-session-official-mcp-discover-space-input.txt",
+      "bytes": 96,
+      "sha256": "8c342541cfba5da54a23707c1781c74c1767a828ab922869fbc055701540145b",
+      "tokens": {
+        "o200k_base": 19,
+        "cl100k_base": 19
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "discover-space-output",
+      "artifact": "0006-session-official-mcp-discover-space-output.txt",
+      "bytes": 10274,
+      "sha256": "c48a3ffff36c848de0302043e01c98ccf2f3114d519881b51d23c1cb6b150f66",
+      "tokens": {
+        "o200k_base": 2325,
+        "cl100k_base": 2323
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "discover-guide-input",
+      "artifact": "0007-session-official-mcp-discover-guide-input.txt",
+      "bytes": 86,
+      "sha256": "09853047c7a0a8211b743af8926cf0fb159f2e203e807e3ac73a2d8fca922325",
+      "tokens": {
+        "o200k_base": 18,
+        "cl100k_base": 17
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "discover-guide-output",
+      "artifact": "0008-session-official-mcp-discover-guide-output.txt",
+      "bytes": 13520,
+      "sha256": "e42afdb449f80246b73f077f8125b583e013b3fc752dcd152cbdcf4202baa9bb",
+      "tokens": {
+        "o200k_base": 2954,
+        "cl100k_base": 2930
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "space-instructions-input",
+      "artifact": "0009-session-official-mcp-space-instructions-input.txt",
+      "bytes": 161,
+      "sha256": "38028729fe75918c4bfac02b6e30df4a0460980bfea81d4b062095e41d94164f",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "space-instructions-output",
+      "artifact": "0010-session-official-mcp-space-instructions-output.txt",
+      "bytes": 572,
+      "sha256": "8e3f7e00189464d961cdb0e3000324d8f8b2ad487c4d7df43e5408e18759f919",
+      "tokens": {
+        "o200k_base": 149,
+        "cl100k_base": 143
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "format-guide-input",
+      "artifact": "0011-session-official-mcp-format-guide-input.txt",
+      "bytes": 175,
+      "sha256": "c0798fa6116684181f5fc07443a5d617d731a591adf8f9ffeeefffafe9fd7b39",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 42
+      }
+    },
+    {
+      "corpus": "session",
+      "method": "official-mcp",
+      "phase": "format-guide-output",
+      "artifact": "0012-session-official-mcp-format-guide-output.txt",
+      "bytes": 39112,
+      "sha256": "7c88db18c371373d877619f2acbd8d45d81d2eee5c9965caf087b85de4e1f0ab",
+      "tokens": {
+        "o200k_base": 9878,
+        "cl100k_base": 9857
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "curl",
+      "phase": "read-input",
+      "artifact": "0013-korean-prose-curl-read-input.txt",
+      "bytes": 121,
+      "sha256": "2c67779db48673846e518c8189cc36620bc19eb1dde7e7ab21e786dd64e958b5",
+      "tokens": {
+        "o200k_base": 36,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "curl",
+      "phase": "read-output-raw",
+      "artifact": "0014-korean-prose-curl-read-output-raw.txt",
+      "bytes": 4751,
+      "sha256": "b8f2acb6c5037492a65e87b7cca3ec8a2621279c40bbbf9e8fefd652dc7615b0",
+      "tokens": {
+        "o200k_base": 1423,
+        "cl100k_base": 1810
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "curl",
+      "phase": "read-output-filtered",
+      "artifact": "0015-korean-prose-curl-read-output-filtered.txt",
+      "bytes": 3975,
+      "sha256": "621898e6a14ffcdf1a07b40fb221ba00fea35292742f230a2c43ecc055955f2b",
+      "tokens": {
+        "o200k_base": 1127,
+        "cl100k_base": 1526
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "curl",
+      "phase": "write-input-full",
+      "artifact": "0016-korean-prose-curl-write-input-full.txt",
+      "bytes": 4057,
+      "sha256": "df82f5bfeca88ce3e9693df369e734c781a2474e187e41d9774e8306c7306cb3",
+      "tokens": {
+        "o200k_base": 1145,
+        "cl100k_base": 1544
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "curl",
+      "phase": "local-edit",
+      "artifact": "0017-korean-prose-curl-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "curl",
+      "phase": "write-output-raw",
+      "artifact": "0018-korean-prose-curl-write-output-raw.txt",
+      "bytes": 4753,
+      "sha256": "a6ac067fc50b0f2fa5b8c5847654c7db42922230a9679d221f96111a4743a12b",
+      "tokens": {
+        "o200k_base": 1425,
+        "cl100k_base": 1812
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "curl",
+      "phase": "write-output-filtered",
+      "artifact": "0019-korean-prose-curl-write-output-filtered.txt",
+      "bytes": 47,
+      "sha256": "4c85a7d46015a306d12b96e4be223c8b16f89a9e3591bf204df622f4d711cf48",
+      "tokens": {
+        "o200k_base": 15,
+        "cl100k_base": 15
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "cfwiki-upload",
+      "phase": "read-input",
+      "artifact": "0020-korean-prose-cfwiki-upload-read-input.txt",
+      "bytes": 106,
+      "sha256": "638235b2603830520d37c1a81c8fc99e16ecace769485b01a65788019ecea59f",
+      "tokens": {
+        "o200k_base": 34,
+        "cl100k_base": 33
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "cfwiki-upload",
+      "phase": "read-output",
+      "artifact": "0021-korean-prose-cfwiki-upload-read-output.txt",
+      "bytes": 4391,
+      "sha256": "04360be321c49f7217a607baa52c13d507deca64fa7d6181d8b6df4bb16cbfe8",
+      "tokens": {
+        "o200k_base": 1173,
+        "cl100k_base": 1593
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "cfwiki-upload",
+      "phase": "local-edit",
+      "artifact": "0022-korean-prose-cfwiki-upload-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "cfwiki-upload",
+      "phase": "write-input-full",
+      "artifact": "0023-korean-prose-cfwiki-upload-write-input-full.txt",
+      "bytes": 4391,
+      "sha256": "8d6c4ea6dc011b55de32e4fb2c2a99fe8218ab449041c1506b4718dbcaba028f",
+      "tokens": {
+        "o200k_base": 1173,
+        "cl100k_base": 1593
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "cfwiki-upload",
+      "phase": "write-output",
+      "artifact": "0024-korean-prose-cfwiki-upload-write-output.txt",
+      "bytes": 4391,
+      "sha256": "81d2fd8b7b7fdbfe4275d9aca65480e0aeb626848d497c3ad14c24b36eec663e",
+      "tokens": {
+        "o200k_base": 1168,
+        "cl100k_base": 1590
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "cfwiki-apply",
+      "phase": "read-input",
+      "artifact": "0025-korean-prose-cfwiki-apply-read-input.txt",
+      "bytes": 106,
+      "sha256": "d8dbf213ec389e3bc978cd794e4c64ec86cfd71753bed6de964108859542504a",
+      "tokens": {
+        "o200k_base": 34,
+        "cl100k_base": 33
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "cfwiki-apply",
+      "phase": "read-output",
+      "artifact": "0026-korean-prose-cfwiki-apply-read-output.txt",
+      "bytes": 4390,
+      "sha256": "166a94fd3923b09180fa61db5a6c2991b7d95915cd7356b08626f761229baf6e",
+      "tokens": {
+        "o200k_base": 1174,
+        "cl100k_base": 1594
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "cfwiki-apply",
+      "phase": "local-edit",
+      "artifact": "0027-korean-prose-cfwiki-apply-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "cfwiki-apply",
+      "phase": "write-input",
+      "artifact": "0028-korean-prose-cfwiki-apply-write-input.txt",
+      "bytes": 394,
+      "sha256": "b71afcf744624537aef091b964b1d874737177b1630b8688327a934b20842678",
+      "tokens": {
+        "o200k_base": 114,
+        "cl100k_base": 112
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "cfwiki-apply",
+      "phase": "write-output",
+      "artifact": "0029-korean-prose-cfwiki-apply-write-output.txt",
+      "bytes": 322,
+      "sha256": "417c3710cc44f69f8285d92b5d16dbac10bb8690eb65981dac751c0ec3ddf0dd",
+      "tokens": {
+        "o200k_base": 102,
+        "cl100k_base": 100
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-markdown",
+      "phase": "read-input",
+      "artifact": "0030-korean-prose-mcp-markdown-read-input.txt",
+      "bytes": 175,
+      "sha256": "858d2623aefac2093e6dc08ae2df9261f3a4e426069ae6136fba05a3d76912cc",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-markdown",
+      "phase": "read-output",
+      "artifact": "0031-korean-prose-mcp-markdown-read-output.txt",
+      "bytes": 4145,
+      "sha256": "1455d55345d8b534b3367313c304f650b147b43ab78e6d54d3d50ac47ba7aded",
+      "tokens": {
+        "o200k_base": 1102,
+        "cl100k_base": 1524
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-markdown",
+      "phase": "read-result-envelope",
+      "artifact": "0032-korean-prose-mcp-markdown-read-result-envelope.txt",
+      "bytes": 4361,
+      "sha256": "5c05e779905352371164b03e577148decbccfec133aa834c0181d2c8f0ff23f9",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 1183,
+        "cl100k_base": 1606
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-markdown",
+      "phase": "write-input",
+      "artifact": "0033-korean-prose-mcp-markdown-write-input.txt",
+      "bytes": 3917,
+      "sha256": "44968fa130a50165e7b3c7f8e321e8136b3c9c93b7c9f353d48349efa64439f4",
+      "tokens": {
+        "o200k_base": 1007,
+        "cl100k_base": 1430
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-markdown",
+      "phase": "write-output",
+      "artifact": "0034-korean-prose-mcp-markdown-write-output.txt",
+      "bytes": 469,
+      "sha256": "de24c6a9ef281fa443454fc84639de12e16039d6b3099303bbe5ce42c01b38a6",
+      "tokens": {
+        "o200k_base": 167,
+        "cl100k_base": 162
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-markdown",
+      "phase": "write-result-envelope",
+      "artifact": "0035-korean-prose-mcp-markdown-write-result-envelope.txt",
+      "bytes": 576,
+      "sha256": "a12735b7c9711b3b1404e76b440d042c7da990dcc932f3be075b11bc882395a8",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 186,
+        "cl100k_base": 180
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-html",
+      "phase": "read-input",
+      "artifact": "0036-korean-prose-mcp-html-read-input.txt",
+      "bytes": 171,
+      "sha256": "6126b46eb9a3fb0d49cce647effb9a4823afad95556b860f7ce9d362c44b7b50",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-html",
+      "phase": "read-output",
+      "artifact": "0037-korean-prose-mcp-html-read-output.txt",
+      "bytes": 5707,
+      "sha256": "ec59b75eff93a10320b74aa328a853bbd26614a60457d44430c99b744a852d14",
+      "tokens": {
+        "o200k_base": 1930,
+        "cl100k_base": 2324
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-html",
+      "phase": "read-result-envelope",
+      "artifact": "0038-korean-prose-mcp-html-read-result-envelope.txt",
+      "bytes": 5928,
+      "sha256": "9009e3b785008183d38822290c0d180c5567486a612c2bdede09abc04ffcaa12",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 2026,
+        "cl100k_base": 2421
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-html",
+      "phase": "write-input",
+      "artifact": "0039-korean-prose-mcp-html-write-input.txt",
+      "bytes": 5483,
+      "sha256": "5586d4b823455f9febff95f19cfb04db000961668f606d84ff173118aa2c7bb3",
+      "tokens": {
+        "o200k_base": 1836,
+        "cl100k_base": 2230
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-html",
+      "phase": "write-output",
+      "artifact": "0040-korean-prose-mcp-html-write-output.txt",
+      "bytes": 461,
+      "sha256": "9cfa65fb6c949dfad557bf8344b0de5bbf57692a8b3eac5929ebea6fe4c624dc",
+      "tokens": {
+        "o200k_base": 165,
+        "cl100k_base": 160
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-html",
+      "phase": "write-result-envelope",
+      "artifact": "0041-korean-prose-mcp-html-write-result-envelope.txt",
+      "bytes": 568,
+      "sha256": "bfd11dd4dcb571e37bb4903afd3590365d3cd65290aa81ca69ac325cba67c79e",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 184,
+        "cl100k_base": 178
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-edits",
+      "phase": "read-input",
+      "artifact": "0042-korean-prose-mcp-edits-read-input.txt",
+      "bytes": 171,
+      "sha256": "6903b5b29a0513d8efcec66696cd88bb9bff84cb04045ab7fcdc83580c41b5b7",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-edits",
+      "phase": "read-output",
+      "artifact": "0043-korean-prose-mcp-edits-read-output.txt",
+      "bytes": 5708,
+      "sha256": "3d58b5774548610af830d93b6d58d68a43f75c16d3ec397988f64f8b4c988f87",
+      "tokens": {
+        "o200k_base": 1907,
+        "cl100k_base": 2302
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-edits",
+      "phase": "read-result-envelope",
+      "artifact": "0044-korean-prose-mcp-edits-read-result-envelope.txt",
+      "bytes": 5929,
+      "sha256": "08f12b6665b55502cf5305b6f99db90515eca2729e2cdf181e5dcbe385e84070",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 2003,
+        "cl100k_base": 2399
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-edits",
+      "phase": "write-input",
+      "artifact": "0045-korean-prose-mcp-edits-write-input.txt",
+      "bytes": 293,
+      "sha256": "5d75b312dad49aadd016f5faea3106c76097db4ef09cc979151c5d3d6249e61c",
+      "tokens": {
+        "o200k_base": 100,
+        "cl100k_base": 98
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-edits",
+      "phase": "write-output",
+      "artifact": "0046-korean-prose-mcp-edits-write-output.txt",
+      "bytes": 463,
+      "sha256": "d65c81dfb577f73e36d10cf873d28210e47107e058c1caf4216ad3b92f2d9632",
+      "tokens": {
+        "o200k_base": 167,
+        "cl100k_base": 162
+      }
+    },
+    {
+      "corpus": "korean-prose",
+      "method": "mcp-edits",
+      "phase": "write-result-envelope",
+      "artifact": "0047-korean-prose-mcp-edits-write-result-envelope.txt",
+      "bytes": 570,
+      "sha256": "5ff9537f768171731eb3279b40f8b1ede19d5b764fae6e8a461192b6e46c6896",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 186,
+        "cl100k_base": 180
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "curl",
+      "phase": "read-input",
+      "artifact": "0048-table-code-tasks-curl-read-input.txt",
+      "bytes": 121,
+      "sha256": "c30d9695873bc6e405c3062597922d7c8a37619123d08e91bf37b70ede8520b1",
+      "tokens": {
+        "o200k_base": 36,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "curl",
+      "phase": "read-output-raw",
+      "artifact": "0049-table-code-tasks-curl-read-output-raw.txt",
+      "bytes": 1800,
+      "sha256": "5638ad8c48e31b4b48b19e164875432bdcaeaf144f2098ad08e5bb3feae907ed",
+      "tokens": {
+        "o200k_base": 666,
+        "cl100k_base": 673
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "curl",
+      "phase": "read-output-filtered",
+      "artifact": "0050-table-code-tasks-curl-read-output-filtered.txt",
+      "bytes": 1020,
+      "sha256": "7acaf51f260a92a3d58443d3ce28f3020970e1a9273453f441bbc09ac3ec757c",
+      "tokens": {
+        "o200k_base": 370,
+        "cl100k_base": 389
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "curl",
+      "phase": "write-input-full",
+      "artifact": "0051-table-code-tasks-curl-write-input-full.txt",
+      "bytes": 1102,
+      "sha256": "083bc2f25e4d0f656e8f9ac49d68a1910ab6a72ed899495c9d806ecded267567",
+      "tokens": {
+        "o200k_base": 388,
+        "cl100k_base": 407
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "curl",
+      "phase": "local-edit",
+      "artifact": "0052-table-code-tasks-curl-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "curl",
+      "phase": "write-output-raw",
+      "artifact": "0053-table-code-tasks-curl-write-output-raw.txt",
+      "bytes": 1802,
+      "sha256": "ab671394b465092007439bf027fcee164af7e748c6c93633f9550cef1ccb07ef",
+      "tokens": {
+        "o200k_base": 668,
+        "cl100k_base": 675
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "curl",
+      "phase": "write-output-filtered",
+      "artifact": "0054-table-code-tasks-curl-write-output-filtered.txt",
+      "bytes": 47,
+      "sha256": "729523c7e087f09cb2176c7124153e14c99b4414d4ae00a35d2b0fd67e0f724f",
+      "tokens": {
+        "o200k_base": 15,
+        "cl100k_base": 15
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-upload",
+      "phase": "read-input",
+      "artifact": "0055-table-code-tasks-cfwiki-upload-read-input.txt",
+      "bytes": 106,
+      "sha256": "664f64a4f573edb369d385a017bf26586f277b8c243668281c7154dff89d7d89",
+      "tokens": {
+        "o200k_base": 34,
+        "cl100k_base": 33
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-upload",
+      "phase": "read-output",
+      "artifact": "0056-table-code-tasks-cfwiki-upload-read-output.txt",
+      "bytes": 1086,
+      "sha256": "3079b91435ed761d67edb6020ab296d5968aea3b0add7605ebc0fb7c015b6b81",
+      "tokens": {
+        "o200k_base": 366,
+        "cl100k_base": 389
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-upload",
+      "phase": "local-edit",
+      "artifact": "0057-table-code-tasks-cfwiki-upload-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-upload",
+      "phase": "write-input-full",
+      "artifact": "0058-table-code-tasks-cfwiki-upload-write-input-full.txt",
+      "bytes": 1086,
+      "sha256": "f940f6401d12c738ffb6416f6351bc047e5177857fbc64c3d77e52b0c5661c61",
+      "tokens": {
+        "o200k_base": 366,
+        "cl100k_base": 389
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-upload",
+      "phase": "write-output",
+      "artifact": "0059-table-code-tasks-cfwiki-upload-write-output.txt",
+      "bytes": 1086,
+      "sha256": "29146b8758b454b4887ddc6f8f0a6aaa0e1e54ce3a005f3fabe9e0e9dd7d2e76",
+      "tokens": {
+        "o200k_base": 375,
+        "cl100k_base": 396
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-markdown",
+      "phase": "read-input",
+      "artifact": "0065-table-code-tasks-mcp-markdown-read-input.txt",
+      "bytes": 175,
+      "sha256": "ab6ce55e865915ad899ff5cfe6bd03d7d84b48e26ab1d1eee51c662de6a92314",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-markdown",
+      "phase": "read-output",
+      "artifact": "0066-table-code-tasks-mcp-markdown-read-output.txt",
+      "bytes": 770,
+      "sha256": "00409794dff55340e40934eba12913e38ed7f8b435040507c567e8c46dc7b052",
+      "tokens": {
+        "o200k_base": 257,
+        "cl100k_base": 280
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-markdown",
+      "phase": "read-result-envelope",
+      "artifact": "0067-table-code-tasks-mcp-markdown-read-result-envelope.txt",
+      "bytes": 907,
+      "sha256": "70d9429fc60a9fd33dada268d3ab0f5ac0877308c89245ec6937385cef5f273d",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 290,
+        "cl100k_base": 314
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-markdown",
+      "phase": "write-input",
+      "artifact": "0068-table-code-tasks-mcp-markdown-write-input.txt",
+      "bytes": 538,
+      "sha256": "017e69e65f32906700285a7e6c98ca576c88110ff8f16dbcf0d4cd2ddb4027b1",
+      "tokens": {
+        "o200k_base": 161,
+        "cl100k_base": 186
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-markdown",
+      "phase": "write-output",
+      "artifact": "0069-table-code-tasks-mcp-markdown-write-output.txt",
+      "bytes": 477,
+      "sha256": "dde9cf23c7d967551fe9d086f0447c0b37c0f7661d79419a0d7e13cf75ceadca",
+      "tokens": {
+        "o200k_base": 169,
+        "cl100k_base": 163
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-markdown",
+      "phase": "write-result-envelope",
+      "artifact": "0070-table-code-tasks-mcp-markdown-write-result-envelope.txt",
+      "bytes": 584,
+      "sha256": "d5bc4ec6db443ef0ce7cc86f8047de67289f0de400dd41da21838f9f3da11e19",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 188,
+        "cl100k_base": 181
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-html",
+      "phase": "read-input",
+      "artifact": "0071-table-code-tasks-mcp-html-read-input.txt",
+      "bytes": 171,
+      "sha256": "2b27d330c94db71624a4d437582de2436ac05ef2fd5dff24b8260493a4d85a94",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-html",
+      "phase": "read-output",
+      "artifact": "0072-table-code-tasks-mcp-html-read-output.txt",
+      "bytes": 2580,
+      "sha256": "8f24301de3e022e587808bf22c1bcfb7be5e892e06a243d087893d5f60b70f05",
+      "tokens": {
+        "o200k_base": 1098,
+        "cl100k_base": 1116
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-html",
+      "phase": "read-result-envelope",
+      "artifact": "0073-table-code-tasks-mcp-html-read-result-envelope.txt",
+      "bytes": 2834,
+      "sha256": "0d41923b55b93ccbcf03c1f93946955be81c417397f24f04c2390bdb1602e409",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 1218,
+        "cl100k_base": 1237
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-html",
+      "phase": "write-input",
+      "artifact": "0074-table-code-tasks-mcp-html-write-input.txt",
+      "bytes": 2352,
+      "sha256": "57e4a586eabc3e8203905ab245655bb69741a9edcc7958eec07500f766c02234",
+      "tokens": {
+        "o200k_base": 1003,
+        "cl100k_base": 1022
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-html",
+      "phase": "write-output",
+      "artifact": "0075-table-code-tasks-mcp-html-write-output.txt",
+      "bytes": 469,
+      "sha256": "fbb1509f0a8339f2cf1642c102758474a511f7eff6a93a6edcae63301718ad70",
+      "tokens": {
+        "o200k_base": 167,
+        "cl100k_base": 161
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-html",
+      "phase": "write-result-envelope",
+      "artifact": "0076-table-code-tasks-mcp-html-write-result-envelope.txt",
+      "bytes": 576,
+      "sha256": "0dbe172e8259f22d6c9a9f91d60b444b56a199425e58778e2bb92c3084a99f2e",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 186,
+        "cl100k_base": 179
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-edits",
+      "phase": "read-input",
+      "artifact": "0077-table-code-tasks-mcp-edits-read-input.txt",
+      "bytes": 171,
+      "sha256": "9169d7825d72c576956d1e956c05f6dddb17eff9400c08bfa811aae4fd9db9e2",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-edits",
+      "phase": "read-output",
+      "artifact": "0078-table-code-tasks-mcp-edits-read-output.txt",
+      "bytes": 2581,
+      "sha256": "4cec61c97769c722d337ebd0b54682240dc4beea90d47a9c7dbd678f10a151e7",
+      "tokens": {
+        "o200k_base": 1093,
+        "cl100k_base": 1113
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-edits",
+      "phase": "read-result-envelope",
+      "artifact": "0079-table-code-tasks-mcp-edits-read-result-envelope.txt",
+      "bytes": 2835,
+      "sha256": "da332b7fa7e6b1f807680d849d88741292651a2e6493b56ea0faab69ff10f756",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 1213,
+        "cl100k_base": 1234
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-edits",
+      "phase": "write-input",
+      "artifact": "0080-table-code-tasks-mcp-edits-write-input.txt",
+      "bytes": 293,
+      "sha256": "eda0cabc8c908b8bb67283e05b62ca55951bb577a30aaf147676632e85c259cd",
+      "tokens": {
+        "o200k_base": 100,
+        "cl100k_base": 99
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-edits",
+      "phase": "write-output",
+      "artifact": "0081-table-code-tasks-mcp-edits-write-output.txt",
+      "bytes": 471,
+      "sha256": "f290eb4fa8460f384d8bcfb34e06d8eb02a547a0e9d7a94395c4812dec486445",
+      "tokens": {
+        "o200k_base": 169,
+        "cl100k_base": 163
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "mcp-edits",
+      "phase": "write-result-envelope",
+      "artifact": "0082-table-code-tasks-mcp-edits-write-result-envelope.txt",
+      "bytes": 578,
+      "sha256": "4eb25f1441dc1400c4fc199b42e92bd8f15c0ed39d24b1bd7aa85b296f110699",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 188,
+        "cl100k_base": 181
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "curl",
+      "phase": "read-input",
+      "artifact": "0083-rich-panel-toc-curl-read-input.txt",
+      "bytes": 121,
+      "sha256": "84516b1c65208fd09911f8f8bc3086e9681902f4cb5346e168fbd834714a6be2",
+      "tokens": {
+        "o200k_base": 36,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "curl",
+      "phase": "read-output-raw",
+      "artifact": "0084-rich-panel-toc-curl-read-output-raw.txt",
+      "bytes": 2017,
+      "sha256": "00feb92846f07157f4ee2dd6833a6282029552044ba44ddadaa4e2018dfcb749",
+      "tokens": {
+        "o200k_base": 721,
+        "cl100k_base": 734
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "curl",
+      "phase": "read-output-filtered",
+      "artifact": "0085-rich-panel-toc-curl-read-output-filtered.txt",
+      "bytes": 1239,
+      "sha256": "d275cff4c308330c06bc08ea144e563677710c98b10eab1788ea7c75f2cabf79",
+      "tokens": {
+        "o200k_base": 425,
+        "cl100k_base": 449
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "curl",
+      "phase": "write-input-full",
+      "artifact": "0086-rich-panel-toc-curl-write-input-full.txt",
+      "bytes": 1321,
+      "sha256": "062e30e44cb09c0a908cc6cbdb6c42dd5f979bc9f88b6aea8f21e163d3dda18d",
+      "tokens": {
+        "o200k_base": 443,
+        "cl100k_base": 467
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "curl",
+      "phase": "local-edit",
+      "artifact": "0087-rich-panel-toc-curl-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "curl",
+      "phase": "write-output-raw",
+      "artifact": "0088-rich-panel-toc-curl-write-output-raw.txt",
+      "bytes": 2019,
+      "sha256": "b225a39b0a5eacaf549e7021464236da2e9f1417233bc3acbca7cf4e4a8cb9f5",
+      "tokens": {
+        "o200k_base": 723,
+        "cl100k_base": 736
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "curl",
+      "phase": "write-output-filtered",
+      "artifact": "0089-rich-panel-toc-curl-write-output-filtered.txt",
+      "bytes": 47,
+      "sha256": "5cc2e06685231dedfad10e198f8b3e045213f0331cb047c62e3572192349aaa4",
+      "tokens": {
+        "o200k_base": 15,
+        "cl100k_base": 15
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-upload",
+      "phase": "read-input",
+      "artifact": "0090-rich-panel-toc-cfwiki-upload-read-input.txt",
+      "bytes": 106,
+      "sha256": "411fbcd5697f91e3353afb7dbb9b91602c415c5acb3357dc6ce303e01b7c0096",
+      "tokens": {
+        "o200k_base": 34,
+        "cl100k_base": 33
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-upload",
+      "phase": "read-output",
+      "artifact": "0091-rich-panel-toc-cfwiki-upload-read-output.txt",
+      "bytes": 1708,
+      "sha256": "39ff0965d8584b5147d8b58db687329b59776c499a7c1a28005fc720a18b752b",
+      "tokens": {
+        "o200k_base": 574,
+        "cl100k_base": 593
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-upload",
+      "phase": "local-edit",
+      "artifact": "0092-rich-panel-toc-cfwiki-upload-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-upload",
+      "phase": "write-input-full",
+      "artifact": "0093-rich-panel-toc-cfwiki-upload-write-input-full.txt",
+      "bytes": 1708,
+      "sha256": "2dd0667a496ad3dce37c34eccf71c2b92e15db20b75a8a4df8c062a398bf54e0",
+      "tokens": {
+        "o200k_base": 574,
+        "cl100k_base": 593
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-upload",
+      "phase": "write-output",
+      "artifact": "0094-rich-panel-toc-cfwiki-upload-write-output.txt",
+      "bytes": 1708,
+      "sha256": "c0cecab5a12c207b7debe228638cb9696143863294011db8204932e16956d027",
+      "tokens": {
+        "o200k_base": 565,
+        "cl100k_base": 584
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-markdown",
+      "phase": "read-input",
+      "artifact": "0100-rich-panel-toc-mcp-markdown-read-input.txt",
+      "bytes": 175,
+      "sha256": "0b149400f604520b00ad87eff2fbf06cca624725202d52d768f9e0fa4b191b6a",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-markdown",
+      "phase": "read-output",
+      "artifact": "0101-rich-panel-toc-mcp-markdown-read-output.txt",
+      "bytes": 689,
+      "sha256": "16ec991a87bef09d5f240a3aa64d1ae0a96250e986936ad5ff27b0605019b4b2",
+      "tokens": {
+        "o200k_base": 221,
+        "cl100k_base": 240
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-markdown",
+      "phase": "read-result-envelope",
+      "artifact": "0102-rich-panel-toc-mcp-markdown-read-result-envelope.txt",
+      "bytes": 823,
+      "sha256": "91ec08d1e6d6d772430af0ec6a623935a48b84414263a7e5e93ca353dec46ba9",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 252,
+        "cl100k_base": 271
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-markdown",
+      "phase": "write-input",
+      "artifact": "0103-rich-panel-toc-mcp-markdown-write-input.txt",
+      "bytes": 397,
+      "sha256": "8145b5dc253ea21cb240417a63fff3b0ef838514b1f7df514485690addad592b",
+      "tokens": {
+        "o200k_base": 110,
+        "cl100k_base": 130
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-markdown",
+      "phase": "write-output",
+      "artifact": "0104-rich-panel-toc-mcp-markdown-write-output.txt",
+      "bytes": 340,
+      "sha256": "97c57643a83503244a9a138e4980a2c2de389bd963fb59b2203724eab65af907",
+      "tokens": {
+        "o200k_base": 71,
+        "cl100k_base": 71
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-markdown",
+      "phase": "write-result-envelope",
+      "artifact": "0105-rich-panel-toc-mcp-markdown-write-result-envelope.txt",
+      "bytes": 407,
+      "sha256": "a24cd66e3de0e8b841587092ae3b9cedfbf76021ce57774fffe49d0c82a1565f",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 88,
+        "cl100k_base": 87
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-html",
+      "phase": "read-input",
+      "artifact": "0106-rich-panel-toc-mcp-html-read-input.txt",
+      "bytes": 171,
+      "sha256": "acb1b38c85efc7a93e144f13800cda983f5b1ec0f77b68920a37a4d4a4fc6a34",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-html",
+      "phase": "read-output",
+      "artifact": "0107-rich-panel-toc-mcp-html-read-output.txt",
+      "bytes": 1954,
+      "sha256": "d2e981976a2edeae3c7477c41473342f7fcde7863ccf49e8f45fa23cc330199d",
+      "tokens": {
+        "o200k_base": 746,
+        "cl100k_base": 764
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-html",
+      "phase": "read-result-envelope",
+      "artifact": "0108-rich-panel-toc-mcp-html-read-result-envelope.txt",
+      "bytes": 2147,
+      "sha256": "368092d74807ed193ce32b22dd09d038ef7677bdf1981be2f4e973af4b098e78",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 821,
+        "cl100k_base": 840
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-html",
+      "phase": "write-input",
+      "artifact": "0109-rich-panel-toc-mcp-html-write-input.txt",
+      "bytes": 1728,
+      "sha256": "201264bd6abc510d8d842bd2b80a49d71ed7ec6c391dedef28e84247c0fd9d78",
+      "tokens": {
+        "o200k_base": 651,
+        "cl100k_base": 670
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-html",
+      "phase": "write-output",
+      "artifact": "0110-rich-panel-toc-mcp-html-write-output.txt",
+      "bytes": 465,
+      "sha256": "4224fba31b4be5cfa086c96bffb656c61c9ecb0e80f2f60f019bf6ca8772458f",
+      "tokens": {
+        "o200k_base": 167,
+        "cl100k_base": 161
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-html",
+      "phase": "write-result-envelope",
+      "artifact": "0111-rich-panel-toc-mcp-html-write-result-envelope.txt",
+      "bytes": 572,
+      "sha256": "7a441f4e8f18fe5abdf0e5aabf8823853f55b90bd05838d551f2c871954cd4ee",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 186,
+        "cl100k_base": 179
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-edits",
+      "phase": "read-input",
+      "artifact": "0112-rich-panel-toc-mcp-edits-read-input.txt",
+      "bytes": 171,
+      "sha256": "f77412e4eac4ab11aa2eb470483a55211ff9536530577bf02fa3905eacacf773",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-edits",
+      "phase": "read-output",
+      "artifact": "0113-rich-panel-toc-mcp-edits-read-output.txt",
+      "bytes": 1955,
+      "sha256": "159f2e0ef736201c524b284c74b988595b67abf02ab7607bc37e164e14343e66",
+      "tokens": {
+        "o200k_base": 766,
+        "cl100k_base": 785
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-edits",
+      "phase": "read-result-envelope",
+      "artifact": "0114-rich-panel-toc-mcp-edits-read-result-envelope.txt",
+      "bytes": 2148,
+      "sha256": "98c3b097f1be81ef7731dd17ed75c812d646a518324f065f3e692a9df4ce3e6b",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 841,
+        "cl100k_base": 861
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-edits",
+      "phase": "write-input",
+      "artifact": "0115-rich-panel-toc-mcp-edits-write-input.txt",
+      "bytes": 293,
+      "sha256": "dd133dc2c1ccb46ef007a2bb7d379014783ed9cf8ccf4a236132f56d7d9a3102",
+      "tokens": {
+        "o200k_base": 100,
+        "cl100k_base": 99
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-edits",
+      "phase": "write-output",
+      "artifact": "0116-rich-panel-toc-mcp-edits-write-output.txt",
+      "bytes": 467,
+      "sha256": "0c28669c2e8ef9a2105559e360ca8fd518d14f2bd2a0427483fbb8a9be9b4516",
+      "tokens": {
+        "o200k_base": 169,
+        "cl100k_base": 163
+      }
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "mcp-edits",
+      "phase": "write-result-envelope",
+      "artifact": "0117-rich-panel-toc-mcp-edits-write-result-envelope.txt",
+      "bytes": 574,
+      "sha256": "7dcb575de7477081c521c132c279ece3ef281a34cf9cd0956526a758ae230414",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 188,
+        "cl100k_base": 181
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "curl",
+      "phase": "read-input",
+      "artifact": "0118-opaque-macro-curl-read-input.txt",
+      "bytes": 121,
+      "sha256": "735dcd90ac53aa0e0fd5db7a88b5aaaba204567717179179b2a819378e0d502c",
+      "tokens": {
+        "o200k_base": 36,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "curl",
+      "phase": "read-output-raw",
+      "artifact": "0119-opaque-macro-curl-read-output-raw.txt",
+      "bytes": 1451,
+      "sha256": "f85d1fdca6f7d4082684854488805d7003e44437f9232264921612df94411dcd",
+      "tokens": {
+        "o200k_base": 529,
+        "cl100k_base": 535
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "curl",
+      "phase": "read-output-filtered",
+      "artifact": "0120-opaque-macro-curl-read-output-filtered.txt",
+      "bytes": 675,
+      "sha256": "e2af4caa2374fe50af68b35852c117e99f19d14f63340e076ded689b26ce2ae2",
+      "tokens": {
+        "o200k_base": 234,
+        "cl100k_base": 252
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "curl",
+      "phase": "write-input-full",
+      "artifact": "0121-opaque-macro-curl-write-input-full.txt",
+      "bytes": 757,
+      "sha256": "d38045f89e55558780123b34e3196d5904f5728d41f6b641e1e9e5880c69ecaf",
+      "tokens": {
+        "o200k_base": 252,
+        "cl100k_base": 270
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "curl",
+      "phase": "local-edit",
+      "artifact": "0122-opaque-macro-curl-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "curl",
+      "phase": "write-output-raw",
+      "artifact": "0123-opaque-macro-curl-write-output-raw.txt",
+      "bytes": 1453,
+      "sha256": "85d86dcc65ef23cecd9182e73b70a17b8bdca5cd13d175d15f2cf9443662bc26",
+      "tokens": {
+        "o200k_base": 531,
+        "cl100k_base": 537
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "curl",
+      "phase": "write-output-filtered",
+      "artifact": "0124-opaque-macro-curl-write-output-filtered.txt",
+      "bytes": 47,
+      "sha256": "0c2440918404688a43ebd1b01725a62737e9597e50473fd0092825e9486db5c7",
+      "tokens": {
+        "o200k_base": 15,
+        "cl100k_base": 15
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "cfwiki-upload",
+      "phase": "read-input",
+      "artifact": "0125-opaque-macro-cfwiki-upload-read-input.txt",
+      "bytes": 106,
+      "sha256": "a15cda1e38f47e934bca42ab795a6fe32095929dcc18e4c048f105a3013d7a4b",
+      "tokens": {
+        "o200k_base": 34,
+        "cl100k_base": 33
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "cfwiki-upload",
+      "phase": "read-output",
+      "artifact": "0126-opaque-macro-cfwiki-upload-read-output.txt",
+      "bytes": 1712,
+      "sha256": "ce1c5fa26d6f48a3965d305fb2551339e23bd2b64fbea707240d7852d50dba14",
+      "tokens": {
+        "o200k_base": 591,
+        "cl100k_base": 607
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "cfwiki-upload",
+      "phase": "local-edit",
+      "artifact": "0127-opaque-macro-cfwiki-upload-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "cfwiki-upload",
+      "phase": "write-input-full",
+      "artifact": "0128-opaque-macro-cfwiki-upload-write-input-full.txt",
+      "bytes": 1712,
+      "sha256": "e740ea63d1278b405f97a26a0198705979b6d1da6a0e0c1f05fda83ec3e96aec",
+      "tokens": {
+        "o200k_base": 591,
+        "cl100k_base": 607
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "cfwiki-upload",
+      "phase": "write-output",
+      "artifact": "0129-opaque-macro-cfwiki-upload-write-output.txt",
+      "bytes": 1712,
+      "sha256": "b7013ea00adbf3fd77ab73a6ceedf6c83e26102d50a62596ffcf039a9bcc0de4",
+      "tokens": {
+        "o200k_base": 596,
+        "cl100k_base": 612
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "cfwiki-apply",
+      "phase": "read-input",
+      "artifact": "0130-opaque-macro-cfwiki-apply-read-input.txt",
+      "bytes": 106,
+      "sha256": "016fcc88bc4bc9034e4419840f8b6d25707c12ed8a41e4f0695262926bd78295",
+      "tokens": {
+        "o200k_base": 34,
+        "cl100k_base": 33
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "cfwiki-apply",
+      "phase": "read-output",
+      "artifact": "0131-opaque-macro-cfwiki-apply-read-output.txt",
+      "bytes": 1711,
+      "sha256": "68562a05ba4394152d95a5fa1c5d0155aaf197e21278a7a7289e84e498914f3f",
+      "tokens": {
+        "o200k_base": 596,
+        "cl100k_base": 610
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "cfwiki-apply",
+      "phase": "local-edit",
+      "artifact": "0132-opaque-macro-cfwiki-apply-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "cfwiki-apply",
+      "phase": "write-input",
+      "artifact": "0133-opaque-macro-cfwiki-apply-write-input.txt",
+      "bytes": 394,
+      "sha256": "f8df927eeff35861b35d39c67ff0687a5f2b3ff7a3dfe249babc84ed519202b7",
+      "tokens": {
+        "o200k_base": 114,
+        "cl100k_base": 112
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "cfwiki-apply",
+      "phase": "write-output",
+      "artifact": "0134-opaque-macro-cfwiki-apply-write-output.txt",
+      "bytes": 448,
+      "sha256": "b77ab5c89f71feef089d18855702f764c9a8d547d25aeb6149e23adb699f9eda",
+      "tokens": {
+        "o200k_base": 132,
+        "cl100k_base": 132
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-markdown",
+      "phase": "read-input",
+      "artifact": "0135-opaque-macro-mcp-markdown-read-input.txt",
+      "bytes": 175,
+      "sha256": "5726a50cbd21f832ce16c118dd8d6a36eeb492494ee0197d1c3b97834895c4b8",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-markdown",
+      "phase": "read-output",
+      "artifact": "0136-opaque-macro-mcp-markdown-read-output.txt",
+      "bytes": 728,
+      "sha256": "b64aa03a229ee07e8a1fc4c1f32393111a01eeb9a53443cf6124c025d2100f71",
+      "tokens": {
+        "o200k_base": 244,
+        "cl100k_base": 259
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-markdown",
+      "phase": "read-result-envelope",
+      "artifact": "0137-opaque-macro-mcp-markdown-read-result-envelope.txt",
+      "bytes": 866,
+      "sha256": "faf33600a29394706287f80232e6b5e496121f9d1551c7d44ad03f3a2c649c41",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 274,
+        "cl100k_base": 289
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-markdown",
+      "phase": "write-input",
+      "artifact": "0138-opaque-macro-mcp-markdown-write-input.txt",
+      "bytes": 438,
+      "sha256": "5922472b7b7c017e12c2e9300191280dffd5c639ec8b203add444da54fbf717e",
+      "tokens": {
+        "o200k_base": 134,
+        "cl100k_base": 150
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-markdown",
+      "phase": "write-output",
+      "artifact": "0139-opaque-macro-mcp-markdown-write-output.txt",
+      "bytes": 308,
+      "sha256": "36e44678807c70150c045b829095b7e4fba0fd52653e6392c4317c3d783db90c",
+      "tokens": {
+        "o200k_base": 64,
+        "cl100k_base": 64
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-markdown",
+      "phase": "write-result-envelope",
+      "artifact": "0140-opaque-macro-mcp-markdown-write-result-envelope.txt",
+      "bytes": 375,
+      "sha256": "80b21a3c4f99503846a3e6e75d73f0fec71bcbb7db002e6b728e03946e652248",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 81,
+        "cl100k_base": 80
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-html",
+      "phase": "read-input",
+      "artifact": "0141-opaque-macro-mcp-html-read-input.txt",
+      "bytes": 171,
+      "sha256": "06675826865f7f96b240223ad3f2ad20026f6961ce280d5dc16768637220f8a8",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-html",
+      "phase": "read-output",
+      "artifact": "0142-opaque-macro-mcp-html-read-output.txt",
+      "bytes": 1896,
+      "sha256": "9b4623478e7d6d101439345c8ef300bee513dedc0552fabbc9969fe675c9d590",
+      "tokens": {
+        "o200k_base": 735,
+        "cl100k_base": 746
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-html",
+      "phase": "read-result-envelope",
+      "artifact": "0143-opaque-macro-mcp-html-read-result-envelope.txt",
+      "bytes": 2073,
+      "sha256": "99968ed1feafa2f6b8a839a90d93932ed6e7ef2851c406567ae7c1b54d4b67e0",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 798,
+        "cl100k_base": 810
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-html",
+      "phase": "write-input",
+      "artifact": "0144-opaque-macro-mcp-html-write-input.txt",
+      "bytes": 1672,
+      "sha256": "40415d50694e9ac73c6afcbf70fb8b07babc133978c64679aa143b7f2593e289",
+      "tokens": {
+        "o200k_base": 641,
+        "cl100k_base": 653
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-html",
+      "phase": "write-output",
+      "artifact": "0145-opaque-macro-mcp-html-write-output.txt",
+      "bytes": 461,
+      "sha256": "adc43fcf7ea5dbd7e8e7add9a33b6ed65234507c5decdb5248ce6cb5ce6b77a8",
+      "tokens": {
+        "o200k_base": 165,
+        "cl100k_base": 159
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-html",
+      "phase": "write-result-envelope",
+      "artifact": "0146-opaque-macro-mcp-html-write-result-envelope.txt",
+      "bytes": 568,
+      "sha256": "cd2595f26a365da9786bbb4a1aa5feae73bc18c9ca270a4dc3b9e2b083665e81",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 184,
+        "cl100k_base": 177
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-edits",
+      "phase": "read-input",
+      "artifact": "0147-opaque-macro-mcp-edits-read-input.txt",
+      "bytes": 171,
+      "sha256": "7b0b1fef4d16536c43ce0bc1c1c7901ac8d2a433eb42668d91ff77c298f665fb",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-edits",
+      "phase": "read-output",
+      "artifact": "0148-opaque-macro-mcp-edits-read-output.txt",
+      "bytes": 1897,
+      "sha256": "127e2236a6df04165ce17ef1df4363b52700bd1afc7d8df1f18e8b7729d112ff",
+      "tokens": {
+        "o200k_base": 746,
+        "cl100k_base": 761
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-edits",
+      "phase": "read-result-envelope",
+      "artifact": "0149-opaque-macro-mcp-edits-read-result-envelope.txt",
+      "bytes": 2074,
+      "sha256": "a9e0387e4a2eb4f6d7f2c4e8195f0cd23316ac6e08758856d0fb6d4238baab8b",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 809,
+        "cl100k_base": 825
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-edits",
+      "phase": "write-input",
+      "artifact": "0150-opaque-macro-mcp-edits-write-input.txt",
+      "bytes": 293,
+      "sha256": "ca22fcefd0a8153d4ae09430bfa609bd33de2e4e51809fdca398d81708233288",
+      "tokens": {
+        "o200k_base": 101,
+        "cl100k_base": 99
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-edits",
+      "phase": "write-output",
+      "artifact": "0151-opaque-macro-mcp-edits-write-output.txt",
+      "bytes": 463,
+      "sha256": "0a363b7dd9be71491e4ea1133c15475ebd99bef71cac8019b82d8d7ba9b10509",
+      "tokens": {
+        "o200k_base": 167,
+        "cl100k_base": 161
+      }
+    },
+    {
+      "corpus": "opaque-macro",
+      "method": "mcp-edits",
+      "phase": "write-result-envelope",
+      "artifact": "0152-opaque-macro-mcp-edits-write-result-envelope.txt",
+      "bytes": 570,
+      "sha256": "4c0be47e63c44f2588ddbbfdd2431a01418369cca125c44bf967906f48861ba9",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 186,
+        "cl100k_base": 179
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "curl",
+      "phase": "read-input",
+      "artifact": "0153-links-lists-quote-curl-read-input.txt",
+      "bytes": 121,
+      "sha256": "e299b99ea21d15c25573e9cd2b42800010c2fe92d394593638d6207a2a713d30",
+      "tokens": {
+        "o200k_base": 36,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "curl",
+      "phase": "read-output-raw",
+      "artifact": "0154-links-lists-quote-curl-read-output-raw.txt",
+      "bytes": 1374,
+      "sha256": "cee744236e3305e1b7b696464ae4a30627b23992772d87c5a1e48fc0dfe827cf",
+      "tokens": {
+        "o200k_base": 506,
+        "cl100k_base": 522
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "curl",
+      "phase": "read-output-filtered",
+      "artifact": "0155-links-lists-quote-curl-read-output-filtered.txt",
+      "bytes": 593,
+      "sha256": "cb4e3cd25120395bcd3b529da3145600b7acfee10cd1f13c8f50abf99dd2e1c9",
+      "tokens": {
+        "o200k_base": 209,
+        "cl100k_base": 238
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "curl",
+      "phase": "write-input-full",
+      "artifact": "0156-links-lists-quote-curl-write-input-full.txt",
+      "bytes": 675,
+      "sha256": "f74269f568220d403b3fac73dfe76bb99cb26b349f24d04494aa6b1d6dcf9ddb",
+      "tokens": {
+        "o200k_base": 227,
+        "cl100k_base": 256
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "curl",
+      "phase": "local-edit",
+      "artifact": "0157-links-lists-quote-curl-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "curl",
+      "phase": "write-output-raw",
+      "artifact": "0158-links-lists-quote-curl-write-output-raw.txt",
+      "bytes": 1376,
+      "sha256": "1bdf52779616a0b6d38e8719b80f03c62b8a5f313479cb6f8b6b029c933498c2",
+      "tokens": {
+        "o200k_base": 508,
+        "cl100k_base": 524
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "curl",
+      "phase": "write-output-filtered",
+      "artifact": "0159-links-lists-quote-curl-write-output-filtered.txt",
+      "bytes": 47,
+      "sha256": "0893dce4464198ac8f3f2a2487ab5f121b0c5a3fd46250032c26b792c77a6f65",
+      "tokens": {
+        "o200k_base": 15,
+        "cl100k_base": 15
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "cfwiki-upload",
+      "phase": "read-input",
+      "artifact": "0160-links-lists-quote-cfwiki-upload-read-input.txt",
+      "bytes": 106,
+      "sha256": "704ba616596d7d46a83e8fecc40d4633ec21e71f0f7475b079e4b54e945b3a71",
+      "tokens": {
+        "o200k_base": 34,
+        "cl100k_base": 33
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "cfwiki-upload",
+      "phase": "read-output",
+      "artifact": "0161-links-lists-quote-cfwiki-upload-read-output.txt",
+      "bytes": 1115,
+      "sha256": "e56e025c1d5696d2e8e62d0d7166741b58d3b60d637fd9b5a68e4af1b0199af7",
+      "tokens": {
+        "o200k_base": 383,
+        "cl100k_base": 408
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "cfwiki-upload",
+      "phase": "local-edit",
+      "artifact": "0162-links-lists-quote-cfwiki-upload-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "cfwiki-upload",
+      "phase": "write-input-full",
+      "artifact": "0163-links-lists-quote-cfwiki-upload-write-input-full.txt",
+      "bytes": 1115,
+      "sha256": "661044e370904176404fdd27a2ce0aa79d0adc80bfdb5c688eae6d87d08e622f",
+      "tokens": {
+        "o200k_base": 383,
+        "cl100k_base": 408
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "cfwiki-upload",
+      "phase": "write-output",
+      "artifact": "0164-links-lists-quote-cfwiki-upload-write-output.txt",
+      "bytes": 1115,
+      "sha256": "b18b50fd6a85444c866f0702eac9086f52cf64f5c9bb4bc9d83eb8b3e195493d",
+      "tokens": {
+        "o200k_base": 388,
+        "cl100k_base": 411
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "cfwiki-apply",
+      "phase": "read-input",
+      "artifact": "0165-links-lists-quote-cfwiki-apply-read-input.txt",
+      "bytes": 106,
+      "sha256": "f402a5efa755badab2836abd69f8a620498babd5daf9fea4e4b96ddde60ef045",
+      "tokens": {
+        "o200k_base": 34,
+        "cl100k_base": 33
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "cfwiki-apply",
+      "phase": "read-output",
+      "artifact": "0166-links-lists-quote-cfwiki-apply-read-output.txt",
+      "bytes": 1114,
+      "sha256": "7d16fb78f094bac02f1a8c14712d5a5e487ff593cf5e0a0470046b94e7ef3428",
+      "tokens": {
+        "o200k_base": 384,
+        "cl100k_base": 409
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "cfwiki-apply",
+      "phase": "local-edit",
+      "artifact": "0167-links-lists-quote-cfwiki-apply-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "cfwiki-apply",
+      "phase": "write-input",
+      "artifact": "0168-links-lists-quote-cfwiki-apply-write-input.txt",
+      "bytes": 404,
+      "sha256": "61d7728c0c045b5065563e7bb882b54bf6c57b79d8fe9d1804ecb87471fc3b41",
+      "tokens": {
+        "o200k_base": 118,
+        "cl100k_base": 114
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "cfwiki-apply",
+      "phase": "write-output",
+      "artifact": "0169-links-lists-quote-cfwiki-apply-write-output.txt",
+      "bytes": 322,
+      "sha256": "6fddc201c381d73dc98c5e892826407be92d57487035b1dc5184f3db4f3fa12f",
+      "tokens": {
+        "o200k_base": 102,
+        "cl100k_base": 100
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-markdown",
+      "phase": "read-input",
+      "artifact": "0170-links-lists-quote-mcp-markdown-read-input.txt",
+      "bytes": 175,
+      "sha256": "4849f4dd1531a57964fdb17219c468d1c89a23ede523ddb2d69467d721437ed4",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-markdown",
+      "phase": "read-output",
+      "artifact": "0171-links-lists-quote-mcp-markdown-read-output.txt",
+      "bytes": 783,
+      "sha256": "00912353df2cda7889796223840a8e10f94c32504f28037542217f36789ca8c1",
+      "tokens": {
+        "o200k_base": 262,
+        "cl100k_base": 289
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-markdown",
+      "phase": "read-result-envelope",
+      "artifact": "0172-links-lists-quote-mcp-markdown-read-result-envelope.txt",
+      "bytes": 914,
+      "sha256": "8621a2f622aa5ac27dff6f69c8588339556944738461acc9a209bd032c4cca74",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 293,
+        "cl100k_base": 321
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-markdown",
+      "phase": "write-input",
+      "artifact": "0173-links-lists-quote-mcp-markdown-write-input.txt",
+      "bytes": 550,
+      "sha256": "be23cc3c73c8a6a7e76cc36a5398a6c1eb1d44201c16aa1634c01cef48c177df",
+      "tokens": {
+        "o200k_base": 165,
+        "cl100k_base": 195
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-markdown",
+      "phase": "write-output",
+      "artifact": "0174-links-lists-quote-mcp-markdown-write-output.txt",
+      "bytes": 479,
+      "sha256": "8554d02b8d1d9f4fe5edf235173801e5f5e0d1a04a3eb9df6028e04b7914e49e",
+      "tokens": {
+        "o200k_base": 171,
+        "cl100k_base": 163
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-markdown",
+      "phase": "write-result-envelope",
+      "artifact": "0175-links-lists-quote-mcp-markdown-write-result-envelope.txt",
+      "bytes": 586,
+      "sha256": "792180418d47482a163ec36967ba41686708aa266f366c2ece270400e7322914",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 190,
+        "cl100k_base": 181
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-html",
+      "phase": "read-input",
+      "artifact": "0176-links-lists-quote-mcp-html-read-input.txt",
+      "bytes": 171,
+      "sha256": "ebb4dc6b96552ec31afb911fabb986b1b51109b7147d7607b27601d2f8cbd160",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-html",
+      "phase": "read-output",
+      "artifact": "0177-links-lists-quote-mcp-html-read-output.txt",
+      "bytes": 1794,
+      "sha256": "fce1dbb2d0588129a00cc9d01a3d8be204e1c498bbc6de45d4920aed9dbfa818",
+      "tokens": {
+        "o200k_base": 754,
+        "cl100k_base": 779
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-html",
+      "phase": "read-result-envelope",
+      "artifact": "0178-links-lists-quote-mcp-html-read-result-envelope.txt",
+      "bytes": 1979,
+      "sha256": "900c019202365d18a62fe17a2392022b55bea0ab78f42e6c9f662e13b28a003f",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 823,
+        "cl100k_base": 849
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-html",
+      "phase": "write-input",
+      "artifact": "0179-links-lists-quote-mcp-html-write-input.txt",
+      "bytes": 1565,
+      "sha256": "e312cb5bffd7950740caff96e15d367ddbf0d9767ade1b72c07dcc2cc9b40578",
+      "tokens": {
+        "o200k_base": 658,
+        "cl100k_base": 685
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-html",
+      "phase": "write-output",
+      "artifact": "0180-links-lists-quote-mcp-html-write-output.txt",
+      "bytes": 471,
+      "sha256": "8516fa7aa3f6da73716f7ce8a6d068b4ae36daa60e40fcdc815240c1396790e5",
+      "tokens": {
+        "o200k_base": 169,
+        "cl100k_base": 161
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-html",
+      "phase": "write-result-envelope",
+      "artifact": "0181-links-lists-quote-mcp-html-write-result-envelope.txt",
+      "bytes": 578,
+      "sha256": "9638e805e0d764d866bad734e3b7e188c1445c314c9bd46dd0064b91cee41ff4",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 188,
+        "cl100k_base": 179
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-edits",
+      "phase": "read-input",
+      "artifact": "0182-links-lists-quote-mcp-edits-read-input.txt",
+      "bytes": 171,
+      "sha256": "f6e57538284f4673e2246acbd952723cb476a0e12eefb1a586a4f047225ae8bc",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-edits",
+      "phase": "read-output",
+      "artifact": "0183-links-lists-quote-mcp-edits-read-output.txt",
+      "bytes": 1795,
+      "sha256": "e1ec9d9a63b6db3b9c62d102714a26ec3686b9d33add652c216a3126aa9f57f3",
+      "tokens": {
+        "o200k_base": 762,
+        "cl100k_base": 787
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-edits",
+      "phase": "read-result-envelope",
+      "artifact": "0184-links-lists-quote-mcp-edits-read-result-envelope.txt",
+      "bytes": 1980,
+      "sha256": "933ba0c188330c63edfe28163f830aa181f905544892df5a3c912820ca0f6435",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 831,
+        "cl100k_base": 857
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-edits",
+      "phase": "write-input",
+      "artifact": "0185-links-lists-quote-mcp-edits-write-input.txt",
+      "bytes": 293,
+      "sha256": "cb8b1ec9d5f4849fdffb131ff458e946753859c38583d499afa400560c016eb9",
+      "tokens": {
+        "o200k_base": 103,
+        "cl100k_base": 102
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-edits",
+      "phase": "write-output",
+      "artifact": "0186-links-lists-quote-mcp-edits-write-output.txt",
+      "bytes": 473,
+      "sha256": "9639845fd48343b2a6b80c78c81eca42e8fd6c8e6f2399ff8568cc91515f4ea8",
+      "tokens": {
+        "o200k_base": 171,
+        "cl100k_base": 163
+      }
+    },
+    {
+      "corpus": "links-lists-quote",
+      "method": "mcp-edits",
+      "phase": "write-result-envelope",
+      "artifact": "0187-links-lists-quote-mcp-edits-write-result-envelope.txt",
+      "bytes": 580,
+      "sha256": "d175659b7759354e529ff48c3006ed3f1a5c91d686f8742c53ee231a57312705",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 190,
+        "cl100k_base": 181
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "curl",
+      "phase": "read-input",
+      "artifact": "0188-long-reference-curl-read-input.txt",
+      "bytes": 121,
+      "sha256": "1ad58659fa95d0d483f0bc3ba6c0ed5eae4f2bedc77cff545aa4b24c66d7234f",
+      "tokens": {
+        "o200k_base": 36,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "curl",
+      "phase": "read-output-raw",
+      "artifact": "0189-long-reference-curl-read-output-raw.txt",
+      "bytes": 16140,
+      "sha256": "e8cdf755f3d0d27936eb43fb1b12042dfc389911f0878f018cc11ad23f258bb3",
+      "tokens": {
+        "o200k_base": 4589,
+        "cl100k_base": 6164
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "curl",
+      "phase": "read-output-filtered",
+      "artifact": "0190-long-reference-curl-read-output-filtered.txt",
+      "bytes": 15362,
+      "sha256": "6bc7780f2b14a80eb4f4033f5076c0d527b7d7fbdc3bc8babcf6d59baf9d4a5f",
+      "tokens": {
+        "o200k_base": 4294,
+        "cl100k_base": 5880
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "curl",
+      "phase": "write-input-full",
+      "artifact": "0191-long-reference-curl-write-input-full.txt",
+      "bytes": 15444,
+      "sha256": "3ea3939f6c680cd08e8d1822497f3eef15170443aca8bc659ea3d39b45ef0093",
+      "tokens": {
+        "o200k_base": 4312,
+        "cl100k_base": 5898
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "curl",
+      "phase": "local-edit",
+      "artifact": "0192-long-reference-curl-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "curl",
+      "phase": "write-output-raw",
+      "artifact": "0193-long-reference-curl-write-output-raw.txt",
+      "bytes": 16142,
+      "sha256": "5cc727f5ce602df309c3674bca43a53aa0ffc0cfaed80ec72ebb58c0b050f2ca",
+      "tokens": {
+        "o200k_base": 4591,
+        "cl100k_base": 6166
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "curl",
+      "phase": "write-output-filtered",
+      "artifact": "0194-long-reference-curl-write-output-filtered.txt",
+      "bytes": 47,
+      "sha256": "8bf201728317a8ac493b5e678a1b5d2702cc3ae6b3390a5ddb350eb234444b83",
+      "tokens": {
+        "o200k_base": 15,
+        "cl100k_base": 15
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "cfwiki-upload",
+      "phase": "read-input",
+      "artifact": "0195-long-reference-cfwiki-upload-read-input.txt",
+      "bytes": 106,
+      "sha256": "5902ed89fb442114e52aaa137748db01c5b65e83a3a0cd3e876e0cf387d94ba3",
+      "tokens": {
+        "o200k_base": 34,
+        "cl100k_base": 33
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "cfwiki-upload",
+      "phase": "read-output",
+      "artifact": "0196-long-reference-cfwiki-upload-read-output.txt",
+      "bytes": 15130,
+      "sha256": "72eb15ea2b3c016261aa408311f68fbb80c13f2a67f9b292fc0dfa6121177d24",
+      "tokens": {
+        "o200k_base": 3796,
+        "cl100k_base": 5475
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "cfwiki-upload",
+      "phase": "local-edit",
+      "artifact": "0197-long-reference-cfwiki-upload-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "cfwiki-upload",
+      "phase": "write-input-full",
+      "artifact": "0198-long-reference-cfwiki-upload-write-input-full.txt",
+      "bytes": 15130,
+      "sha256": "820a5e59e7d4f3b6e1b51fd7c9a1c47cf487e25cc2512be07f0bcd18bacbeaaa",
+      "tokens": {
+        "o200k_base": 3796,
+        "cl100k_base": 5475
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "cfwiki-upload",
+      "phase": "write-output",
+      "artifact": "0199-long-reference-cfwiki-upload-write-output.txt",
+      "bytes": 15130,
+      "sha256": "0f22394054e3898646ffd7c886674ec2ddd454913e42f797e28cfce814efd815",
+      "tokens": {
+        "o200k_base": 3804,
+        "cl100k_base": 5483
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "cfwiki-apply",
+      "phase": "read-input",
+      "artifact": "0200-long-reference-cfwiki-apply-read-input.txt",
+      "bytes": 106,
+      "sha256": "3265ec065af6146053cd03939482af6778dc365b2de09be274e76609ba24cf48",
+      "tokens": {
+        "o200k_base": 34,
+        "cl100k_base": 33
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "cfwiki-apply",
+      "phase": "read-output",
+      "artifact": "0201-long-reference-cfwiki-apply-read-output.txt",
+      "bytes": 15129,
+      "sha256": "86c485b8f12db4e997874e0b76c565fef347f0770deaca16f26732041c0e3389",
+      "tokens": {
+        "o200k_base": 3797,
+        "cl100k_base": 5476
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "cfwiki-apply",
+      "phase": "local-edit",
+      "artifact": "0202-long-reference-cfwiki-apply-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "cfwiki-apply",
+      "phase": "write-input",
+      "artifact": "0203-long-reference-cfwiki-apply-write-input.txt",
+      "bytes": 398,
+      "sha256": "b3f4b81814fdc7ed1fd39e276ac3d39f9bc62e05a3f6c4cd3bfe03b0ee7af49e",
+      "tokens": {
+        "o200k_base": 112,
+        "cl100k_base": 110
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "cfwiki-apply",
+      "phase": "write-output",
+      "artifact": "0204-long-reference-cfwiki-apply-write-output.txt",
+      "bytes": 322,
+      "sha256": "1253999e0cadd9fbf663391c9f6ef33c2e99af8ec40fda18506c0c0432a4f2fd",
+      "tokens": {
+        "o200k_base": 102,
+        "cl100k_base": 100
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-markdown",
+      "phase": "read-input",
+      "artifact": "0205-long-reference-mcp-markdown-read-input.txt",
+      "bytes": 175,
+      "sha256": "2e8b1e0c22a6f4a1f792d5c2f7fc8e052d89e81a05f213f50c24ef909c658f6f",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-markdown",
+      "phase": "read-output",
+      "artifact": "0206-long-reference-mcp-markdown-read-output.txt",
+      "bytes": 15136,
+      "sha256": "e9731f75b352370371b468d0a9276d25d00a0e908a4d957361fed7dda5fbabdc",
+      "tokens": {
+        "o200k_base": 3910,
+        "cl100k_base": 5590
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-markdown",
+      "phase": "read-result-envelope",
+      "artifact": "0207-long-reference-mcp-markdown-read-result-envelope.txt",
+      "bytes": 15640,
+      "sha256": "35136d9adaac6fd87d5d27157b7ca536fb9782330f9331a25913415a2652edde",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 4171,
+        "cl100k_base": 5852
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-markdown",
+      "phase": "write-input",
+      "artifact": "0208-long-reference-mcp-markdown-write-input.txt",
+      "bytes": 14906,
+      "sha256": "b33f5af91a92203a1653fad8cc5b989a2e7a9618081705b1ef1170798c6889c9",
+      "tokens": {
+        "o200k_base": 3816,
+        "cl100k_base": 5498
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-markdown",
+      "phase": "write-output",
+      "artifact": "0209-long-reference-mcp-markdown-write-output.txt",
+      "bytes": 473,
+      "sha256": "95adc225b8fd69d6b54f7578c52f6aa5f68a53010d3971a50364c8b41dfbcd37",
+      "tokens": {
+        "o200k_base": 165,
+        "cl100k_base": 159
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-markdown",
+      "phase": "write-result-envelope",
+      "artifact": "0210-long-reference-mcp-markdown-write-result-envelope.txt",
+      "bytes": 580,
+      "sha256": "9199570639bdd21382e597fa462706496b124a5175184666d3efb3a3b96f8381",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 184,
+        "cl100k_base": 177
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-html",
+      "phase": "read-input",
+      "artifact": "0211-long-reference-mcp-html-read-input.txt",
+      "bytes": 171,
+      "sha256": "8fae3ea23dafca564b889668d6b6d6b6416c66543b7e6df95f945e4a327997ce",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-html",
+      "phase": "read-output",
+      "artifact": "0212-long-reference-mcp-html-read-output.txt",
+      "bytes": 21054,
+      "sha256": "67249c5674d4404a52e552c80c31889de94d851cdaafb4430965756a22ee117f",
+      "tokens": {
+        "o200k_base": 7024,
+        "cl100k_base": 8608
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-html",
+      "phase": "read-result-envelope",
+      "artifact": "0213-long-reference-mcp-html-read-result-envelope.txt",
+      "bytes": 21563,
+      "sha256": "61ecad034eb0f95b5236892fc361d91179af96edadd372b790ced4256aead40e",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 7336,
+        "cl100k_base": 8921
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-html",
+      "phase": "write-input",
+      "artifact": "0214-long-reference-mcp-html-write-input.txt",
+      "bytes": 20828,
+      "sha256": "e0d54ad2d27e7b59654f86a8a69f0e53eca18f51fa18efc778c07782111e7e7e",
+      "tokens": {
+        "o200k_base": 6931,
+        "cl100k_base": 8516
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-html",
+      "phase": "write-output",
+      "artifact": "0215-long-reference-mcp-html-write-output.txt",
+      "bytes": 465,
+      "sha256": "f3d1939a35d454198c5adc0e89dcf214b7af1dd9400b6b090c1516a087636e47",
+      "tokens": {
+        "o200k_base": 163,
+        "cl100k_base": 157
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-html",
+      "phase": "write-result-envelope",
+      "artifact": "0216-long-reference-mcp-html-write-result-envelope.txt",
+      "bytes": 572,
+      "sha256": "daa82062fa64d1f6d1e2f6bf7cae9c4d15d433f5985a796d5746159b26290dcc",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 182,
+        "cl100k_base": 175
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-edits",
+      "phase": "read-input",
+      "artifact": "0217-long-reference-mcp-edits-read-input.txt",
+      "bytes": 171,
+      "sha256": "c5db517427f481bcdd5a1c728c077e00fb85650cdbf07e6c0e6bfbf920d7f271",
+      "tokens": {
+        "o200k_base": 44,
+        "cl100k_base": 43
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-edits",
+      "phase": "read-output",
+      "artifact": "0218-long-reference-mcp-edits-read-output.txt",
+      "bytes": 21055,
+      "sha256": "b4c4298273727d6505890ac510972de4c7aff42dc5ef38c51353ed2ed3ab8228",
+      "tokens": {
+        "o200k_base": 7010,
+        "cl100k_base": 8602
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-edits",
+      "phase": "read-result-envelope",
+      "artifact": "0219-long-reference-mcp-edits-read-result-envelope.txt",
+      "bytes": 21564,
+      "sha256": "aae5333789d17e61b48e0c852d942751e4789171928225aa4b5533875192f37f",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 7322,
+        "cl100k_base": 8915
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-edits",
+      "phase": "write-input",
+      "artifact": "0220-long-reference-mcp-edits-write-input.txt",
+      "bytes": 293,
+      "sha256": "2c2beaeac153e167ef35a9bbaf05d2fbc203d255862d7281c36353445434ebc2",
+      "tokens": {
+        "o200k_base": 101,
+        "cl100k_base": 100
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-edits",
+      "phase": "write-output",
+      "artifact": "0221-long-reference-mcp-edits-write-output.txt",
+      "bytes": 467,
+      "sha256": "99eb7ff0b6603ce24cda20e6db433e508c8757a918028ca74311d1c75d626aea",
+      "tokens": {
+        "o200k_base": 165,
+        "cl100k_base": 159
+      }
+    },
+    {
+      "corpus": "long-reference",
+      "method": "mcp-edits",
+      "phase": "write-result-envelope",
+      "artifact": "0222-long-reference-mcp-edits-write-result-envelope.txt",
+      "bytes": 574,
+      "sha256": "22d4c5bbdbce5c8a93529e5246d465d9801b57241854184c97d6bf0e8e98f620",
+      "wireOnly": true,
+      "tokens": {
+        "o200k_base": 184,
+        "cl100k_base": 177
+      }
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "phase": "read-input",
+      "artifact": "confirmed-apply-0013-table-code-tasks-cfwiki-apply-read-input.txt",
+      "bytes": 106,
+      "sha256": "b4b4b084a75d66efecfbf4a8dc5d8f5d157844df6d87a89ba6a58c8dc8689361",
+      "tokens": {
+        "o200k_base": 34,
+        "cl100k_base": 33
+      },
+      "sourceRun": "2026-10-15T13-04-47-9df5ae"
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "phase": "read-output",
+      "artifact": "confirmed-apply-0014-table-code-tasks-cfwiki-apply-read-output.txt",
+      "bytes": 1085,
+      "sha256": "a502073bb6adaa10ff582d747907457c5ea0972b36e98403650a503ab14c638e",
+      "tokens": {
+        "o200k_base": 376,
+        "cl100k_base": 398
+      },
+      "sourceRun": "2026-10-15T13-04-47-9df5ae"
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "phase": "local-edit",
+      "artifact": "confirmed-apply-0015-table-code-tasks-cfwiki-apply-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      },
+      "sourceRun": "2026-10-15T13-04-47-9df5ae"
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "phase": "write-input",
+      "artifact": "confirmed-apply-0016-table-code-tasks-cfwiki-apply-write-input.txt",
+      "bytes": 416,
+      "sha256": "73c07fb6947e72418fff6f6b4188aa8b66ee69d6d56128b648ef177d7dc37bd8",
+      "tokens": {
+        "o200k_base": 118,
+        "cl100k_base": 116
+      },
+      "sourceRun": "2026-10-15T13-04-47-9df5ae"
+    },
+    {
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "phase": "write-output",
+      "artifact": "confirmed-apply-0017-table-code-tasks-cfwiki-apply-write-output.txt",
+      "bytes": 322,
+      "sha256": "431cb783dd95db0981ed9b6e7be2592e97a4e0cb96eadaadb17626bf3caa8959",
+      "tokens": {
+        "o200k_base": 102,
+        "cl100k_base": 100
+      },
+      "sourceRun": "2026-10-15T13-04-47-9df5ae"
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "phase": "read-input",
+      "artifact": "confirmed-apply-0018-rich-panel-toc-cfwiki-apply-read-input.txt",
+      "bytes": 106,
+      "sha256": "ccab1ed824fb4c7ffffc5a1d78a5b1bc57e1d9f6720e6d7861ce533855683b88",
+      "tokens": {
+        "o200k_base": 34,
+        "cl100k_base": 33
+      },
+      "sourceRun": "2026-10-15T13-04-47-9df5ae"
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "phase": "read-output",
+      "artifact": "confirmed-apply-0019-rich-panel-toc-cfwiki-apply-read-output.txt",
+      "bytes": 1707,
+      "sha256": "48512bf77ad9b775638524106ca6c9c57884ab7ea941d5ba971c1682ac89c4aa",
+      "tokens": {
+        "o200k_base": 583,
+        "cl100k_base": 602
+      },
+      "sourceRun": "2026-10-15T13-04-47-9df5ae"
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "phase": "local-edit",
+      "artifact": "confirmed-apply-0020-rich-panel-toc-cfwiki-apply-local-edit.txt",
+      "bytes": 103,
+      "sha256": "c88df1cd6494d4d54774ae754adf43747d6da9712d815e227408cc4ded8b52bb",
+      "tokens": {
+        "o200k_base": 33,
+        "cl100k_base": 35
+      },
+      "sourceRun": "2026-10-15T13-04-47-9df5ae"
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "phase": "write-input",
+      "artifact": "confirmed-apply-0021-rich-panel-toc-cfwiki-apply-write-input.txt",
+      "bytes": 412,
+      "sha256": "9fee0e3daf3b2156f46c7a571bb1b1710dddc04b5e9b1f96cfe5791f971a1051",
+      "tokens": {
+        "o200k_base": 120,
+        "cl100k_base": 118
+      },
+      "sourceRun": "2026-10-15T13-04-47-9df5ae"
+    },
+    {
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "phase": "write-output",
+      "artifact": "confirmed-apply-0022-rich-panel-toc-cfwiki-apply-write-output.txt",
+      "bytes": 494,
+      "sha256": "e91430566250b2c749463fec48d2ccd4e79071370f3e3e785841bb7777190612",
+      "tokens": {
+        "o200k_base": 136,
+        "cl100k_base": 138
+      },
+      "sourceRun": "2026-10-15T13-04-47-9df5ae"
+    }
+  ],
+  "errors": [],
+  "createdPages": [
+    {
+      "key": "korean-prose:curl",
+      "corpus": "korean-prose",
+      "method": "curl",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e korean-prose curl",
+      "pending": false,
+      "id": "6619605",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "korean-prose:cfwiki-upload",
+      "corpus": "korean-prose",
+      "method": "cfwiki-upload",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e korean-prose cfwiki-upload",
+      "pending": false,
+      "id": "6619625",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "korean-prose:cfwiki-apply",
+      "corpus": "korean-prose",
+      "method": "cfwiki-apply",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e korean-prose cfwiki-apply",
+      "pending": false,
+      "id": "6619654",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "korean-prose:mcp-markdown",
+      "corpus": "korean-prose",
+      "method": "mcp-markdown",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e korean-prose mcp-markdown",
+      "pending": false,
+      "id": "6717708",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "korean-prose:mcp-html",
+      "corpus": "korean-prose",
+      "method": "mcp-html",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e korean-prose mcp-html",
+      "pending": false,
+      "id": "6619681",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "korean-prose:mcp-edits",
+      "corpus": "korean-prose",
+      "method": "mcp-edits",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e korean-prose mcp-edits",
+      "pending": false,
+      "id": "6717731",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "table-code-tasks:curl",
+      "corpus": "table-code-tasks",
+      "method": "curl",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e table-code-tasks curl",
+      "pending": false,
+      "id": "6652236",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "table-code-tasks:cfwiki-upload",
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-upload",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e table-code-tasks cfwiki-upload",
+      "pending": false,
+      "id": "6652257",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "table-code-tasks:cfwiki-apply:superseded",
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e table-code-tasks cfwiki-apply",
+      "pending": false,
+      "id": "6717769",
+      "supersededBy": "6619915",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "table-code-tasks:mcp-markdown",
+      "corpus": "table-code-tasks",
+      "method": "mcp-markdown",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e table-code-tasks mcp-markdown",
+      "pending": false,
+      "id": "6717790",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "table-code-tasks:mcp-html",
+      "corpus": "table-code-tasks",
+      "method": "mcp-html",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e table-code-tasks mcp-html",
+      "pending": false,
+      "id": "6586651",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "table-code-tasks:mcp-edits",
+      "corpus": "table-code-tasks",
+      "method": "mcp-edits",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e table-code-tasks mcp-edits",
+      "pending": false,
+      "id": "6717823",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "rich-panel-toc:curl",
+      "corpus": "rich-panel-toc",
+      "method": "curl",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e rich-panel-toc curl",
+      "pending": false,
+      "id": "6619714",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "rich-panel-toc:cfwiki-upload",
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-upload",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e rich-panel-toc cfwiki-upload",
+      "pending": false,
+      "id": "6717844",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "rich-panel-toc:cfwiki-apply:superseded",
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e rich-panel-toc cfwiki-apply",
+      "pending": false,
+      "id": "6717865",
+      "supersededBy": "6619936",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "rich-panel-toc:mcp-markdown",
+      "corpus": "rich-panel-toc",
+      "method": "mcp-markdown",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e rich-panel-toc mcp-markdown",
+      "pending": false,
+      "id": "6717886"
+    },
+    {
+      "key": "rich-panel-toc:mcp-html",
+      "corpus": "rich-panel-toc",
+      "method": "mcp-html",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e rich-panel-toc mcp-html",
+      "pending": false,
+      "id": "6717907",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "rich-panel-toc:mcp-edits",
+      "corpus": "rich-panel-toc",
+      "method": "mcp-edits",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e rich-panel-toc mcp-edits",
+      "pending": false,
+      "id": "6717928",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "opaque-macro:curl",
+      "corpus": "opaque-macro",
+      "method": "curl",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e opaque-macro curl",
+      "pending": false,
+      "id": "6652300",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "opaque-macro:cfwiki-upload",
+      "corpus": "opaque-macro",
+      "method": "cfwiki-upload",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e opaque-macro cfwiki-upload",
+      "pending": false,
+      "id": "6619755",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "opaque-macro:cfwiki-apply",
+      "corpus": "opaque-macro",
+      "method": "cfwiki-apply",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e opaque-macro cfwiki-apply",
+      "pending": false,
+      "id": "6619776",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "opaque-macro:mcp-markdown",
+      "corpus": "opaque-macro",
+      "method": "mcp-markdown",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e opaque-macro mcp-markdown",
+      "pending": false,
+      "id": "6717961"
+    },
+    {
+      "key": "opaque-macro:mcp-html",
+      "corpus": "opaque-macro",
+      "method": "mcp-html",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e opaque-macro mcp-html",
+      "pending": false,
+      "id": "6586713",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "opaque-macro:mcp-edits",
+      "corpus": "opaque-macro",
+      "method": "mcp-edits",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e opaque-macro mcp-edits",
+      "pending": false,
+      "id": "6652330",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "links-lists-quote:curl",
+      "corpus": "links-lists-quote",
+      "method": "curl",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e links-lists-quote curl",
+      "pending": false,
+      "id": "6586744",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "links-lists-quote:cfwiki-upload",
+      "corpus": "links-lists-quote",
+      "method": "cfwiki-upload",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e links-lists-quote cfwiki-upload",
+      "pending": false,
+      "id": "6717992",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "links-lists-quote:cfwiki-apply",
+      "corpus": "links-lists-quote",
+      "method": "cfwiki-apply",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e links-lists-quote cfwiki-apply",
+      "pending": false,
+      "id": "6619816",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "links-lists-quote:mcp-markdown",
+      "corpus": "links-lists-quote",
+      "method": "mcp-markdown",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e links-lists-quote mcp-markdown",
+      "pending": false,
+      "id": "6652353",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "links-lists-quote:mcp-html",
+      "corpus": "links-lists-quote",
+      "method": "mcp-html",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e links-lists-quote mcp-html",
+      "pending": false,
+      "id": "6586773",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "links-lists-quote:mcp-edits",
+      "corpus": "links-lists-quote",
+      "method": "mcp-edits",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e links-lists-quote mcp-edits",
+      "pending": false,
+      "id": "6619838",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "long-reference:curl",
+      "corpus": "long-reference",
+      "method": "curl",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e long-reference curl",
+      "pending": false,
+      "id": "6619867",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "long-reference:cfwiki-upload",
+      "corpus": "long-reference",
+      "method": "cfwiki-upload",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e long-reference cfwiki-upload",
+      "pending": false,
+      "id": "6619887",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "long-reference:cfwiki-apply",
+      "corpus": "long-reference",
+      "method": "cfwiki-apply",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e long-reference cfwiki-apply",
+      "pending": false,
+      "id": "6718033",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "long-reference:mcp-markdown",
+      "corpus": "long-reference",
+      "method": "mcp-markdown",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e long-reference mcp-markdown",
+      "pending": false,
+      "id": "6718053",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "long-reference:mcp-html",
+      "corpus": "long-reference",
+      "method": "mcp-html",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e long-reference mcp-html",
+      "pending": false,
+      "id": "6586805",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "long-reference:mcp-edits",
+      "corpus": "long-reference",
+      "method": "mcp-edits",
+      "title": "cfwiki benchmark 2026-10-15T12-57-21-40bd4e long-reference mcp-edits",
+      "pending": false,
+      "id": "6652389",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "table-code-tasks:cfwiki-apply",
+      "corpus": "table-code-tasks",
+      "method": "cfwiki-apply",
+      "title": "cfwiki benchmark 2026-10-15T13-04-47-9df5ae table-code-tasks cfwiki-apply",
+      "pending": false,
+      "id": "6619915",
+      "sourceRun": "2026-10-15T13-04-47-9df5ae",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    },
+    {
+      "key": "rich-panel-toc:cfwiki-apply",
+      "corpus": "rich-panel-toc",
+      "method": "cfwiki-apply",
+      "title": "cfwiki benchmark 2026-10-15T13-04-47-9df5ae rich-panel-toc cfwiki-apply",
+      "pending": false,
+      "id": "6619936",
+      "sourceRun": "2026-10-15T13-04-47-9df5ae",
+      "setupVerification": {
+        "passed": true,
+        "failures": []
+      }
+    }
+  ]
+}

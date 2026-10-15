@@ -33,57 +33,31 @@ node --version
 npm --version
 ```
 
-패키지는 GitHub Packages의 **`@twotwo-me/confluence-wiki-md`**로 배포합니다.
-v0.1.1 이하의 `confluence-wiki-md`를 전역 설치했다면 먼저 이전 패키지를 제거해
-`cfwiki` 명령 충돌을 방지합니다. 작업 폴더의 문서와 연결 프로필은 별도로 보관됩니다.
+공개 GitHub 릴리스는 로그인 없이 설치할 수 있습니다.
 
 ```sh
-npm uninstall --global confluence-wiki-md
-```
-
-GitHub Packages는 공개 npm 패키지 설치에도 인증이 필요합니다.
-GitHub에서 `read:packages` 권한의 **personal access token (classic)**을 준비하고 로그인합니다.
-Username은 본인의 GitHub 사용자명, Password는 GitHub 토큰을 입력합니다.
-Confluence API 토큰이나 사내 PAT와는 별개의 인증입니다.
-[GitHub 공식 인증 안내](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#authenticating-to-github-packages)
-
-```sh
-npm login --scope=@twotwo-me --auth-type=legacy --registry=https://npm.pkg.github.com
-npm install --global @twotwo-me/confluence-wiki-md
+PUPPETEER_SKIP_DOWNLOAD=true npm install --global https://github.com/TwoTwo-me/confluence-wiki-md/releases/latest/download/confluence-wiki-md.tgz
 cfwiki --help
+cfwiki skill install --agent codex
 ```
 
-로그인 후 특정 버전을 설치하거나 전역 설치 없이 실행할 수도 있습니다.
+npmjs.org 공개 배포 후에는 짧은 패키지 이름으로 설치하거나 전역 설치 없이 실행할 수 있습니다.
 
 ```sh
-npm install --global @twotwo-me/confluence-wiki-md@0.3.0
-npx --package @twotwo-me/confluence-wiki-md cfwiki --help
+PUPPETEER_SKIP_DOWNLOAD=true npm install --global @twotwo-me/confluence-wiki-md
+PUPPETEER_SKIP_DOWNLOAD=true npx --yes --package=@twotwo-me/confluence-wiki-md cfwiki --help
 ```
 
-GitHub Packages 인증 없이 설치하려면 공개 GitHub Releases 압축파일을 사용합니다.
+Node.js 24 이상이 필요합니다. 일반 Markdown에는 Chrome 다운로드가 필요하지 않습니다.
+Mermaid/PlantUML 검사는 별도 렌더러 환경을 준비하세요. 설치에는 GitHub/npm 계정이
+필요 없으며, Confluence 접근용 프로필은 각자 설정합니다. 패키지에는 토큰이 포함되지 않습니다.
+기존 `@twotwo-me:registry=https://npm.pkg.github.com` 설정이 있으면 npmjs 설치 시
+공개 레지스트리로 바꾸거나 GitHub 릴리스 URL을 사용하세요.
 
-```sh
-npm install --global https://github.com/TwoTwo-me/confluence-wiki-md/releases/latest/download/confluence-wiki-md.tgz
-```
-
-두 경로 모두 같은 패키지를 설치합니다. 패키지에는 CLI, 인증 예제, Markdown 예제, 에이전트 스킬이 들어 있으며
-사용자 토큰과 다운로드한 위키는 포함하지 않습니다. npmjs.org에는 배포하지 않습니다.
-기존 스킬 링크가 이전 패키지 경로를 가리킨다면 해당 링크를 제거하고 아래 새 경로로 다시 연결하세요.
-
-설치 과정에서 Puppeteer의 Chrome 다운로드가 실행될 수 있습니다.
-이미 Chrome이 있거나 일반 Markdown 기능만 쓴다면 설치 명령 앞에 `PUPPETEER_SKIP_DOWNLOAD=true`를 붙여
-다운로드를 생략할 수 있습니다. Mermaid를 사용할 때는 아래 [로컬 검사 환경](#로컬-검사-환경)을 준비하세요.
-브라우저 로그인은 CLI 실행 조건이 아닙니다. CLI는 기본 인증 파일 `~/.config/cfwiki/.env` 또는
-`--env`로 선택한 프로필의 토큰으로 인증합니다.
-
-프로필과 문서를 보관할 작업 폴더를 만든 뒤 아래 Cloud 또는 PAT 설정으로 진행합니다.
-
-```sh
-mkdir -p confluence-work
-cd confluence-work
-```
-
-전역 설치가 권한 오류로 실패하면 사용자 권한으로 설치한 Node.js 환경을 사용하세요.
+Codex·Claude Code·OpenCode·Cursor 설치 경로, 프로젝트별 설치, Windows 명령,
+GitHub 릴리스 무인증 검증은 [설치 안내](docs/installation.md)를 참고하세요.
+`cfwiki skill install --agent all --dry-run`으로 설치 위치를 먼저 확인할 수 있습니다.
+다른 기존 스킬을 교체할 때는 `--overwrite`가 원본을 별도 보관합니다.
 
 ### 소스 개발용 설치
 
@@ -234,8 +208,8 @@ GitHub가 제공하는 Linux/macOS runner를 사용합니다. 별도 runner 서�
 
 - `main` push와 Pull Request: 기존 테스트와 실제 npm 패키지 전역 설치 검사를 실행합니다.
 - `v0.1.0` 형태의 버전 태그 push: 버전·main 포함 여부를 확인하고 테스트한 `.tgz` 및 SHA-256 체크섬을 GitHub Releases에 게시합니다.
-- 같은 버전을 GitHub Packages에 배포합니다. Actions의 `GITHUB_TOKEN`을 사용하므로 별도 배포 토큰을 등록할 필요가 없습니다.
-- 배포 후 별도 작업에서 읽기 권한만 가진 토큰으로 레지스트리 패키지를 내려받아 압축파일 해시와 CLI 실행을 검증합니다.
+- npm 게시를 활성화하면 같은 압축파일을 npmjs.org에 게시합니다. 최초 계정 게시 후 OIDC trusted publisher로 연결해 장기 토큰 없이 배포합니다.
+- 배포 후 인증 없는 환경에서 공개 GitHub 릴리스와 공개 npm 패키지를 설치해 압축파일 해시와 CLI 실행을 검증합니다.
 
 자동 검증은 Confluence 계정 없이 실행합니다. 실제 Confluence 페이지를 생성하는 테스트나 로컬 도표 엔진 검사는 별도로 실행합니다.
 패키지 공개 설정, 배포 재시도, 버전 올리는 방법은 [docs/RELEASING.md](docs/RELEASING.md)를 참고하세요.
@@ -554,31 +528,23 @@ Data Center 미지원 작업은 `Data Center <operation> is not supported by thi
 
 ## 에이전트 스킬 설치
 
-CLI 설치를 마친 뒤 어느 폴더에서든 실행할 수 있습니다. 기존 `confluence-wiki` 설치가 있으면 먼저 확인하세요.
-심볼릭 링크를 사용하므로 CLI 패키지를 업데이트하면 포함된 스킬도 함께 갱신됩니다.
+패키지에 포함된 동일한 스킬을 각 에이전트의 표준 경로로 복사합니다.
 
 ```sh
-mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-ln -s "$(npm root -g)/@twotwo-me/confluence-wiki-md/skills/confluence-wiki" "${CODEX_HOME:-$HOME/.codex}/skills/confluence-wiki"
+cfwiki skill paths --agent all
+cfwiki skill install --agent codex
+cfwiki skill install --agent claude
+cfwiki skill install --agent opencode --project .
+cfwiki skill install --agent cursor
 ```
 
-Claude Code는 별도의 스킬 디렉터리를 사용합니다. 사용자마다 같은 패키지 스킬을 연결하세요.
+명시적으로 선택한 에이전트만 설치합니다. 같은 버전 재설치는 변경하지 않고,
+다른 파일이 있으면 덮어쓰기 전에 중단합니다. `--overwrite`는 기존 폴더를 백업합니다.
+설치기에 계정이나 Confluence 프로필은 필요하지 않습니다. 자세한 경로와 npx 설치는
+[설치 안내](docs/installation.md)에 있습니다.
 
-```sh
-mkdir -p "$HOME/.claude/skills"
-ln -s "$(npm root -g)/@twotwo-me/confluence-wiki-md/skills/confluence-wiki" "$HOME/.claude/skills/confluence-wiki"
-```
-
-스킬 디렉터리를 다르게 사용하는 에이전트는 설치 패키지의 `skills/confluence-wiki`를
-해당 디렉터리에 복사하거나 링크합니다. 스킬에는 토큰을 넣지 않습니다. 에이전트가 다른 작업 폴더에서
-실행되면 다음처럼 **프로필의 절대 경로**를 함께 전달하세요.
-
-```text
-$confluence-wiki를 사용해 "배포 절차"를 검색하고 Markdown으로 읽어줘.
-연결 프로필은 /absolute/path/to/confluence-wiki-md/.env.company를 사용해.
-```
-
-브라우저 자동화나 별도 MCP 서버 없이 CLI와 스킬로 문서 작업을 수행할 수 있습니다.
+스킬 진입 문서에는 기본 읽기·수정 흐름만 두고, 도표·댓글·ACL·근거 탐색은 필요한
+참조 문서를 읽도록 구성해 매번 불필요한 지침을 문맥에 넣지 않습니다.
 
 ## 공유 위키와 근거 기반 에이전트 작업
 
@@ -635,17 +601,18 @@ CLI는 근거를 수집할 뿐 답을 작성하거나 `answered`를 판정하지
 
 ## Markdown stdout과 파일
 
-**읽기는 Markdown stdout, 편집은 .md 파일**을 기본 흐름으로 정했습니다.
+**`read`는 Markdown stdout, `download`는 ID 폴더의 .md 파일**을 기본 흐름으로 정했습니다.
 에이전트가 내용을 확인할 때 임시 파일이 필요 없고, 수정할 때는 파일을 저장해 diff와 버전을 확인할 수 있습니다.
 
 ```sh
 cfwiki search "배포 절차" --env .env.cloud
 cfwiki read 12345 --env .env.cloud
 cfwiki read 12345 --body-only --env .env.cloud
-cfwiki download 12345 -o wiki/deployment.md --assets --env .env.cloud
-cfwiki validate wiki/deployment.md
-cfwiki upload wiki/deployment.md --dry-run --env .env.cloud
-cfwiki upload wiki/deployment.md --env .env.cloud
+cfwiki download 12345 -o wiki --assets --env .env.cloud
+cfwiki download 12345 --recursive -o wiki-tree --env .env.cloud
+cfwiki validate "wiki/12345/배포 절차.md"
+cfwiki upload "wiki/12345/배포 절차.md" --dry-run --env .env.cloud
+cfwiki upload "wiki/12345/배포 절차.md" --env .env.cloud
 ```
 
 새 파일에는 `type`과 `title`을 넣고 `upload`합니다. 없는 front matter는 자동으로 보완합니다.
@@ -704,6 +671,8 @@ OKF의 concept ID는 번들 안의 파일 경로이며, Confluence 숫자 ID는 
 `base_body_hash`는 다운로드한 Markdown 본문의 기준 SHA-256입니다. 두 형식의 해시를 직접 비교하지 않습니다.
 `preserved`는 Markdown만으로 재생성할 수 없는 네이티브 요소의 원본 XML입니다.
 기본 `minimal` 모드는 일반 코드·표·이미지·페이지 링크와 설정된 Mermaid/PlantUML의 중복 XML을 제거합니다.
+info/note/tip/warning/panel/expand/quote는 편집 가능한 `confluence-*` 코드 펜스로 표현합니다.
+다운로드 파일의 YAML은 기본값과 중복 URL을 생략하며, 사이트 바인딩·ID·버전·해시와 사용자 필드는 유지합니다.
 보존할 항목이 없으면 `preserved` 필드 자체를 쓰지 않습니다. 남아 있는 항목은 해당 기능을 유지할 때 필요합니다.
 서로 다른 서버로 잘못 쓰지 않도록 파일의 URL과 현재 프로필을 비교하며,
 front matter의 주소로 토큰을 전송하지 않습니다.
@@ -1001,10 +970,34 @@ cfwiki search "rollback" --local wiki
 cfwiki push wiki --space DOCS --env .env.cloud
 ```
 
-내보내기는 `index.md`와 `pages/<page-id>.md`를 만듭니다.
-번들 내부 링크는 상대 Markdown 링크로 바꿉니다. 기본 최대 1,000개이며 `--limit`으로 조절합니다.
-`--parent ID`는 직계 하위 페이지만 조회합니다.
-`index.md`와 `log.md`는 OKF 예약 파일로, push 대상에서 제외합니다.
+내보내기는 페이지 ID 폴더 안에 페이지 제목을 파일명으로 저장합니다.
+
+```text
+wiki/
+  cfwiki-manifest.json
+  1111/
+    안녕.md
+    2222/
+      어서와.md
+```
+
+`1111/2222`는 실제 페이지 계층 `안녕/어서와`에 대응합니다. 각 ID 폴더에는
+해당 페이지의 Markdown 하나만 있습니다. 제목이 같은 페이지도 ID가 달라 충돌하지 않습니다.
+파일명에 쓸 수 없는 문자만 안전하게 치환하고 원래 제목은 YAML에 남깁니다.
+번들 내부 링크는 위치에 맞는 상대 경로로 바꾸며 앵커도 유지합니다.
+`cfwiki-manifest.json`에 파일·ID·부모·버전·해시를 기록하고 별도 `index.md`는 만들지 않습니다.
+ID 폴더의 `index.md`와 `log.md`도 정상 페이지로 push합니다. 구형 탐색 파일은 파일명과 `okf_version` 메타데이터를 함께 확인해 제외합니다.
+
+`download ID --recursive -o wiki`와 `export wiki --parent ID`는 루트 페이지와 모든
+자손을 포함합니다. 페이지네이션을 따라 조회하며 기본 최대 1,000개를 넘으면 저장 전에
+오류를 반환합니다. 필요한 경우 `--limit`을 명시적으로 늘리세요. `list --parent`는
+직계 자식 조회를 유지합니다. `download ID -o exact.md`는 기존 단일 파일 저장과 같습니다.
+
+기존 파일은 기본적으로 보존합니다. `--overwrite`를 줘도 제목 변경·페이지 이동 때문에
+기존 경로의 로컬 편집을 지우게 되는 경우에는 중단합니다. 로컬 diff를 확인하고 별도
+디렉터리에 다시 내려받으세요. 첨부는 가능한 한 원래 파일명으로 페이지 폴더에 저장합니다. 안전하지 않은 이름과 Markdown 첨부는
+안전한 이름으로 바꾸고 `attachment_files`에 원래 이름을 기록해 재업로드 시 첨부가 중복되지 않게 합니다. 숫자만 있는 첨부 파일명도 자식 폴더와 충돌하지 않게 바꿉니다. 경로를 포함하거나 점으로 시작하는 첨부 이름은 저장 전에 거부합니다.
+Markdown 첨부에는 `.attachment`를 덧붙여 두 번째 페이지로 오인하지 않게 합니다.
 push는 새 페이지 ID를 먼저 할당한 후 문서 사이의 링크를 연결하므로 순환 링크도 처리합니다.
 기존 ID가 포함된 번들을 다른 사이트에 그대로 게시하는 것은 차단합니다.
 
@@ -1020,7 +1013,7 @@ cfwiki attachments download 12345 67890 -o files/design.pdf --env .env.cloud
 ## 삭제와 충돌
 
 ```sh
-cfwiki delete wiki/deployment.md --yes --env .env.cloud
+cfwiki delete wiki/deployment.md --version 3 --yes --env .env.cloud
 cfwiki delete 12345 --version 7 --yes --env .env.cloud
 ```
 
@@ -1098,7 +1091,7 @@ GitHub Releases에서 설치했다면 같은 명령으로 최신 버전을 설�
 npm install --global https://github.com/TwoTwo-me/confluence-wiki-md/releases/latest/download/confluence-wiki-md.tgz
 ```
 
-GitHub Packages에서 설치했다면 로그인된 상태에서 다음 명령으로 업데이트합니다.
+공개 npm에서 설치했다면 로그인 없이 다음 명령으로 업데이트합니다.
 
 ```sh
 npm install --global @twotwo-me/confluence-wiki-md@latest
@@ -1111,8 +1104,14 @@ npm uninstall --global @twotwo-me/confluence-wiki-md
 ```
 
 소스 개발용 설치는 저장소에서 `git pull --ff-only`, `npm ci` 순서로 업데이트합니다.
-에이전트 스킬은 설치한 스킬 디렉터리의 링크를 별도로 제거합니다. Confluence 앱은
+에이전트 스킬은 `cfwiki skill paths --agent all`에 표시된 복사본을 별도로 제거합니다. Confluence 앱은
 **Connected apps**에서 별도로 제거하며, CLI 연결 해제만으로 원격 페이지나 앱이 삭제되지는 않습니다.
+
+## 토큰 사용량 비교
+
+실제 Confluence 문서를 curl REST, 공식 Atlassian MCP v2, cfwiki로 생성·조회·수정한
+측정 방법과 결과는 [토큰 비교 보고서](docs/token-benchmark.md)에 있습니다.
+입출력 텍스트의 토큰 수와 모델 제공자의 과금 사용량은 구분합니다.
 
 ## 공식 자료
 

@@ -1,101 +1,91 @@
 # Package releases
 
-The package name is `@twotwo-me/confluence-wiki-md`; the installed command is
-`cfwiki`. Node.js 24 or later is required. Versions 0.1.2 and later publish to the
-GitHub Packages npm registry and GitHub Releases. npmjs.org is not a publication
-target. The release archive is an alternative for users without a GitHub token.
+The package is `@twotwo-me/confluence-wiki-md`; its commands are `cfwiki` and
+`cfwiki-skill`. Node.js 24 or later is required. New releases use public npm and
+GitHub release archives. The archives remain available without an npm account or
+GitHub token. Earlier releases used GitHub Packages; that registry required login
+even for public packages. Never add credentials to the tracked `.npmrc`.
 
-## Workflows
+## Verification and GitHub release
 
-| Workflow | Trigger | Result |
-| --- | --- | --- |
-| `ci.yml` | Main push, pull request, manual run | Tests and isolated package installation on Linux and macOS |
-| `release.yml` | `vX.Y.Z` tag push, manual retry with an existing tag | GitHub Release, GitHub Packages publication, and installation from the registry |
-
-Actions use GitHub-hosted runners. No Confluence credentials are needed by these
-workflows. Release tags must match `package.json` and point to a commit reachable
-from `main`. Only stable three-part versions are accepted. Dependencies are
-installed without browser downloads for CI; real diagram-engine and live API
-checks remain separate commands.
-
-The package manifest uses an explicit file allowlist. `npm run test:package`
-inspects the actual archive, installs it globally under a temporary prefix, and
-executes the installed command from outside the checkout. It also checks Markdown
-conversion, empty-token profile templates, and the bundled agent skill. Local
-profiles, wiki downloads, test artifacts, and CI configuration are excluded.
-
-## GitHub Packages setup
-
-The package uses the lowercase owner scope `@twotwo-me`, a repository URL pointing
-to `TwoTwo-me/confluence-wiki-md`, and `publishConfig.registry` set to
-`https://npm.pkg.github.com/`. The tracked `.npmrc` contains only the scope mapping;
-never add tokens to it.
-
-The `github-packages` job has `packages: write` and publishes the verified archive
-using its automatic `GITHUB_TOKEN`. No npm account, trusted publisher, repository
-variable, or manually saved publish token is required. A separate
-`registry-install` job has only `packages: read`, downloads and verifies the
-published package, and installs it under an isolated prefix before running the CLI.
-Package installation scripts are disabled during that authenticated check.
-
-On the first publication, inspect the package's settings on GitHub and set its
-visibility to **Public**. GitHub packages initially default to private even when
-the linked repository is public. Access inheritance and package visibility are
-separate settings. See [GitHub's package visibility documentation](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility).
-
-Public npm packages on GitHub still require authentication to install. Users need
-their own classic PAT with `read:packages`; the Confluence token is unrelated.
+CI tests Linux and macOS. A release tag must be a stable `vX.Y.Z` matching the
+manifest and lockfile and must point to a commit reachable from `main`.
 
 ```sh
-npm login --scope=@twotwo-me --auth-type=legacy --registry=https://npm.pkg.github.com
-npm install --global @twotwo-me/confluence-wiki-md
-```
-
-See [GitHub's npm registry documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry).
-Users upgrading from 0.1.1 or earlier must first uninstall the old unscoped package
-with `npm uninstall --global confluence-wiki-md`, then reinstall and update any
-agent skill symlink to the scoped package directory. The `cfwiki` command is unchanged.
-
-## Publish a new version
-
-Start from a clean, up-to-date `main` checkout after CI passes. Increment the
-version without creating a Git tag automatically, review the manifest and lockfile
-diff, then commit and tag the release:
-
-```sh
-npm version patch --no-git-tag-version
+npm version minor --no-git-tag-version
 npm test
-npm run test:package
-git add package.json package-lock.json
-git commit -m "Release 0.1.3"
-git push origin main
-git tag v0.1.3
-git push origin v0.1.3
+npm run test:package -- artifacts/release
 ```
 
-Replace `0.1.3` with the actual version. The release workflow repeats tests and
-publishes the exact archive that passed installation verification. It also attaches
-`SHA256SUMS`. Users can choose a stable version URL or the latest release:
+Review and commit the intended changes, push `main`, and push the matching version
+tag. The tag workflow repeats the checks, installs the real packed artifact
+outside the checkout, and publishes that exact tarball plus `SHA256SUMS` to a
+GitHub Release. A separate job downloads the public URL without credentials and
+checks its bytes against the verified archive, installs it, runs both CLI and
+skill workflows, and checks one-shot execution.
+
+The package allowlist excludes credentials, local profiles, page downloads, live
+fixtures, and raw benchmark artifacts. It includes the CLI, installer, canonical
+skill, examples, empty-token profile templates, installation guide, and token
+benchmark report. The installation check verifies the packed file list and the
+published skill bytes. `PUPPETEER_SKIP_DOWNLOAD=true` avoids browser downloads in
+all distribution checks; rendering engines and live API checks remain separate.
+
+## Public npm setup
+
+The manifest publishes to `https://registry.npmjs.org/` with public access. The
+account or organization must own the lowercase `@twotwo-me` scope. For the first
+publication, authenticate as the maintainer and publish the already verified
+archive with the account's required 2FA:
 
 ```sh
-npm install --global https://github.com/TwoTwo-me/confluence-wiki-md/releases/download/v0.1.2/confluence-wiki-md.tgz
-npm install --global @twotwo-me/confluence-wiki-md@0.1.2
+npm publish artifacts/release/confluence-wiki-md.tgz --access public --registry=https://registry.npmjs.org/
 ```
 
-The second command requires a GitHub Packages login.
+npm currently requires account 2FA or a suitable granular token for direct
+publication. Account creation alone does not complete this requirement. See
+[npm's scoped-public package guidance](https://docs.npmjs.com/creating-and-publishing-scoped-public-packages/).
+Do not put login or OTP values in command arguments committed to the repository.
 
-## Retry and diagnose
+For later releases, configure a trusted publisher in the npm package settings:
+GitHub owner **TwoTwo-me**, repository **confluence-wiki-md**, workflow
+**release.yml**. Then set repository Actions variable `NPM_PUBLISH_ENABLED=true`.
+The workflow's `npm-publish` job uses GitHub OIDC with `id-token: write`, Node 24,
+and npm >=11.5.1. No long-lived npm token is stored in GitHub. Trusted publishing
+also generates provenance automatically. The package-side publisher must be
+configured before enabling the variable; merely adding workflow permissions is
+insufficient. See [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/).
 
-Use the Release workflow's manual run with the existing tag, or rerun the failed
-job. The GitHub release job leaves an existing release untouched. A published
-package version cannot be overwritten; rerun only failed jobs after another job
-succeeded. In particular, retry a failed `registry-install` job without repeating
-an already successful publication.
+Until this setup is complete, leave the variable unset. The npm job is skipped;
+GitHub Releases and their anonymous-install checks still run. This is an explicit
+publication state, not proof that the version is available from npm.
 
-For authentication failures, check the lowercase scope, registry URL, workflow
-package permissions, and the package's repository link or Actions access. User
-installation tokens need `read:packages`. Do not change Confluence credentials to
-troubleshoot package publishing or installation.
+After publication:
 
-If an archive must change after publication, release a new version instead of
-moving an existing tag or replacing an already published package.
+```sh
+npm run test:registry -- artifacts/release/confluence-wiki-md.tgz
+npm run test:release -- artifacts/release/confluence-wiki-md.tgz
+```
+
+The registry check strips auth token environment variables, uses empty isolated
+user/global npm configuration and a separate cache, compares the published
+SHA-512 integrity with the verified archive, and tests global install plus
+`npm exec` and skill copies. The release-URL check likewise removes GitHub/npm
+token variables. These checks do not use Confluence credentials.
+
+## Retry and version policy
+
+Use the release workflow's manual dispatch with an existing tag or rerun a failed
+job. The GitHub release job leaves an existing release untouched. The npm job
+skips an already published version only if its integrity matches the verified
+archive; a mismatch fails. Never replace a published archive or move a release
+tag to different content. Release a new version when code, documentation, or
+bundled skills change.
+
+Use a minor release for new command behavior and layout changes before 1.0, and a
+patch for compatible fixes. Keep the manifest and root lockfile version in sync.
+For users requiring reproducibility, document a pinned npm version or a
+`releases/download/vX.Y.Z/confluence-wiki-md.tgz` URL rather than `latest`.
+
+See [installation.md](installation.md) for anonymous installation and exact agent
+skill paths.
